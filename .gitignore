@@ -192,3 +192,12 @@ cython_debug/
 #  refer to https://docs.cursor.com/context/ignore-files
 .cursorignore
 .cursorindexingignore
+
+
+# test
+tests/data/output/transform_glissue/**
+!tests/data/output/transform_glissue/.gitkeep
+tests/data/output/draw_chart/**
+!tests/data/output/draw_chart/.gitkeep
+tests/data/output/write_glissue_html/**
+!tests/data/output/write_glissue_html/.gitkeep

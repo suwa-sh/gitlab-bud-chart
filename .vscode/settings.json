@@ -1,0 +1,24 @@
+{
+    "[python]": {
+        // formatterにRuffを指定
+        "editor.formatOnSave": true,
+        "editor.defaultFormatter": "charliermarsh.ruff",
+        "editor.codeActionsOnSave": {
+            // linterにRuffを指定
+            "source.fixAll.ruff": "explicit",
+            "source.organizeImports.ruff": "explicit"
+        }
+    },
+    // mypyによる型チェック, インポートチェックを有効化
+    "mypy-type-checker.args": [
+        "--ignore-missing-imports",
+        "--disallow-untyped-defs",
+    ],
+    "python.testing.pytestArgs": ["tests"],
+    "python.testing.unittestEnabled": false,
+    "python.testing.pytestEnabled": true,
+    // vscodeターミナル向けのPYTHONPATH設定
+    "terminal.integrated.env.linux": {
+        "PYTHONPATH": "${workspaceFolder}/src"
+    }
+}
