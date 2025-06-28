@@ -2,6 +2,10 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.api import issues, charts, gitlab_config
 from app.config import settings
+from app.services.gitlab_client import gitlab_client
+import logging
+
+logger = logging.getLogger(__name__)
 
 app = FastAPI(
     title="GitLab Bud Chart API",
@@ -30,3 +34,23 @@ async def root():
 @app.get("/health")
 async def health_check():
     return {"status": "healthy"}
+
+@app.on_event("startup")
+async def startup_event():
+    """アプリケーション起動時の初期化"""
+    logger.info("アプリケーション起動中...")
+    
+    # GitLab接続の自動初期化
+    if settings.gitlab_url and settings.gitlab_token and settings.gitlab_project_id:
+        logger.info("GitLab接続設定が見つかりました。接続を試行します...")
+        success = gitlab_client.connect(
+            settings.gitlab_url, 
+            settings.gitlab_token, 
+            settings.gitlab_project_id
+        )
+        if success:
+            logger.info("GitLab接続成功")
+        else:
+            logger.warning("GitLab接続失敗 - 手動設定が必要です")
+    else:
+        logger.info("GitLab接続設定が不完全です。手動設定が必要です。")
