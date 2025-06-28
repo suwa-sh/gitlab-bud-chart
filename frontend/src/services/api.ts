@@ -49,3 +49,24 @@ export const chartsApi = {
     return response.data
   },
 }
+
+export const gitlabApi = {
+  connect: async (config: {
+    gitlab_url: string
+    gitlab_token: string
+    project_id: string
+  }) => {
+    const response = await api.post('/gitlab/connect', config)
+    return response.data
+  },
+  
+  getStatus: async () => {
+    const response = await api.get('/gitlab/status')
+    return response.data
+  },
+  
+  getSampleIssues: async () => {
+    const response = await api.get('/gitlab/issues/sample')
+    return response.data
+  },
+}

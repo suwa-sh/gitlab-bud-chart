@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.api import issues, charts
+from app.api import issues, charts, gitlab_config
 from app.config import settings
 
 app = FastAPI(
@@ -21,6 +21,7 @@ app.add_middleware(
 # ルーター追加
 app.include_router(issues.router, prefix="/api/issues", tags=["issues"])
 app.include_router(charts.router, prefix="/api/charts", tags=["charts"])
+app.include_router(gitlab_config.router, prefix="/api/gitlab", tags=["gitlab"])
 
 @app.get("/")
 async def root():
