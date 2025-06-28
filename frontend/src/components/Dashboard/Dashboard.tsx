@@ -11,8 +11,8 @@ export const Dashboard = () => {
   const { state } = useApp()
   const { issues, loading, fetchIssues, exportIssues } = useIssues()
   const [selectedPeriod, setSelectedPeriod] = useState({
-    start: '2025-04',
-    end: '2025-06'
+    start: '2024-12-01',
+    end: '2024-12-31'
   })
 
   useEffect(() => {

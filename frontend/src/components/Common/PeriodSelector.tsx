@@ -1,3 +1,7 @@
+import { useState } from 'react'
+import { format, addMonths, startOfMonth, endOfMonth } from 'date-fns'
+import './PeriodSelector.css'
+
 interface PeriodSelectorProps {
   value: {
     start: string
@@ -7,60 +11,95 @@ interface PeriodSelectorProps {
 }
 
 export const PeriodSelector = ({ value, onChange }: PeriodSelectorProps) => {
-  const handleStartChange = (start: string) => {
-    onChange({ ...value, start })
-  }
+  const [isCustom, setIsCustom] = useState(false)
 
-  const handleEndChange = (end: string) => {
-    onChange({ ...value, end })
-  }
+  const handlePresetPeriod = (preset: string) => {
+    const today = new Date()
+    let start: Date
+    let end: Date
 
-  // Generate month options (current year and next year)
-  const generateMonthOptions = () => {
-    const options = []
-    const currentYear = new Date().getFullYear()
-    
-    for (let year = currentYear; year <= currentYear + 1; year++) {
-      for (let month = 1; month <= 12; month++) {
-        const monthStr = month.toString().padStart(2, '0')
-        const value = `${year}-${monthStr}`
-        const label = `${year}年${month}月`
-        options.push({ value, label })
-      }
+    switch (preset) {
+      case 'this-month':
+        start = startOfMonth(today)
+        end = endOfMonth(today)
+        break
+      case 'last-month':
+        const lastMonth = addMonths(today, -1)
+        start = startOfMonth(lastMonth)
+        end = endOfMonth(lastMonth)
+        break
+      case 'this-quarter':
+        const quarterMonth = Math.floor(today.getMonth() / 3) * 3
+        start = new Date(today.getFullYear(), quarterMonth, 1)
+        end = endOfMonth(addMonths(start, 2))
+        break
+      case 'last-quarter':
+        const lastQuarterStart = addMonths(new Date(), -3)
+        const lastQuarterMonth = Math.floor(lastQuarterStart.getMonth() / 3) * 3
+        start = new Date(lastQuarterStart.getFullYear(), lastQuarterMonth, 1)
+        end = endOfMonth(addMonths(start, 2))
+        break
+      case 'this-year':
+        start = new Date(today.getFullYear(), 0, 1)
+        end = new Date(today.getFullYear(), 11, 31)
+        break
+      default:
+        return
     }
-    
-    return options
-  }
 
-  const monthOptions = generateMonthOptions()
+    onChange({
+      start: format(start, 'yyyy-MM-dd'),
+      end: format(end, 'yyyy-MM-dd')
+    })
+    setIsCustom(false)
+  }
 
   return (
     <div className="period-selector">
-      <label>期間:</label>
-      <div className="period-inputs">
-        <select
-          value={value.start}
-          onChange={(e) => handleStartChange(e.target.value)}
-          className="period-select"
+      <div className="period-presets">
+        <button onClick={() => handlePresetPeriod('this-month')}>
+          今月
+        </button>
+        <button onClick={() => handlePresetPeriod('last-month')}>
+          先月
+        </button>
+        <button onClick={() => handlePresetPeriod('this-quarter')}>
+          今四半期
+        </button>
+        <button onClick={() => handlePresetPeriod('last-quarter')}>
+          前四半期
+        </button>
+        <button onClick={() => handlePresetPeriod('this-year')}>
+          今年
+        </button>
+        <button 
+          className={isCustom ? 'active' : ''}
+          onClick={() => setIsCustom(!isCustom)}
         >
-          {monthOptions.map(option => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </select>
-        <span className="period-separator">〜</span>
-        <select
-          value={value.end}
-          onChange={(e) => handleEndChange(e.target.value)}
-          className="period-select"
-        >
-          {monthOptions.map(option => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </select>
+          カスタム
+        </button>
+      </div>
+      
+      {isCustom && (
+        <div className="custom-period">
+          <input
+            type="date"
+            value={value.start}
+            onChange={(e) => onChange({ ...value, start: e.target.value })}
+            className="date-input"
+          />
+          <span>〜</span>
+          <input
+            type="date"
+            value={value.end}
+            onChange={(e) => onChange({ ...value, end: e.target.value })}
+            className="date-input"
+          />
+        </div>
+      )}
+      
+      <div className="current-period">
+        <span>{value.start} 〜 {value.end}</span>
       </div>
     </div>
   )

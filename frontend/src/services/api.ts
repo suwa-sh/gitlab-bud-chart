@@ -1,5 +1,5 @@
 import axios from 'axios'
-import { Issue, ChartData } from '../types/api'
+import { Issue, BurnChartResponse, VelocityResponse } from '../types/api'
 
 const API_BASE_URL = 'http://localhost:8000/api'
 
@@ -82,23 +82,34 @@ export const issuesApi = {
 
 export const chartsApi = {
   getBurnDownData: async (
-    milestone: string,
+    milestone: string | undefined,
     startDate: string,
     endDate: string
-  ): Promise<ChartData[]> => {
-    const response = await api.get('/charts/burn-down', {
-      params: { milestone, start_date: startDate, end_date: endDate }
-    })
+  ): Promise<BurnChartResponse> => {
+    const params: any = { start_date: startDate, end_date: endDate }
+    if (milestone) {
+      params.milestone = milestone
+    }
+    const response = await api.get('/charts/burn-down', { params })
     return response.data
   },
   
   getBurnUpData: async (
-    milestone: string,
+    milestone: string | undefined,
     startDate: string,
     endDate: string
-  ): Promise<ChartData[]> => {
-    const response = await api.get('/charts/burn-up', {
-      params: { milestone, start_date: startDate, end_date: endDate }
+  ): Promise<BurnChartResponse> => {
+    const params: any = { start_date: startDate, end_date: endDate }
+    if (milestone) {
+      params.milestone = milestone
+    }
+    const response = await api.get('/charts/burn-up', { params })
+    return response.data
+  },
+  
+  getVelocityData: async (weeks: number = 12): Promise<VelocityResponse> => {
+    const response = await api.get('/charts/velocity', {
+      params: { weeks }
     })
     return response.data
   },
