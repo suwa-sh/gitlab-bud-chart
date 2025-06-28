@@ -1,6 +1,0 @@
-{
-  "gitlab_url": "http://localhost:8080",
-  "project_id": 1,
-  "access_token": "glpat-cnHyDV8kvvz4Z_3ASq8g",
-  "manual_setup_note": "GitLab接続には有効なアクセストークンが必要です。手動でGitLabに設定してから実際のE2Eテストを実行してください。"
-}

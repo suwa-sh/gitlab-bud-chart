@@ -464,6 +464,8 @@ frontend/coverage/**
 sample-data/generated/
 !sample-data/examples/
 
+test_config.json
+
 # ===================================
 # DOCUMENTATION BUILD
 # ===================================
