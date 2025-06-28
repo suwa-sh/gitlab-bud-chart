@@ -59,4 +59,5 @@ gitlab の issue を分析し、burn-up/burn-down チャート表示＆product b
 │ > @docs/develop/tasks/task-06-backend-api.md  の作業を実施後、検証項目を確認し、対応状況を更新してください
 │ > @docker/docker-compose.gitlab.yml でgitlab起動済み。http://localhost:8080 で起動中。テストデータを当該gitlabに登録し、 e2eテストを実施してください
 │ > @docs/develop/tasks/task-07-frontend-setup.md   の作業を実施後、検証項目を確認し、対応状況を更新してください
+│ > @docs/develop/tasks/task-08-issue-list-ui.md の作業を実施後、検証項目を確認し、対応状況を更新してください
 ```

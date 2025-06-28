@@ -1,0 +1,74 @@
+import { Issue } from '../../types/api'
+
+interface IssueTableRowProps {
+  issue: Issue
+}
+
+export const IssueTableRow = ({ issue }: IssueTableRowProps) => {
+  const formatDate = (dateString?: string) => {
+    if (!dateString) return '-'
+    return new Date(dateString).toLocaleDateString('ja-JP')
+  }
+
+  const getKanbanBadgeClass = (status?: string) => {
+    if (!status) return 'kanban-badge'
+    switch (status.toLowerCase()) {
+      case 'working':
+      case '作業中':
+        return 'kanban-badge working'
+      case 'completed':
+      case '完了':
+        return 'kanban-badge completed'
+      case 'blocked':
+      case 'ブロック':
+        return 'kanban-badge blocked'
+      default:
+        return 'kanban-badge'
+    }
+  }
+
+  const getStateBadgeClass = (state: string) => {
+    switch (state.toLowerCase()) {
+      case 'opened':
+      case 'open':
+        return 'state-badge opened'
+      case 'closed':
+        return 'state-badge closed'
+      default:
+        return 'state-badge'
+    }
+  }
+
+  return (
+    <tr>
+      <td>{issue.milestone || '-'}</td>
+      <td>
+        <a 
+          href={`#/issue/${issue.id}`} 
+          className="issue-title"
+          title={issue.description}
+        >
+          {issue.title}
+        </a>
+      </td>
+      <td>
+        {issue.point ? (
+          <span className="point-badge">{issue.point}</span>
+        ) : '-'}
+      </td>
+      <td>
+        <span className={getKanbanBadgeClass(issue.kanban_status)}>
+          {issue.kanban_status || '-'}
+        </span>
+      </td>
+      <td>{issue.assignee || '-'}</td>
+      <td>{formatDate(issue.created_at)}</td>
+      <td>{formatDate(issue.completed_at)}</td>
+      <td>
+        <span className={getStateBadgeClass(issue.state)}>
+          {issue.state}
+        </span>
+      </td>
+    </tr>
+  )
+}
