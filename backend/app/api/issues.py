@@ -5,70 +5,162 @@ from app.services.issue_analyzer import issue_analyzer
 from app.models.issue import (
     IssueResponse, 
     IssueListRequest, 
-    IssueListResponse
+    IssueListResponse,
+    IssueSearchRequest,
+    IssueModel
 )
 import logging
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
-@router.get("/", response_model=IssueListResponse)
+def _apply_advanced_filters(
+    issues: List[IssueModel], 
+    min_point: Optional[float], 
+    max_point: Optional[float], 
+    search: Optional[str],
+    kanban_status: Optional[str]
+) -> List[IssueModel]:
+    """高度フィルタ適用"""
+    filtered = issues
+    
+    # Point範囲フィルタ
+    if min_point is not None:
+        filtered = [i for i in filtered if i.point is not None and i.point >= min_point]
+    if max_point is not None:
+        filtered = [i for i in filtered if i.point is not None and i.point <= max_point]
+    
+    # テキスト検索
+    if search:
+        search_lower = search.lower()
+        filtered = [
+            i for i in filtered 
+            if search_lower in i.title.lower() or search_lower in i.description.lower()
+        ]
+    
+    # Kanbanステータスフィルタ（追加）
+    if kanban_status:
+        filtered = [i for i in filtered if i.kanban_status == kanban_status]
+    
+    return filtered
+
+def _sort_issues(issues: List[IssueModel], sort_by: str, sort_order: str) -> List[IssueModel]:
+    """Issue ソート"""
+    reverse = sort_order == 'desc'
+    
+    if sort_by == 'created_at':
+        return sorted(issues, key=lambda x: x.created_at, reverse=reverse)
+    elif sort_by == 'updated_at':
+        return sorted(issues, key=lambda x: x.updated_at or x.created_at, reverse=reverse)
+    elif sort_by == 'point':
+        return sorted(issues, key=lambda x: x.point or 0, reverse=reverse)
+    elif sort_by == 'title':
+        return sorted(issues, key=lambda x: x.title.lower(), reverse=reverse)
+    elif sort_by == 'state':
+        return sorted(issues, key=lambda x: x.state, reverse=reverse)
+    else:
+        return sorted(issues, key=lambda x: x.created_at, reverse=reverse)
+
+def _paginate_issues(issues: List[IssueModel], page: int, per_page: int) -> List[IssueModel]:
+    """ページネーション"""
+    start = (page - 1) * per_page
+    end = start + per_page
+    return issues[start:end]
+
+def _collect_metadata(issues: List[IssueModel]) -> Dict[str, Any]:
+    """メタデータ収集"""
+    return {
+        'milestones': sorted(list(set(i.milestone for i in issues if i.milestone))),
+        'assignees': sorted(list(set(i.assignee for i in issues if i.assignee))),
+        'services': sorted(list(set(i.service for i in issues if i.service))),
+        'quarters': sorted(list(set(i.quarter for i in issues if i.quarter))),
+        'kanban_statuses': sorted(list(set(i.kanban_status for i in issues if i.kanban_status)))
+    }
+
+def _issue_to_response(issue: IssueModel) -> IssueResponse:
+    """IssueModel → IssueResponse変換"""
+    return IssueResponse(
+        id=issue.id,
+        title=issue.title,
+        description=issue.description,
+        state=issue.state,
+        created_at=issue.created_at,
+        updated_at=issue.updated_at,
+        due_date=issue.due_date,
+        assignee=issue.assignee,
+        milestone=issue.milestone,
+        labels=issue.labels,
+        web_url=issue.web_url,
+        point=issue.point,
+        kanban_status=issue.kanban_status,
+        service=issue.service,
+        quarter=issue.quarter,
+        completed_at=issue.completed_at
+    )
+
+@router.get("/", response_model=Dict[str, Any])
 async def get_issues(
-    state: Optional[str] = Query('all', description="Issue状態 (all, opened, closed)"),
-    milestone: Optional[str] = Query(None, description="マイルストーン名"),
-    assignee: Optional[str] = Query(None, description="担当者名"),
-    labels: Optional[str] = Query(None, description="ラベル (カンマ区切り)")
+    state: Optional[str] = Query('all'),
+    milestone: Optional[str] = Query(None),
+    assignee: Optional[str] = Query(None),
+    service: Optional[str] = Query(None),
+    quarter: Optional[str] = Query(None),
+    kanban_status: Optional[str] = Query(None),
+    min_point: Optional[float] = Query(None),
+    max_point: Optional[float] = Query(None),
+    search: Optional[str] = Query(None),
+    sort_by: Optional[str] = Query('created_at'),
+    sort_order: Optional[str] = Query('desc'),
+    page: Optional[int] = Query(1),
+    per_page: Optional[int] = Query(50)
 ):
-    """GitLabからissue一覧を取得"""
+    """高度なフィルタ・検索対応Issues一覧取得"""
     try:
-        # ラベル解析
-        label_list = labels.split(',') if labels else None
+        # フィルタ条件構築
+        labels = []
+        if service:
+            labels.append(f"s:{service}")
+        if quarter:
+            labels.append(f"@{quarter}")
+        if kanban_status:
+            labels.append(f"#{kanban_status}")
         
-        # Issue取得
-        issues = await issue_service.get_all_issues(
+        # Issue取得・分析
+        issues, statistics = await issue_service.get_analyzed_issues(
             state=state,
             milestone=milestone,
             assignee=assignee,
-            labels=label_list
+            labels=labels if labels else None,
+            analyze=True
         )
         
-        # メタデータ抽出
-        milestones = list(set(issue.milestone for issue in issues if issue.milestone))
-        assignees = list(set(issue.assignee for issue in issues if issue.assignee))
-        
-        # レスポンス変換
-        issue_responses = [
-            IssueResponse(
-                id=issue.id,
-                title=issue.title,
-                description=issue.description,
-                state=issue.state,
-                created_at=issue.created_at,
-                updated_at=issue.updated_at,
-                due_date=issue.due_date,
-                assignee=issue.assignee,
-                milestone=issue.milestone,
-                labels=issue.labels,
-                web_url=issue.web_url,
-                point=issue.point,
-                kanban_status=issue.kanban_status,
-                service=issue.service,
-                quarter=issue.quarter,
-                completed_at=issue.completed_at
-            )
-            for issue in issues
-        ]
-        
-        return IssueListResponse(
-            total_count=len(issue_responses),
-            issues=issue_responses,
-            milestones=sorted(milestones),
-            assignees=sorted(assignees)
+        # 追加フィルタ適用
+        filtered_issues = _apply_advanced_filters(
+            issues, min_point, max_point, search, kanban_status
         )
+        
+        # ソート
+        sorted_issues = _sort_issues(filtered_issues, sort_by, sort_order)
+        
+        # ページネーション
+        paginated_issues = _paginate_issues(sorted_issues, page, per_page)
+        
+        # メタデータ収集
+        metadata = _collect_metadata(filtered_issues)
+        
+        return {
+            'issues': [_issue_to_response(issue) for issue in paginated_issues],
+            'total_count': len(filtered_issues),
+            'page': page,
+            'per_page': per_page,
+            'total_pages': (len(filtered_issues) + per_page - 1) // per_page,
+            'metadata': metadata,
+            'statistics': statistics
+        }
         
     except Exception as e:
-        logger.error(f"Issues取得API失敗: {e}")
-        raise HTTPException(status_code=500, detail=f"Issues取得に失敗しました: {str(e)}")
+        logger.error(f"Issues一覧取得API失敗: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/analyzed", response_model=Dict[str, Any])
 async def get_analyzed_issues(
@@ -241,6 +333,143 @@ async def get_issues_statistics(
     except Exception as e:
         logger.error(f"Issue統計API失敗: {e}")
         raise HTTPException(status_code=500, detail=f"Issue統計取得に失敗しました: {str(e)}")
+
+@router.post("/search", response_model=Dict[str, Any])
+async def search_issues(search_request: IssueSearchRequest):
+    """高度検索API"""
+    try:
+        # 検索条件をクエリパラメータ形式に変換
+        labels = []
+        if search_request.service:
+            labels.append(f"s:{search_request.service}")
+        if search_request.quarter:
+            labels.append(f"@{search_request.quarter}")
+        if search_request.kanban_status:
+            labels.append(f"#{search_request.kanban_status}")
+        
+        # Issue取得・分析
+        issues, statistics = await issue_service.get_analyzed_issues(
+            state=search_request.state,
+            milestone=search_request.milestone,
+            assignee=search_request.assignee,
+            labels=labels if labels else None,
+            analyze=True
+        )
+        
+        # 日付範囲フィルタ
+        if search_request.date_from or search_request.date_to:
+            filtered_issues = []
+            for issue in issues:
+                issue_date = issue.created_at
+                if search_request.date_from and issue_date < search_request.date_from:
+                    continue
+                if search_request.date_to and issue_date > search_request.date_to:
+                    continue
+                filtered_issues.append(issue)
+            issues = filtered_issues
+        
+        # 追加フィルタ適用
+        filtered_issues = _apply_advanced_filters(
+            issues, search_request.min_point, search_request.max_point,
+            search_request.query, search_request.kanban_status
+        )
+        
+        # ソート
+        sorted_issues = _sort_issues(
+            filtered_issues, search_request.sort_by, search_request.sort_order
+        )
+        
+        # ページネーション
+        paginated_issues = _paginate_issues(
+            sorted_issues, search_request.page, search_request.per_page
+        )
+        
+        # メタデータ収集
+        metadata = _collect_metadata(filtered_issues)
+        
+        return {
+            'issues': [_issue_to_response(issue) for issue in paginated_issues],
+            'total_count': len(filtered_issues),
+            'page': search_request.page,
+            'per_page': search_request.per_page,
+            'total_pages': (len(filtered_issues) + search_request.per_page - 1) // search_request.per_page,
+            'metadata': metadata,
+            'search_criteria': search_request.dict()
+        }
+        
+    except Exception as e:
+        logger.error(f"高度検索API失敗: {e}")
+        raise HTTPException(status_code=500, detail=f"高度検索に失敗しました: {str(e)}")
+
+@router.get("/export/csv")
+async def export_issues_csv(
+    state: Optional[str] = Query('all'),
+    milestone: Optional[str] = Query(None),
+    service: Optional[str] = Query(None),
+    quarter: Optional[str] = Query(None)
+):
+    """Issues CSV エクスポート"""
+    try:
+        import csv
+        import io
+        from fastapi.responses import StreamingResponse
+        
+        # フィルタ条件構築
+        labels = []
+        if service:
+            labels.append(f"s:{service}")
+        if quarter:
+            labels.append(f"@{quarter}")
+        
+        # Issue取得・分析
+        issues, _ = await issue_service.get_analyzed_issues(
+            state=state,
+            milestone=milestone,
+            labels=labels if labels else None,
+            analyze=True
+        )
+        
+        # CSV作成
+        output = io.StringIO()
+        writer = csv.writer(output)
+        
+        # ヘッダー
+        writer.writerow([
+            'ID', 'Title', 'State', 'Created At', 'Updated At', 'Due Date',
+            'Assignee', 'Milestone', 'Point', 'Kanban Status', 'Service',
+            'Quarter', 'Completed At', 'Web URL'
+        ])
+        
+        # データ行
+        for issue in issues:
+            writer.writerow([
+                issue.id,
+                issue.title,
+                issue.state,
+                issue.created_at.isoformat() if issue.created_at else '',
+                issue.updated_at.isoformat() if issue.updated_at else '',
+                issue.due_date.isoformat() if issue.due_date else '',
+                issue.assignee or '',
+                issue.milestone or '',
+                issue.point or '',
+                issue.kanban_status or '',
+                issue.service or '',
+                issue.quarter or '',
+                issue.completed_at.isoformat() if issue.completed_at else '',
+                issue.web_url or ''
+            ])
+        
+        output.seek(0)
+        
+        return StreamingResponse(
+            io.BytesIO(output.getvalue().encode('utf-8')),
+            media_type='text/csv',
+            headers={'Content-Disposition': 'attachment; filename="issues.csv"'}
+        )
+        
+    except Exception as e:
+        logger.error(f"CSV エクスポートAPI失敗: {e}")
+        raise HTTPException(status_code=500, detail=f"CSV エクスポートに失敗しました: {str(e)}")
 
 @router.get("/milestone/{milestone_name}", response_model=IssueListResponse)
 async def get_issues_by_milestone(milestone_name: str):
