@@ -54,4 +54,6 @@ gitlab の issue を分析し、burn-up/burn-down チャート表示＆product b
 │ > .gitignore整備
 │ > @docs/develop/tasks/task-03-gitlab-connection.md  の作業を実施後、検証項目を確認し、対応状況を更新してください
 │ > @docs/develop/tasks/task-04-gitlab-api-integration.md  の作業を実施後、検証項目を確認し、対応状況を更新してください
+│ > @docs/develop/tasks/task-05-issue-analysis.md   の作業を実施後、検証項目を確認し、対応状況を更新してください
+│ > Quarter形式誤り @FY2501Q1ではなく、@FY25Q1。関連コードと資料を更新してください
 ```

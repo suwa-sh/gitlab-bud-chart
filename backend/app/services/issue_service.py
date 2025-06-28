@@ -1,9 +1,10 @@
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict, Any, Tuple
 from datetime import datetime
 import logging
 from app.services.gitlab_client import gitlab_client
 from app.models.issue import IssueModel, IssueResponse
 from app.utils.retry import async_retry
+from app.services.issue_analyzer import issue_analyzer
 
 logger = logging.getLogger(__name__)
 
@@ -131,6 +132,84 @@ class IssueService:
         except Exception as e:
             logger.warning(f"日時解析失敗: {date_str}, error: {e}")
             return None
+    
+    async def get_analyzed_issues(
+        self,
+        state: Optional[str] = 'all',
+        milestone: Optional[str] = None,
+        assignee: Optional[str] = None,
+        labels: Optional[List[str]] = None,
+        analyze: bool = True
+    ) -> Tuple[List[IssueModel], Dict[str, Any]]:
+        """
+        分析済みissue取得 + 統計情報
+        """
+        # Issue取得
+        issues = await self.get_all_issues(
+            state=state,
+            milestone=milestone,
+            assignee=assignee,
+            labels=labels
+        )
+        
+        # 分析実行
+        if analyze:
+            issues = issue_analyzer.analyze_issues_batch(issues)
+        
+        # 統計情報生成
+        statistics = self._generate_statistics(issues)
+        
+        return issues, statistics
+    
+    def _generate_statistics(self, issues: List[IssueModel]) -> Dict[str, Any]:
+        """
+        Issue統計情報生成
+        """
+        try:
+            total_count = len(issues)
+            
+            # 状態別集計
+            state_counts = {}
+            for issue in issues:
+                state_counts[issue.state] = state_counts.get(issue.state, 0) + 1
+            
+            # Point集計
+            total_points = sum(issue.point for issue in issues if issue.point)
+            avg_points = total_points / len([i for i in issues if i.point]) if any(i.point for i in issues) else 0
+            
+            # Kanban Status集計
+            kanban_counts = {}
+            for issue in issues:
+                if issue.kanban_status:
+                    kanban_counts[issue.kanban_status] = kanban_counts.get(issue.kanban_status, 0) + 1
+            
+            # Service集計
+            service_counts = {}
+            for issue in issues:
+                if issue.service:
+                    service_counts[issue.service] = service_counts.get(issue.service, 0) + 1
+            
+            # 完了率
+            completed_issues = [i for i in issues if i.completed_at or i.state == 'closed']
+            completion_rate = len(completed_issues) / total_count if total_count > 0 else 0
+            
+            # 一意値リスト
+            unique_values = issue_analyzer.get_unique_values(issues)
+            
+            return {
+                'total_count': total_count,
+                'state_counts': state_counts,
+                'total_points': total_points,
+                'average_points': round(avg_points, 2),
+                'kanban_counts': kanban_counts,
+                'service_counts': service_counts,
+                'completion_rate': round(completion_rate, 4),
+                'unique_values': unique_values
+            }
+            
+        except Exception as e:
+            logger.error(f"統計情報生成失敗: {e}")
+            return {}
 
 # グローバルインスタンス
 issue_service = IssueService()

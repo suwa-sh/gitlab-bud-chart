@@ -37,7 +37,7 @@ class IssueAnalyzer:
     - point: prefix が p: の label 値 [p:0.5, p:1.0, ...]
     - kanban_status: prefix が # の label 値 [#作業中, #完了, ...]
     - service: prefix が s: の label 値 [s:backend, s:frontend, ...]
-    - quarter: prefix が @ の label 値 [@FY2501, @FY2502, ...]
+    - quarter: prefix が @ の label 値 [@FY25Q1, @FY25Q2, ...]
     - completed_at: due_date を completed_at
     """
     
@@ -128,7 +128,7 @@ class IssueAnalyzer:
                 result['service'] = service_match.group(1)
                 logger.debug(f"Service解析: {label} -> {result['service']}")
             
-            # Quarter解析 (@FY2501, @FY2502, etc.)
+            # Quarter解析 (@FY25Q1, @FY25Q2, etc.)
             quarter_match = self.quarter_pattern.match(label)
             if quarter_match:
                 result['quarter'] = quarter_match.group(1)
@@ -251,7 +251,7 @@ class IssueAnalyzer:
         
         # Quarter検証
         if issue.quarter:
-            quarter_pattern = re.compile(r'^FY\d{4}Q[1-4]$')
+            quarter_pattern = re.compile(r'^FY\d{2}Q[1-4]$')
             if not quarter_pattern.match(issue.quarter):
                 warnings.append(f"非標準のQuarter形式: {issue.quarter}")
         
@@ -566,7 +566,7 @@ class TestIssueAnalyzer:
             due_date=datetime(2024, 2, 1),
             assignee="testuser",
             milestone="v1.0",
-            labels=["p:1.5", "#作業中", "s:backend", "@FY2501Q1", "enhancement"],
+            labels=["p:1.5", "#作業中", "s:backend", "@FY25Q1", "enhancement"],
             web_url="http://example.com/issues/1"
         )
     
@@ -578,7 +578,7 @@ class TestIssueAnalyzer:
         assert result.point == 1.5
         assert result.kanban_status == "作業中"
         assert result.service == "backend"
-        assert result.quarter == "FY2501Q1"
+        assert result.quarter == "FY25Q1"
         assert result.completed_at is None  # openedなので
     
     def test_analyze_labels_point_parsing(self, analyzer):
@@ -625,9 +625,9 @@ class TestIssueAnalyzer:
     
     def test_analyze_labels_quarter_parsing(self, analyzer):
         test_cases = [
-            (["@FY2501Q1"], "FY2501Q1"),
-            (["@FY2502Q4"], "FY2502Q4"),
-            (["FY2501Q1"], None),  # プレフィックスなし
+            (["@FY25Q1"], "FY25Q1"),
+            (["@FY25Q4"], "FY25Q4"),
+            (["FY25Q1"], None),  # プレフィックスなし
             ([], None)
         ]
         
@@ -704,17 +704,17 @@ class TestIssueAnalyzer:
             IssueModel(
                 id=1, title="Issue 1", description="", state="opened",
                 created_at=datetime(2024, 1, 1), labels=[],
-                point=1.0, kanban_status="作業中", service="backend", quarter="FY2501Q1"
+                point=1.0, kanban_status="作業中", service="backend", quarter="FY25Q1"
             ),
             IssueModel(
                 id=2, title="Issue 2", description="", state="opened",
                 created_at=datetime(2024, 1, 2), labels=[],
-                point=2.0, kanban_status="完了", service="frontend", quarter="FY2501Q1"
+                point=2.0, kanban_status="完了", service="frontend", quarter="FY25Q1"
             ),
             IssueModel(
                 id=3, title="Issue 3", description="", state="opened",
                 created_at=datetime(2024, 1, 3), labels=[],
-                point=1.0, kanban_status="作業中", service="backend", quarter="FY2501Q2"
+                point=1.0, kanban_status="作業中", service="backend", quarter="FY25Q2"
             )
         ]
         
@@ -722,14 +722,14 @@ class TestIssueAnalyzer:
         
         assert set(result['kanban_statuses']) == {"作業中", "完了"}
         assert set(result['services']) == {"backend", "frontend"}
-        assert set(result['quarters']) == {"FY2501Q1", "FY2501Q2"}
+        assert set(result['quarters']) == {"FY25Q1", "FY25Q2"}
         assert set(result['points']) == {1.0, 2.0}
     
     def test_validate_issue_data_valid(self, analyzer):
         issue = IssueModel(
             id=1, title="Test", description="", state="opened",
             created_at=datetime(2024, 1, 1), labels=[],
-            point=1.0, kanban_status="作業中", service="backend", quarter="FY2501Q1"
+            point=1.0, kanban_status="作業中", service="backend", quarter="FY25Q1"
         )
         
         result = analyzer.validate_issue_data(issue)
@@ -834,7 +834,7 @@ class TestAnalysisAPI:
             IssueModel(
                 id=1, title="Test Issue", description="", state="opened",
                 created_at=datetime(2024, 1, 1), labels=[],
-                point=1.0, milestone="v1.0", quarter="FY2501Q1", service="backend"
+                point=1.0, milestone="v1.0", quarter="FY25Q1", service="backend"
             )
         ]
         mock_statistics = {
