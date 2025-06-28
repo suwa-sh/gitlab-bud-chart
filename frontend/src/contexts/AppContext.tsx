@@ -10,6 +10,14 @@ interface AppState {
     assignee?: string
     service?: string
     kanban_status?: string
+    state?: string
+    search?: string
+    min_point?: number
+    max_point?: number
+    quarter?: string
+    created_after?: string
+    created_before?: string
+    completed_after?: string
   }
   gitlabConfig: {
     url: string
@@ -23,6 +31,7 @@ type AppAction =
   | { type: 'SET_ERROR'; payload: string | null }
   | { type: 'SET_FILTERS'; payload: Partial<AppState['filters']> }
   | { type: 'SET_GITLAB_CONFIG'; payload: Partial<AppState['gitlabConfig']> }
+  | { type: 'SET_METADATA'; payload: any }
 
 const initialState: AppState = {
   issues: [],
@@ -52,6 +61,9 @@ function appReducer(state: AppState, action: AppAction): AppState {
       return { ...state, filters: { ...state.filters, ...action.payload } }
     case 'SET_GITLAB_CONFIG':
       return { ...state, gitlabConfig: { ...state.gitlabConfig, ...action.payload } }
+    case 'SET_METADATA':
+      // Handle metadata if we need to store it in state later
+      return state
     default:
       return state
   }

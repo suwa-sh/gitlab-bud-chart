@@ -24,7 +24,8 @@ export const IssueTable = ({
     milestone: '',
     assignee: '',
     kanban_status: '',
-    service: ''
+    service: '',
+    state: ''
   })
   const [currentPage, setCurrentPage] = useState(1)
   const [sortConfig, setSortConfig] = useState<{

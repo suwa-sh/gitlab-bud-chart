@@ -15,7 +15,21 @@ export const issuesApi = {
     milestone?: string
     assignee?: string
     state?: string
-  }): Promise<Issue[]> => {
+    kanban_status?: string
+    service?: string
+    search?: string
+    query?: string
+    min_point?: number
+    max_point?: number
+    quarter?: string
+    created_after?: string
+    created_before?: string
+    completed_after?: string
+    page?: number
+    per_page?: number
+    sort_by?: string
+    sort_order?: string
+  }): Promise<Issue[] | any> => {
     const response = await api.get('/issues', { params })
     return response.data
   },
@@ -24,6 +38,46 @@ export const issuesApi = {
     const response = await api.get(`/issues/${id}`)
     return response.data
   },
+  
+  searchIssues: async (params: {
+    query: string
+    milestone?: string
+    assignee?: string
+    state?: string
+    kanban_status?: string
+    service?: string
+    min_point?: number
+    max_point?: number
+    quarter?: string
+    page?: number
+    per_page?: number
+  }): Promise<Issue[] | any> => {
+    const response = await api.post('/issues/search', params)
+    return response.data
+  },
+  
+  exportIssues: async (filters: any, format: 'csv' | 'json' = 'csv'): Promise<Blob> => {
+    const response = await api.get(`/issues/export/${format}`, {
+      params: filters,
+      responseType: 'blob'
+    })
+    return response.data
+  },
+  
+  getAnalyzedIssues: async (params?: any): Promise<any> => {
+    const response = await api.get('/issues/analyzed', { params })
+    return response.data
+  },
+  
+  getIssueStatistics: async (params?: any): Promise<any> => {
+    const response = await api.get('/issues/statistics', { params })
+    return response.data
+  },
+  
+  validateIssues: async (): Promise<any> => {
+    const response = await api.get('/issues/validation')
+    return response.data
+  }
 }
 
 export const chartsApi = {

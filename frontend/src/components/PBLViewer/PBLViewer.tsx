@@ -8,7 +8,7 @@ import './PBLViewer.css'
 
 export const PBLViewer = () => {
   const { state } = useApp()
-  const { issues, loading, fetchIssues } = useIssues()
+  const { issues, loading, fetchIssues, exportIssues } = useIssues()
   const [showStatistics, setShowStatistics] = useState(true)
 
   useEffect(() => {
@@ -36,6 +36,13 @@ export const PBLViewer = () => {
             className="toggle-stats-btn"
           >
             {showStatistics ? '統計を非表示' : '統計を表示'}
+          </button>
+          <button 
+            onClick={() => exportIssues('csv')}
+            disabled={loading || issues.length === 0}
+            className="export-btn"
+          >
+            CSV エクスポート
           </button>
         </div>
       </header>

@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useState, useMemo } from 'react'
 import { Issue } from '../../types/api'
 
 interface IssueTableFiltersProps {
@@ -8,6 +8,7 @@ interface IssueTableFiltersProps {
     assignee: string
     kanban_status: string
     service: string
+    state?: string
   }
   onFiltersChange: (filters: any) => void
   issues: Issue[]
@@ -18,6 +19,8 @@ export const IssueTableFilters = ({
   onFiltersChange, 
   issues 
 }: IssueTableFiltersProps) => {
+  const [isExpanded, setIsExpanded] = useState(false)
+  
   // Get unique values for filter options
   const filterOptions = useMemo(() => {
     const milestones = Array.from(new Set(issues.map(i => i.milestone).filter(Boolean)))
@@ -40,104 +43,130 @@ export const IssueTableFilters = ({
     })
   }
 
-  const clearFilters = () => {
+  const handleClearFilters = () => {
     onFiltersChange({
       search: '',
       milestone: '',
       assignee: '',
       kanban_status: '',
-      service: ''
+      service: '',
+      state: ''
     })
   }
 
+  const activeFilterCount = Object.values(filters).filter(v => v).length
+
   return (
     <div className="issue-table-filters">
-      <div className="filter-row">
-        <div className="filter-group">
-          <label htmlFor="search">検索</label>
-          <input
-            id="search"
-            type="text"
-            placeholder="タイトルで検索..."
-            value={filters.search}
-            onChange={(e) => handleFilterChange('search', e.target.value)}
-          />
-        </div>
+      <div className="filters-header">
+        <button 
+          className="filters-toggle"
+          onClick={() => setIsExpanded(!isExpanded)}
+        >
+          <span className="filter-icon">🔍</span>
+          フィルタ
+          {activeFilterCount > 0 && (
+            <span className="active-filter-count">{activeFilterCount}</span>
+          )}
+        </button>
         
-        <div className="filter-group">
-          <label htmlFor="milestone">マイルストーン</label>
-          <select
-            id="milestone"
-            value={filters.milestone}
-            onChange={(e) => handleFilterChange('milestone', e.target.value)}
-          >
-            <option value="">すべて</option>
-            {filterOptions.milestones.map(milestone => (
-              <option key={milestone} value={milestone}>
-                {milestone}
-              </option>
-            ))}
-          </select>
-        </div>
-        
-        <div className="filter-group">
-          <label htmlFor="assignee">担当者</label>
-          <select
-            id="assignee"
-            value={filters.assignee}
-            onChange={(e) => handleFilterChange('assignee', e.target.value)}
-          >
-            <option value="">すべて</option>
-            {filterOptions.assignees.map(assignee => (
-              <option key={assignee} value={assignee}>
-                {assignee}
-              </option>
-            ))}
-          </select>
-        </div>
-        
-        <div className="filter-group">
-          <label htmlFor="kanban_status">カンバンステータス</label>
-          <select
-            id="kanban_status"
-            value={filters.kanban_status}
-            onChange={(e) => handleFilterChange('kanban_status', e.target.value)}
-          >
-            <option value="">すべて</option>
-            {filterOptions.kanbanStatuses.map(status => (
-              <option key={status} value={status}>
-                {status}
-              </option>
-            ))}
-          </select>
-        </div>
-        
-        <div className="filter-group">
-          <label htmlFor="service">サービス</label>
-          <select
-            id="service"
-            value={filters.service}
-            onChange={(e) => handleFilterChange('service', e.target.value)}
-          >
-            <option value="">すべて</option>
-            {filterOptions.services.map(service => (
-              <option key={service} value={service}>
-                {service}
-              </option>
-            ))}
-          </select>
-        </div>
-        
-        <div className="filter-actions">
+        {activeFilterCount > 0 && (
           <button 
-            type="button" 
-            onClick={clearFilters}
-            className="clear-filters-btn"
+            className="clear-filters"
+            onClick={handleClearFilters}
           >
             クリア
           </button>
-        </div>
+        )}
       </div>
+
+      {isExpanded && (
+        <div className="filters-content">
+          <div className="filter-row">
+            <div className="filter-group">
+              <label>検索</label>
+              <input
+                type="text"
+                placeholder="タイトル検索..."
+                value={filters.search}
+                onChange={(e) => handleFilterChange('search', e.target.value)}
+                className="filter-input"
+              />
+            </div>
+
+            <div className="filter-group">
+              <label>Milestone</label>
+              <select
+                value={filters.milestone}
+                onChange={(e) => handleFilterChange('milestone', e.target.value)}
+                className="filter-select"
+              >
+                <option value="">すべて</option>
+                {filterOptions.milestones.map(m => (
+                  <option key={m} value={m}>{m}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="filter-group">
+              <label>Assignee</label>
+              <select
+                value={filters.assignee}
+                onChange={(e) => handleFilterChange('assignee', e.target.value)}
+                className="filter-select"
+              >
+                <option value="">すべて</option>
+                {filterOptions.assignees.map(a => (
+                  <option key={a} value={a}>{a}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div className="filter-row">
+            <div className="filter-group">
+              <label>Kanban Status</label>
+              <select
+                value={filters.kanban_status}
+                onChange={(e) => handleFilterChange('kanban_status', e.target.value)}
+                className="filter-select"
+              >
+                <option value="">すべて</option>
+                {filterOptions.kanbanStatuses.map(k => (
+                  <option key={k} value={k}>{k}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="filter-group">
+              <label>Service</label>
+              <select
+                value={filters.service}
+                onChange={(e) => handleFilterChange('service', e.target.value)}
+                className="filter-select"
+              >
+                <option value="">すべて</option>
+                {filterOptions.services.map(s => (
+                  <option key={s} value={s}>{s}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="filter-group">
+              <label>State</label>
+              <select
+                value={filters.state || ''}
+                onChange={(e) => handleFilterChange('state', e.target.value)}
+                className="filter-select"
+              >
+                <option value="">すべて</option>
+                <option value="opened">Opened</option>
+                <option value="closed">Closed</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

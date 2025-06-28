@@ -9,7 +9,7 @@ import './Dashboard.css'
 
 export const Dashboard = () => {
   const { state } = useApp()
-  const { issues, loading, fetchIssues } = useIssues()
+  const { issues, loading, fetchIssues, exportIssues } = useIssues()
   const [selectedPeriod, setSelectedPeriod] = useState({
     start: '2025-04',
     end: '2025-06'
@@ -56,7 +56,16 @@ export const Dashboard = () => {
         />
         
         <div className="issues-section">
-          <h2>Issues</h2>
+          <div className="issues-section-header">
+            <h2>Issues</h2>
+            <button 
+              className="export-btn"
+              onClick={() => exportIssues('csv')}
+              disabled={loading || issues.length === 0}
+            >
+              CSV エクスポート
+            </button>
+          </div>
           <IssueTable 
             issues={issues}
             loading={loading}
