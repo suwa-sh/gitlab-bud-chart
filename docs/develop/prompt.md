@@ -44,3 +44,9 @@ gitlab の issue を分析し、burn-up/burn-down チャート表示＆product b
     - gitlab から issue 取得
     - 取得した issue を分析し、burn-up, burn-down チャート用にデータ集計
 ```
+
+# 実施
+
+```
+│ > @docs/develop/tasks/task-01-setup.md の作業を実施後、検証項目を確認し、対応状況を更新してください
+```
