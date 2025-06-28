@@ -49,4 +49,7 @@ gitlab の issue を分析し、burn-up/burn-down チャート表示＆product b
 
 ```
 │ > @docs/develop/tasks/task-01-setup.md の作業を実施後、検証項目を確認し、対応状況を更新してください
+│ > @docs/develop/tasks/task-02-environment.md  の作業を実施後、検証項目を確認し、対応状況を更新してください
+│ > cssが適用されていないようです。playwrightでコンソールとスクリーンショットを確認し、修正してください。
+│ > .gitignore整備
 ```

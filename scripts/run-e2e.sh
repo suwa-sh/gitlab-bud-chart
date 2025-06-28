@@ -7,7 +7,7 @@ echo "=== E2E テスト実行 ==="
 echo "1. Backend起動中..."
 cd backend
 source venv/bin/activate
-uvicorn app.main:app --host 0.0.0.0 --port 8000 &
+uvicorn app.main:app --host 127.0.0.1 --port 8000 &
 BACKEND_PID=$!
 
 # Start frontend  
@@ -18,7 +18,7 @@ FRONTEND_PID=$!
 
 # Wait for services to start
 echo "3. サービス起動待機..."
-sleep 15
+sleep 10
 
 # Run E2E tests
 echo "4. E2Eテスト実行..."

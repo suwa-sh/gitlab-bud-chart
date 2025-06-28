@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-echo "=== GitLab Bud Chart セットアップ ==="
+echo "=== GitLab Bud Chart 開発環境セットアップ ==="
 
 # Backend setup
 echo "1. Backend環境構築..."
@@ -13,8 +13,7 @@ source venv/bin/activate
 
 # Install dependencies
 pip install --upgrade pip
-pip install poetry
-poetry install
+pip install -r requirements.txt
 
 echo "✅ Backend環境構築完了"
 
@@ -29,23 +28,6 @@ npm install
 npx playwright install
 
 echo "✅ Frontend環境構築完了"
-
-# Create initial files
-echo "3. 初期ファイル作成..."
-cd ..
-
-# Backend initial files
-mkdir -p backend/app/{api,services,models,tests}
-touch backend/app/__init__.py
-touch backend/app/main.py
-touch backend/app/config.py
-
-# Frontend initial files  
-mkdir -p frontend/src/{components,hooks,services,types,utils}
-mkdir -p frontend/src/components/{Dashboard,PBLViewer,IssueList,Chart,Common,GitLabConfig}
-mkdir -p frontend/tests/{unit,e2e}
-
-echo "✅ プロジェクト構造作成完了"
 
 echo "=== セットアップ完了 ==="
 echo ""
