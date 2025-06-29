@@ -1,82 +1,72 @@
-name: Reusable Docker Build
+name: Build and Push Docker Images
 
 on:
-  workflow_call:
-    inputs:
-      context:
-        required: true
-        type: string
-        description: 'Build context path'
-      image-suffix:
-        required: true
-        type: string
-        description: 'Image name suffix (e.g., backend, frontend)'
-      platforms:
-        required: false
-        type: string
-        default: 'linux/amd64'
-        description: 'Target platforms for build'
-      build-args:
-        required: false
-        type: string
-        description: 'Additional build arguments'
-    secrets:
-      registry-token:
-        required: true
-        description: 'Registry authentication token'
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+  release:
+    types: [published]
 
 env:
   REGISTRY: ghcr.io
 
 jobs:
-  build:
+  build-and-push:
     runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
-    outputs:
-      image: ${{ steps.image.outputs.image }}
-      digest: ${{ steps.build.outputs.digest }}
+
+    strategy:
+      matrix:
+        include:
+          - image: frontend
+            dockerfile: ./frontend/Dockerfile
+            context: ./frontend
+          - image: backend
+            dockerfile: ./backend/Dockerfile
+            context: ./backend
+
     steps:
-      - uses: actions/checkout@v4
-      
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
-        
+
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
-          password: ${{ secrets.registry-token }}
-          
+          password: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Extract metadata
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ github.repository }}-${{ inputs.image-suffix }}
+          images: ${{ env.REGISTRY }}/${{ github.repository }}/${{ matrix.image }}
           tags: |
             type=ref,event=branch
             type=ref,event=pr
-            type=sha,prefix={{branch}}-
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+            type=sha,prefix={{branch}}-
             type=raw,value=latest,enable={{is_default_branch}}
-            
+
       - name: Build and push Docker image
-        id: build
         uses: docker/build-push-action@v5
         with:
-          context: ${{ inputs.context }}
-          platforms: ${{ inputs.platforms }}
-          push: true
+          context: ${{ matrix.context }}
+          file: ${{ matrix.dockerfile }}
+          platforms: linux/amd64,linux/arm64
+          push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
-          build-args: ${{ inputs.build-args }}
-          
-      - name: Export image reference
-        id: image
-        run: |
-          echo "image=${{ env.REGISTRY }}/${{ github.repository }}-${{ inputs.image-suffix }}@${{ steps.build.outputs.digest }}" >> $GITHUB_OUTPUT
