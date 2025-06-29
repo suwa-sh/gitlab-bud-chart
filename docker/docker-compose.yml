@@ -1,0 +1,44 @@
+version: "3.8"
+
+services:
+  backend:
+    image: ghcr.io/suwa-sh/gitlab-bud-chart/backend:latest
+    container_name: gitlab-bud-chart-backend
+    ports:
+      - "8000:8000"
+    environment:
+      - PYTHONPATH=/app
+      - GITLAB_URL=http://host.docker.internal:8080
+      - GITLAB_TOKEN=glpat-cnHyDV8kvvz4Z_3ASq8g
+      - GITLAB_PROJECT_ID=1
+    volumes:
+      - ../backend:/app
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  frontend:
+    image: ghcr.io/suwa-sh/gitlab-bud-chart/frontend:latest
+    container_name: gitlab-bud-chart-frontend
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    environment:
+      - VITE_API_URL=http://localhost:8000
+      - VITE_GITLAB_URL=http://host.docker.internal:8080
+      - VITE_GITLAB_TOKEN=glpat-cnHyDV8kvvz4Z_3ASq8g
+      - VITE_GITLAB_PROJECT_ID=1
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3

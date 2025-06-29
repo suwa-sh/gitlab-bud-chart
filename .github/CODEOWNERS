@@ -1,0 +1,36 @@
+# GitLab Bud Chart - Code Owners
+# This file defines who owns and should review code in different parts of the repository
+# See: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+# Global owners (will be requested for review on all PRs)
+* @your-username
+
+# Backend code
+/backend/ @your-username @backend-team
+/backend/app/ @your-username @backend-team
+/backend/tests/ @your-username @backend-team @qa-team
+
+# Frontend code  
+/frontend/ @your-username @frontend-team
+/frontend/src/ @your-username @frontend-team
+/frontend/tests/ @your-username @frontend-team @qa-team
+
+# Documentation
+/docs/ @your-username @docs-team
+*.md @your-username @docs-team
+
+# Configuration and deployment
+/.github/ @your-username @devops-team
+/scripts/ @your-username @devops-team
+docker* @your-username @devops-team
+*.yml @your-username @devops-team
+*.yaml @your-username @devops-team
+
+# Security-sensitive files
+.env.example @your-username @security-team
+.gitignore @your-username @security-team
+
+# Dependencies
+package*.json @your-username @security-team
+requirements.txt @your-username @security-team
+pyproject.toml @your-username @security-team

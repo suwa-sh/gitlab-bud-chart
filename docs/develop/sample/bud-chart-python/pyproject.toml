@@ -3,7 +3,7 @@ name = "bud-chart"
 version = "0.1.0"
 description = "Add your description here"
 authors = [
-    { name = "yukio.kurosawa", email = "yukio.kurosawa@g.softbank.co.jp" }
+    { name = "sample", email = "sample@example.com" }
 ]
 dependencies = [
     "pandas==2.2.2",

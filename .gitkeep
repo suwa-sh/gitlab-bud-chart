@@ -1,0 +1,2 @@
+# This file ensures that the directory structure is preserved in git
+# even when other files in the directory are ignored by .gitignore

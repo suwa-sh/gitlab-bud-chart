@@ -1,0 +1,6 @@
+- gitlab の issue を元に以下項目を管理する
+  - point: prefix が p: の label 値 [p:0.5, p:1.0, ...]
+  - kanban_status: prefix が # の label 値 [#作業中, #完了, ...]
+  - service: prefix が s: の label 値[ s:, ... ]
+  - quarter: prefix が @ の label 値[ @FY2501, @FY2502, ... ]
+  - completed_at: due_date を completed_at

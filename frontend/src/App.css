@@ -1,0 +1,365 @@
+.App {
+  min-height: 100vh;
+  background-color: #f8f9fa;
+}
+
+.nav-tabs {
+  display: flex;
+  background: white;
+  border-bottom: 1px solid #dee2e6;
+  padding: 0 20px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.nav-tab {
+  padding: 16px 24px;
+  text-decoration: none;
+  color: #6c757d;
+  border-bottom: 3px solid transparent;
+  transition: all 0.2s ease;
+  font-weight: 500;
+  position: relative;
+}
+
+.nav-tab:hover {
+  color: #007bff;
+  text-decoration: none;
+  background-color: #f8f9fa;
+}
+
+.nav-tab.active {
+  color: #007bff;
+  border-bottom-color: #007bff;
+  background-color: #fff;
+}
+
+/* Main content container */
+.dashboard, .pbl-viewer {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 30px 20px;
+  min-height: calc(100vh - 70px);
+}
+
+.dashboard h1, .pbl-viewer h1 {
+  color: #2c3e50;
+  margin-bottom: 30px;
+  font-size: 2.5rem;
+  font-weight: 700;
+}
+
+.config-section, .period-section {
+  margin-bottom: 25px;
+  padding: 20px;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  border-left: 4px solid #007bff;
+}
+
+.config-section p, .period-section p {
+  margin: 0;
+  color: #6c757d;
+  font-weight: 500;
+}
+
+.charts-section {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 25px;
+  margin-bottom: 40px;
+}
+
+.chart-container {
+  padding: 25px;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  border: 1px solid #e9ecef;
+}
+
+.chart-container h2 {
+  color: #2c3e50;
+  margin-bottom: 20px;
+  font-size: 1.5rem;
+  border-bottom: 2px solid #e9ecef;
+  padding-bottom: 10px;
+}
+
+.chart-placeholder {
+  height: 250px;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #6c757d;
+  border-radius: 6px;
+  font-weight: 500;
+  border: 2px dashed #dee2e6;
+}
+
+.issues-section {
+  margin-top: 40px;
+}
+
+.issues-section h2 {
+  color: #2c3e50;
+  margin-bottom: 20px;
+  font-size: 1.8rem;
+}
+
+.issues-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  border: 1px solid #e9ecef;
+}
+
+.issues-table th {
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  padding: 16px 12px;
+  text-align: left;
+  border-bottom: 2px solid #dee2e6;
+  font-weight: 600;
+  color: #2c3e50;
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.issues-table td {
+  padding: 14px 12px;
+  border-bottom: 1px solid #e9ecef;
+  color: #495057;
+  vertical-align: middle;
+}
+
+.issues-table tr:hover {
+  background: #f8f9fa;
+  transform: translateY(-1px);
+  transition: all 0.2s ease;
+}
+
+.issues-table tr:last-child td {
+  border-bottom: none;
+}
+
+/* Responsive design */
+@media (max-width: 1024px) {
+  .charts-section {
+    grid-template-columns: 1fr;
+  }
+  
+  .dashboard, .pbl-viewer {
+    padding: 20px 15px;
+  }
+}
+
+@media (max-width: 768px) {
+  .nav-tabs {
+    padding: 0 10px;
+  }
+  
+  .nav-tab {
+    padding: 12px 16px;
+    font-size: 14px;
+  }
+  
+  .dashboard h1, .pbl-viewer h1 {
+    font-size: 2rem;
+  }
+  
+  .config-section, .period-section {
+    padding: 15px;
+  }
+  
+  .chart-container {
+    padding: 20px;
+  }
+  
+  .issues-table {
+    font-size: 14px;
+  }
+  
+  .issues-table th,
+  .issues-table td {
+    padding: 10px 8px;
+  }
+}
+
+/* Loading state */
+.loading {
+  text-align: center;
+  padding: 40px;
+  color: #6c757d;
+  font-size: 16px;
+}
+
+/* Layout */
+.app-layout {
+  min-height: 100vh;
+  background-color: #f8f9fa;
+}
+
+.main-content {
+  position: relative;
+}
+
+/* Loading spinner */
+.loading-spinner-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.loading-spinner {
+  background: white;
+  padding: 30px;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  text-align: center;
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #007bff;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 15px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.loading-spinner p {
+  margin: 0;
+  color: #6c757d;
+  font-weight: 500;
+}
+
+/* Error boundary */
+.error-boundary {
+  padding: 40px;
+  text-align: center;
+  background: white;
+  margin: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border-left: 4px solid #dc3545;
+}
+
+.error-boundary h2 {
+  color: #dc3545;
+  margin-bottom: 20px;
+}
+
+.error-boundary details {
+  text-align: left;
+  background: #f8f9fa;
+  padding: 15px;
+  border-radius: 4px;
+  margin-top: 20px;
+  font-family: monospace;
+  font-size: 14px;
+  color: #495057;
+}
+
+/* State badges */
+.state-badge {
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.state-badge.opened {
+  background: #e7f3ff;
+  color: #0969da;
+  border: 1px solid #b6e3ff;
+}
+
+.state-badge.closed {
+  background: #f6f8fa;
+  color: #656d76;
+  border: 1px solid #d1d9e0;
+}
+
+/* Label tags */
+.labels {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.label-tag {
+  background: #f1f3f4;
+  color: #5f6368;
+  padding: 2px 6px;
+  border-radius: 8px;
+  font-size: 11px;
+  border: 1px solid #e8eaed;
+}
+
+/* Configuration section enhancements */
+.config-section {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.config-section button {
+  background: #6c757d;
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.config-section button:hover {
+  background: #5a6268;
+}
+
+@media (max-width: 480px) {
+  .nav-tabs {
+    flex-direction: column;
+  }
+  
+  .nav-tab {
+    border-bottom: none;
+    border-left: 3px solid transparent;
+  }
+  
+  .nav-tab.active {
+    border-left-color: #007bff;
+    border-bottom-color: transparent;
+  }
+  
+  .config-section {
+    flex-direction: column;
+    gap: 10px;
+    align-items: flex-start;
+  }
+  
+  .labels {
+    flex-direction: column;
+  }
+}
