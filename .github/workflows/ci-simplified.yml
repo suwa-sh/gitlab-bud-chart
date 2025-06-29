@@ -1,0 +1,69 @@
+name: CI Simplified
+
+on:
+  push:
+    branches: [ main, develop, feature/* ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  backend-checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          
+      - name: Lint and Test Backend
+        run: |
+          cd backend
+          pip install -r requirements.txt
+          pip install black isort flake8 mypy pytest pytest-cov
+          
+          # Linting
+          black --check .
+          isort --check-only .
+          flake8 .
+          mypy .
+          
+          # Testing
+          pytest --cov=. --cov-report=xml
+
+  frontend-checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          
+      - name: Lint and Test Frontend
+        run: |
+          cd frontend
+          npm ci
+          npm run lint
+          npm run type-check
+          npm test -- --coverage
+
+  build-backend:
+    needs: backend-checks
+    uses: ./.github/workflows/docker-build.yml
+    with:
+      context: ./backend
+      image-suffix: backend
+    secrets:
+      registry-token: ${{ secrets.GITHUB_TOKEN }}
+
+  build-frontend:
+    needs: frontend-checks
+    uses: ./.github/workflows/docker-build.yml
+    with:
+      context: ./frontend
+      image-suffix: frontend
+    secrets:
+      registry-token: ${{ secrets.GITHUB_TOKEN }}

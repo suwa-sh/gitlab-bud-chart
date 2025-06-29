@@ -1,0 +1,158 @@
+name: E2E Tests
+
+on:
+  pull_request:
+    branches: [ main, develop ]
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  e2e-tests:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          
+      - name: Install Playwright
+        run: |
+          cd frontend
+          npm ci
+          npx playwright install --with-deps
+          
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+          
+      - name: Set up GitLab CE
+        run: |
+          docker network create gitlab-network
+          
+          docker run -d \
+            --name gitlab \
+            --network gitlab-network \
+            --publish 8080:80 \
+            --env GITLAB_OMNIBUS_CONFIG="gitlab_rails['initial_root_password'] = 'password123'; gitlab_rails['gitlab_shell_ssh_port'] = 2222;" \
+            gitlab/gitlab-ce:latest
+            
+          echo "Waiting for GitLab to be ready..."
+          timeout 600 bash -c 'until curl -s http://localhost:8080/users/sign_in | grep -q "Sign in"; do sleep 10; done'
+          
+      - name: Configure GitLab
+        run: |
+          # Create access token
+          docker exec gitlab gitlab-rails runner "
+            user = User.find_by_username('root')
+            token = user.personal_access_tokens.create(
+              name: 'E2E Test Token',
+              scopes: ['api', 'read_user', 'read_repository', 'write_repository']
+            )
+            puts token.token
+          " > gitlab_token.txt
+          
+          export GITLAB_TOKEN=$(cat gitlab_token.txt)
+          echo "GITLAB_TOKEN=$GITLAB_TOKEN" >> $GITHUB_ENV
+          
+          # Create test project
+          curl -X POST -H "PRIVATE-TOKEN: $GITLAB_TOKEN" \
+            -H "Content-Type: application/json" \
+            -d '{"name": "Test Project", "visibility": "public"}' \
+            http://localhost:8080/api/v4/projects
+            
+      - name: Start application with GHCR images
+        run: |
+          # Use the latest images from main branch or PR
+          if [ "${{ github.event_name }}" == "pull_request" ]; then
+            export TAG="pr-${{ github.event.pull_request.number }}"
+          else
+            export TAG="main-${{ github.sha }}"
+          fi
+          
+          cat > docker-compose.e2e.yml << EOF
+          version: "3.8"
+          services:
+            backend:
+              image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-backend:${TAG}
+              container_name: e2e-backend
+              network_mode: host
+              environment:
+                - PYTHONPATH=/app
+                - GITLAB_URL=http://localhost:8080
+                - GITLAB_TOKEN=${GITLAB_TOKEN}
+                - GITLAB_PROJECT_ID=1
+              healthcheck:
+                test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+                interval: 10s
+                timeout: 5s
+                retries: 5
+                
+            frontend:
+              image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-frontend:${TAG}
+              container_name: e2e-frontend
+              network_mode: host
+              depends_on:
+                - backend
+              environment:
+                - VITE_API_URL=http://localhost:8000
+                - VITE_GITLAB_URL=http://localhost:8080
+                - VITE_GITLAB_TOKEN=${GITLAB_TOKEN}
+                - VITE_GITLAB_PROJECT_ID=1
+              healthcheck:
+                test: ["CMD", "curl", "-f", "http://localhost:3000"]
+                interval: 10s
+                timeout: 5s
+                retries: 5
+          EOF
+          
+          docker-compose -f docker-compose.e2e.yml up -d
+          
+          # Wait for services to be healthy
+          timeout 120 bash -c 'until docker-compose -f docker-compose.e2e.yml ps | grep -E "e2e-(backend|frontend).*healthy" | wc -l | grep -q 2; do sleep 5; done'
+          
+      - name: Run E2E tests
+        run: |
+          cd frontend
+          export VITE_API_URL=http://localhost:8000
+          export VITE_GITLAB_URL=http://localhost:8080
+          export VITE_GITLAB_TOKEN=${{ env.GITLAB_TOKEN }}
+          export VITE_GITLAB_PROJECT_ID=1
+          
+          npm run test:e2e
+          
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-report
+          path: frontend/playwright-report/
+          retention-days: 30
+          
+      - name: Upload screenshots
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-screenshots
+          path: frontend/test-results/
+          retention-days: 7
+          
+      - name: Cleanup
+        if: always()
+        run: |
+          docker-compose -f docker-compose.e2e.yml down || true
+          docker stop gitlab || true
+          docker rm gitlab || true
+          docker network rm gitlab-network || true

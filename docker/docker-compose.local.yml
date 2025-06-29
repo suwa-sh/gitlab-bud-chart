@@ -2,7 +2,9 @@ version: "3.8"
 
 services:
   backend:
-    image: ghcr.io/suwa-sh/gitlab-bud-chart/backend:latest
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
     container_name: gitlab-bud-chart-backend
     ports:
       - "8000:8000"
@@ -23,7 +25,9 @@ services:
       retries: 3
 
   frontend:
-    image: ghcr.io/suwa-sh/gitlab-bud-chart/frontend:latest
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile
     container_name: gitlab-bud-chart-frontend
     ports:
       - "3000:3000"

@@ -107,3 +107,9 @@ gitlab の issue を分析し、burn-up/burn-down チャート表示＆product b
 ```
 │ > dashboardのissuesとpbl-viewerの Titleのリンクは、gitlabのフルパスURLとしてください 例) http://localhost:8080/root/test-project/-/issues/8
 ```
+
+- docker イメージ
+
+```
+ghcr で @docker/docker-compose.yml で自己ビルドする docker イメージを管理したい
+```
