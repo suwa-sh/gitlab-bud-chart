@@ -1,10 +1,12 @@
 import { Issue } from '../../types/api'
+import { useApp } from '../../contexts/AppContext'
 
 interface IssueTableRowProps {
   issue: Issue
 }
 
 export const IssueTableRow = ({ issue }: IssueTableRowProps) => {
+  const { state } = useApp()
   const formatDate = (dateString?: string) => {
     if (!dateString) return '-'
     return new Date(dateString).toLocaleDateString('ja-JP')
@@ -39,14 +41,25 @@ export const IssueTableRow = ({ issue }: IssueTableRowProps) => {
     }
   }
 
+  const getGitLabIssueUrl = (issueId: number) => {
+    const { gitlabConfig } = state
+    if (gitlabConfig.url && gitlabConfig.projectNamespace) {
+      return `${gitlabConfig.url}/${gitlabConfig.projectNamespace}/-/issues/${issueId}`
+    }
+    // Fallback to hash URL if GitLab config is not available
+    return `#/issue/${issueId}`
+  }
+
   return (
     <tr>
       <td>{issue.milestone || '-'}</td>
       <td>
         <a 
-          href={`#/issue/${issue.id}`} 
+          href={getGitLabIssueUrl(issue.id)} 
           className="issue-title"
           title={issue.description}
+          target="_blank"
+          rel="noopener noreferrer"
         >
           {issue.title}
         </a>

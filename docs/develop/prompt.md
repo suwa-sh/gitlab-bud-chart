@@ -101,3 +101,9 @@ gitlab の issue を分析し、burn-up/burn-down チャート表示＆product b
 │ > dashboardのissuesとpbl-viewerの表示項目Created Atの前にQuarterを追加する
 │ > burndown/burnupチャートの理想線は、日本の休日（土日祝）はポイント消化を0とする。祝日の判定は、holiday_jpを利用する。
 ```
+
+- issue リンク
+
+```
+│ > dashboardのissuesとpbl-viewerの Titleのリンクは、gitlabのフルパスURLとしてください 例) http://localhost:8080/root/test-project/-/issues/8
+```

@@ -30,6 +30,7 @@ interface AppState {
     token?: string
     projectId?: string
     projectName?: string
+    projectNamespace?: string
     apiVersion?: string
   }
 }
@@ -68,6 +69,7 @@ const loadGitLabConfigFromStorage = (): AppState['gitlabConfig'] => {
         token: config.token,
         projectId: config.projectId,
         projectName: config.projectName,
+        projectNamespace: config.projectNamespace,
         apiVersion: config.apiVersion
       }
     }
@@ -80,6 +82,7 @@ const loadGitLabConfigFromStorage = (): AppState['gitlabConfig'] => {
     token: undefined,
     projectId: undefined,
     projectName: undefined,
+    projectNamespace: undefined,
     apiVersion: undefined
   }
 }

@@ -99,6 +99,17 @@ export const GitLabConfig = ({ onConfigured, editMode = false, onCancel }: GitLa
       
       // AppContextを更新
       const selectedProject = projects.find(p => p.id.toString() === config.project_id)
+      
+      // Extract namespace from web_url if path_with_namespace is not available
+      let projectNamespace = selectedProject?.path_with_namespace || result.project_info.project?.path_with_namespace
+      if (!projectNamespace && result.project_info.project?.web_url) {
+        // Extract namespace from URL like http://localhost:8080/root/test-project
+        const urlMatch = result.project_info.project.web_url.match(/https?:\/\/[^\/]+\/(.+)$/)
+        if (urlMatch) {
+          projectNamespace = urlMatch[1]
+        }
+      }
+      
       dispatch({
         type: 'SET_GITLAB_CONFIG',
         payload: {
@@ -107,6 +118,7 @@ export const GitLabConfig = ({ onConfigured, editMode = false, onCancel }: GitLa
           token: config.gitlab_token,
           projectId: config.project_id,
           projectName: selectedProject?.name || result.project_info.project?.name || config.project_id,
+          projectNamespace: projectNamespace,
           apiVersion: config.api_version
         }
       })
@@ -145,6 +157,7 @@ export const GitLabConfig = ({ onConfigured, editMode = false, onCancel }: GitLa
         token: '',
         projectId: '',
         projectName: '',
+        projectNamespace: '',
         apiVersion: '4'
       }
     })
