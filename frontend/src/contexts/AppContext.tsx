@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useReducer, ReactNode } from 'react'
+import React, { createContext, useContext, useReducer, ReactNode, useEffect } from 'react'
 import { Issue } from '../types/api'
 
 interface AppState {
@@ -22,6 +22,8 @@ interface AppState {
   gitlabConfig: {
     url: string
     isConnected: boolean
+    token?: string
+    projectId?: string
   }
 }
 
@@ -33,15 +35,45 @@ type AppAction =
   | { type: 'SET_GITLAB_CONFIG'; payload: Partial<AppState['gitlabConfig']> }
   | { type: 'SET_METADATA'; payload: any }
 
+// LocalStorageからGitLab設定を読み込む関数
+const loadGitLabConfigFromStorage = (): AppState['gitlabConfig'] => {
+  try {
+    const stored = localStorage.getItem('gitlab-config')
+    if (stored) {
+      const config = JSON.parse(stored)
+      return {
+        url: config.url || '',
+        isConnected: config.isConnected || false,
+        token: config.token,
+        projectId: config.projectId
+      }
+    }
+  } catch (error) {
+    console.warn('Failed to load GitLab config from localStorage:', error)
+  }
+  return {
+    url: '',
+    isConnected: false,
+    token: undefined,
+    projectId: undefined
+  }
+}
+
+// LocalStorageにGitLab設定を保存する関数
+const saveGitLabConfigToStorage = (config: AppState['gitlabConfig']) => {
+  try {
+    localStorage.setItem('gitlab-config', JSON.stringify(config))
+  } catch (error) {
+    console.warn('Failed to save GitLab config to localStorage:', error)
+  }
+}
+
 const initialState: AppState = {
   issues: [],
   loading: false,
   error: null,
   filters: {},
-  gitlabConfig: {
-    url: '',
-    isConnected: false
-  }
+  gitlabConfig: loadGitLabConfigFromStorage()
 }
 
 const AppContext = createContext<{
@@ -71,6 +103,11 @@ function appReducer(state: AppState, action: AppAction): AppState {
 
 export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [state, dispatch] = useReducer(appReducer, initialState)
+  
+  // GitLab設定が変更されたときにlocalStorageに保存
+  useEffect(() => {
+    saveGitLabConfigToStorage(state.gitlabConfig)
+  }, [state.gitlabConfig])
   
   return (
     <AppContext.Provider value={{ state, dispatch }}>

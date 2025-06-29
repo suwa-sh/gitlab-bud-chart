@@ -67,4 +67,6 @@ gitlab の issue を分析し、burn-up/burn-down チャート表示＆product b
 │ > @docs/develop/tasks/task-12-integration.md の作業を実施後、検証項目を確認し、対応状況を更新してください
 │ > e2eテストの接続情報は @/workspace/test_config.json の情報を利用してください。playwrightのコンソールの確認を行い、スクリーンショットも確認してください。
 │ > テスト用のGitLabインスタンスは起動しています。コマンドの結果を参考に、テストコードを見直してください。
+│ > test-chartプロジェクトにissue1〜issue20のデータを登録し、burn-down,burn-up,issueリスト,pbl-viewerの動作を確認するe2eテストを作成し、実行してください。playwrightのコンソールの確認を行い、スクリーンショットも確認してください。
+│ > pbl-viewerのセッション管理の課題を解消してください。playwrightのコンソールの確認を行い、スクリーンショットも確認してください。
 ```
