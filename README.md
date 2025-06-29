@@ -7,6 +7,39 @@ GitLab の issue を分析し、burn-up/burn-down チャート表示と product 
 | ![](/docs/images/dashboard.png) | ![](/docs/images/pbl-viewer.png) |
 | ------------------------------- | -------------------------------- |
 
+## 使い方
+
+```
+# 前提: docker
+
+git clone https://github.com/suwa-sh/gitlab-bud-chart.git
+cd gitlab-bud-chart/docker
+
+# 最新のビルド済みイメージを使用できます
+docker compose pull
+docker compose up
+# http://{IPアドレス}:3000
+
+# GitLab
+# URL: コンテナ動作の場合、localhost/host.docker.internalではうまく動作しない。IP指定など推奨
+# Access Token: Read系の権限必要
+# API Version: Gitlab 9.0以降なら 4
+
+# ローカルのself-hosted gitlabを使用したい場合
+docker compose -f docker-compose.gitlab.yml up
+
+# ローカルビルドを使用したい場合
+docker compose -f docker-compose.local.yml up
+```
+
+## 設計
+
+- [プロンプト](/docs/develop/prompt.md)
+
+![](/docs/develop/specs/rough_design.excalidraw.png)
+
+# 以下、claude がつくったもの
+
 ## 機能
 
 - **GitLab 連携**: Self-hosted GitLab からの issue 取得

@@ -1,40 +1,11 @@
 # GitHub Actions Workflows
 
-This directory contains GitHub Actions workflows for CI/CD and Docker image management using GitHub Container Registry (GHCR).
+This directory contains GitHub Actions workflows for Docker image management using GitHub Container Registry (GHCR).
 
 ## Workflows Overview
 
-### 1. CI Workflow (`ci.yml`)
-- **Trigger**: Push to main/develop/feature branches and pull requests
-- **Jobs**:
-  - Backend linting (Black, isort, Flake8, mypy)
-  - Backend testing with coverage
-  - Frontend linting (ESLint, TypeScript)
-  - Frontend testing with coverage
-  - Docker image building and pushing to GHCR
-  - Integration testing with docker-compose
-- **Images produced**: 
-  - `ghcr.io/{owner}/{repo}-backend:{tag}`
-  - `ghcr.io/{owner}/{repo}-frontend:{tag}`
+### 1. Reusable Docker Build (`docker-build.yml`)
 
-### 2. E2E Test Workflow (`e2e.yml`)
-- **Trigger**: Pull requests and pushes to main
-- **Features**:
-  - Sets up GitLab CE instance
-  - Runs Playwright E2E tests
-  - Uses GHCR images from CI
-  - Uploads test reports and screenshots
-
-### 3. Release Workflow (`release.yml`)
-- **Trigger**: Version tags (v*) or manual dispatch
-- **Features**:
-  - Multi-platform builds (amd64, arm64)
-  - Semantic versioning tags
-  - Creates GitHub releases
-  - Generates docker-compose.release.yml
-  - Automatic changelog generation
-
-### 4. Reusable Docker Build (`docker-build.yml`)
 - Reusable workflow for Docker builds
 - Supports caching and multi-platform builds
 - Used by other workflows
@@ -92,6 +63,7 @@ Required secrets in GitHub repository settings:
 ### Modify Build Platforms
 
 Edit the `platforms` field in build steps:
+
 ```yaml
 platforms: linux/amd64,linux/arm64,linux/arm/v7
 ```
@@ -107,6 +79,7 @@ build-args: |
 ### Change Image Retention
 
 Configure in repository settings:
+
 - Settings → Packages → Container retention policy
 
 ## Troubleshooting
@@ -114,6 +87,7 @@ Configure in repository settings:
 ### Permission Denied
 
 Ensure workflows have package write permissions:
+
 ```yaml
 permissions:
   contents: read
@@ -123,12 +97,14 @@ permissions:
 ### Image Not Found
 
 Check image visibility:
+
 - Public repositories: Images are public by default
 - Private repositories: Configure package visibility in settings
 
 ### Build Cache
 
 Workflows use GitHub Actions cache:
+
 ```yaml
 cache-from: type=gha
 cache-to: type=gha,mode=max
