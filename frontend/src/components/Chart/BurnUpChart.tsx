@@ -6,6 +6,7 @@ import {
 import { ChartData } from '../../types/api'
 import { format } from 'date-fns'
 import { ja } from 'date-fns/locale'
+import { calculateBusinessDayIdealLineForBurnUp } from '../../utils/businessDays'
 import './Chart.css'
 
 interface BurnUpChartProps {
@@ -13,22 +14,48 @@ interface BurnUpChartProps {
   loading?: boolean
   height?: number
   showVelocity?: boolean
+  startDate?: string
+  endDate?: string
 }
 
 export const BurnUpChart = ({ 
   data, 
   loading = false, 
   height = 400,
-  showVelocity = false
+  showVelocity = false,
+  startDate,
+  endDate
 }: BurnUpChartProps) => {
   
   const { chartData, averageVelocity } = useMemo(() => {
-    const formatted = data.map(item => ({
-      date: format(new Date(item.date), 'MM/dd', { locale: ja }),
-      理想: Math.round(item.planned_points * 10) / 10,
-      完了: Math.round(item.completed_points * 10) / 10,
-      総量: Math.round(item.total_points * 10) / 10
-    }))
+    let formatted
+    
+    if (!data.length || !startDate || !endDate) {
+      // Fallback to original calculation if dates not available
+      formatted = data.map(item => ({
+        date: format(new Date(item.date), 'MM/dd', { locale: ja }),
+        理想: Math.round(item.planned_points * 10) / 10,
+        完了: Math.round(item.completed_points * 10) / 10,
+        総量: Math.round(item.total_points * 10) / 10
+      }))
+    } else {
+      // Calculate business day aware ideal line for burn up
+      const totalPoints = data[data.length - 1]?.total_points || 0
+      const chartDates = data.map(item => item.date)
+      const businessDayIdealLine = calculateBusinessDayIdealLineForBurnUp(
+        totalPoints,
+        startDate,
+        endDate,
+        chartDates
+      )
+
+      formatted = data.map((item, index) => ({
+        date: format(new Date(item.date), 'MM/dd', { locale: ja }),
+        理想: Math.round(businessDayIdealLine[index] * 10) / 10,
+        完了: Math.round(item.completed_points * 10) / 10,
+        総量: Math.round(item.total_points * 10) / 10
+      }))
+    }
 
     // ベロシティ計算
     let velocity = 0
@@ -39,7 +66,7 @@ export const BurnUpChart = ({
     }
 
     return { chartData: formatted, averageVelocity: velocity }
-  }, [data])
+  }, [data, startDate, endDate])
 
   const customTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {

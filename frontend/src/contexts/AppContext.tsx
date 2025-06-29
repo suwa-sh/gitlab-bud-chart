@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useReducer, ReactNode, useEffect } from 'react'
+import { format, addMonths, endOfMonth } from 'date-fns'
 import { Issue } from '../types/api'
 
 interface AppState {
@@ -19,11 +20,17 @@ interface AppState {
     created_before?: string
     completed_after?: string
   }
+  chartPeriod: {
+    start: string
+    end: string
+  }
   gitlabConfig: {
     url: string
     isConnected: boolean
     token?: string
     projectId?: string
+    projectName?: string
+    apiVersion?: string
   }
 }
 
@@ -32,8 +39,22 @@ type AppAction =
   | { type: 'SET_LOADING'; payload: boolean }
   | { type: 'SET_ERROR'; payload: string | null }
   | { type: 'SET_FILTERS'; payload: Partial<AppState['filters']> }
+  | { type: 'SET_CHART_PERIOD'; payload: { start: string; end: string } }
   | { type: 'SET_GITLAB_CONFIG'; payload: Partial<AppState['gitlabConfig']> }
   | { type: 'SET_METADATA'; payload: any }
+
+// 現在の四半期の開始日と終了日を計算する関数
+const getCurrentQuarterPeriod = (): { start: string; end: string } => {
+  const today = new Date()
+  const quarterMonth = Math.floor(today.getMonth() / 3) * 3
+  const start = new Date(today.getFullYear(), quarterMonth, 1)
+  const end = endOfMonth(addMonths(start, 2))
+  
+  return {
+    start: format(start, 'yyyy-MM-dd'),
+    end: format(end, 'yyyy-MM-dd')
+  }
+}
 
 // LocalStorageからGitLab設定を読み込む関数
 const loadGitLabConfigFromStorage = (): AppState['gitlabConfig'] => {
@@ -45,7 +66,9 @@ const loadGitLabConfigFromStorage = (): AppState['gitlabConfig'] => {
         url: config.url || '',
         isConnected: config.isConnected || false,
         token: config.token,
-        projectId: config.projectId
+        projectId: config.projectId,
+        projectName: config.projectName,
+        apiVersion: config.apiVersion
       }
     }
   } catch (error) {
@@ -55,7 +78,9 @@ const loadGitLabConfigFromStorage = (): AppState['gitlabConfig'] => {
     url: '',
     isConnected: false,
     token: undefined,
-    projectId: undefined
+    projectId: undefined,
+    projectName: undefined,
+    apiVersion: undefined
   }
 }
 
@@ -73,6 +98,7 @@ const initialState: AppState = {
   loading: false,
   error: null,
   filters: {},
+  chartPeriod: getCurrentQuarterPeriod(),
   gitlabConfig: loadGitLabConfigFromStorage()
 }
 
@@ -91,6 +117,8 @@ function appReducer(state: AppState, action: AppAction): AppState {
       return { ...state, error: action.payload }
     case 'SET_FILTERS':
       return { ...state, filters: { ...state.filters, ...action.payload } }
+    case 'SET_CHART_PERIOD':
+      return { ...state, chartPeriod: action.payload }
     case 'SET_GITLAB_CONFIG':
       return { ...state, gitlabConfig: { ...state.gitlabConfig, ...action.payload } }
     case 'SET_METADATA':

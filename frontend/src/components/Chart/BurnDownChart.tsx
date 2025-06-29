@@ -6,28 +6,52 @@ import {
 import { ChartData } from '../../types/api'
 import { format } from 'date-fns'
 import { ja } from 'date-fns/locale'
+import { calculateBusinessDayIdealLine } from '../../utils/businessDays'
 import './Chart.css'
 
 interface BurnDownChartProps {
   data: ChartData[]
   loading?: boolean
   height?: number
+  startDate?: string
+  endDate?: string
 }
 
 export const BurnDownChart = ({ 
   data, 
   loading = false, 
-  height = 400 
+  height = 400,
+  startDate,
+  endDate
 }: BurnDownChartProps) => {
   
   const chartData = useMemo(() => {
-    return data.map(item => ({
+    if (!data.length || !startDate || !endDate) {
+      return data.map(item => ({
+        date: format(new Date(item.date), 'MM/dd', { locale: ja }),
+        理想: Math.round(item.planned_points * 10) / 10,
+        実績: Math.round(item.actual_points * 10) / 10,
+        残り: Math.round(item.remaining_points * 10) / 10
+      }))
+    }
+
+    // Calculate business day aware ideal line
+    const totalPoints = data[0]?.remaining_points || 0
+    const chartDates = data.map(item => item.date)
+    const businessDayIdealLine = calculateBusinessDayIdealLine(
+      totalPoints,
+      startDate,
+      endDate,
+      chartDates
+    )
+
+    return data.map((item, index) => ({
       date: format(new Date(item.date), 'MM/dd', { locale: ja }),
-      理想: Math.round(item.planned_points * 10) / 10,
+      理想: Math.round(businessDayIdealLine[index] * 10) / 10,
       実績: Math.round(item.actual_points * 10) / 10,
       残り: Math.round(item.remaining_points * 10) / 10
     }))
-  }, [data])
+  }, [data, startDate, endDate])
 
   const customTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {

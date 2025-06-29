@@ -1,6 +1,7 @@
 import { useCallback, useState } from 'react'
 import { useApp } from '../contexts/AppContext'
 import { issuesApi } from '../services/api'
+import { getOverlappingQuarters } from '../utils/quarterUtils'
 
 export const useIssues = () => {
   const { state, dispatch } = useApp()
@@ -19,6 +20,63 @@ export const useIssues = () => {
         per_page: params.per_page || 50
       }
       
+      // Period filtering: convert period to overlapping quarters and use search endpoint
+      if (params.period) {
+        const overlappingQuarters = getOverlappingQuarters(params.period.start, params.period.end)
+        
+        if (overlappingQuarters.length > 0) {
+          // Use search endpoint with multiple quarter labels
+          const searchParams = {
+            query: apiParams.search || '', // Empty query if no search term
+            state: apiParams.state,
+            milestone: apiParams.milestone,
+            assignee: apiParams.assignee,
+            service: apiParams.service,
+            kanban_status: apiParams.kanban_status,
+            min_point: apiParams.min_point,
+            max_point: apiParams.max_point,
+            page: apiParams.page,
+            per_page: apiParams.per_page,
+            sort_by: apiParams.sort_by,
+            sort_order: apiParams.sort_order
+          }
+          
+          // For period filtering, we need to make separate requests for each quarter and merge
+          // Or use a single search call - let me check the search endpoint capabilities
+          const response = await issuesApi.searchIssues(searchParams)
+          
+          // Filter results by quarters on the client side as a fallback
+          if (response.issues) {
+            const filteredIssues = response.issues.filter((issue: any) => 
+              overlappingQuarters.some(quarter => issue.quarter === quarter)
+            )
+            
+            // Update the response with filtered issues
+            response.issues = filteredIssues
+          }
+          
+          // レスポンスが配列の場合とオブジェクトの場合を処理
+          if (Array.isArray(response)) {
+            const filteredResponse = response.filter((issue: any) => 
+              overlappingQuarters.some(quarter => issue.quarter === quarter)
+            )
+            dispatch({ type: 'SET_ISSUES', payload: filteredResponse })
+          } else {
+            dispatch({ type: 'SET_ISSUES', payload: response.issues || response })
+            if (response.metadata) {
+              dispatch({ type: 'SET_METADATA', payload: response.metadata })
+            }
+          }
+          
+          return response
+        } else {
+          // No overlapping quarters found, return empty result
+          dispatch({ type: 'SET_ISSUES', payload: [] })
+          return { issues: [] }
+        }
+      }
+      
+      // Default behavior for non-period filtering  
       const response = await issuesApi.getIssues(apiParams)
       
       // レスポンスが配列の場合とオブジェクトの場合を処理

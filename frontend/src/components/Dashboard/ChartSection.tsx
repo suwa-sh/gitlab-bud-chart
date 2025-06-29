@@ -155,6 +155,8 @@ export const ChartSection = ({ period, issues, loading }: ChartSectionProps) => 
               data={burnDownData}
               loading={chartLoading}
               height={chartView === 'both' ? 350 : 450}
+              startDate={period.start}
+              endDate={period.end}
             />
           </div>
         )}
@@ -166,6 +168,8 @@ export const ChartSection = ({ period, issues, loading }: ChartSectionProps) => 
               loading={chartLoading}
               height={chartView === 'both' ? 350 : 450}
               showVelocity={true}
+              startDate={period.start}
+              endDate={period.end}
             />
           </div>
         )}

@@ -32,6 +32,27 @@
   border-radius: 6px;
   font-size: 14px;
   font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.edit-config-btn {
+  background: #007bff;
+  color: white;
+  border: none;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-weight: 500;
+}
+
+.edit-config-btn:hover {
+  background: #0056b3;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 123, 255, 0.3);
 }
 
 .period-selector {
@@ -116,9 +137,35 @@
   margin-bottom: 20px;
 }
 
-.issues-section h2 {
+.issues-title-group {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.issues-title-group h2 {
   margin: 0;
   color: #333;
+}
+
+.period-indicator {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #e9ecef;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+}
+
+.period-label {
+  color: #6c757d;
+  font-weight: 500;
+}
+
+.period-dates {
+  color: #495057;
+  font-weight: 600;
 }
 
 .export-btn {

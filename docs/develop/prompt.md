@@ -71,3 +71,33 @@ gitlab の issue を分析し、burn-up/burn-down チャート表示＆product b
 │ > pbl-viewerのセッション管理の課題を解消してください。playwrightのコンソールの確認を行い、スクリーンショットも確認してください。
 │ > frontend/Dockerfile, backend/Dockerfile を整備し、 docker/docker-compose.yml に、forntendとbackendの起動設定を作成してください
 ```
+
+# 整備
+
+- gitlab の selfhosting は、古いバージョンの api しか対応していない可能性あり
+
+```
+│ > gitlabのapi_versionをfrontendのgitlab接続設定で指定したい。デフォルトは4
+```
+
+- gitlab 接続先は初回のみとなっているが、変更可能としたい。また、ID 数値のみでの指定は面倒なので、一覧からの選択を可能とする
+
+```
+│ > gitlab接続設定を変更できるようにしたい。また、対象プロジェクトはidではなくプロジェクト名でも指定可能としたい。また、有効なurlとtokenが指定されている場合、プロジェクト名は一覧からの選択も可能としたい。修正完了後、playwrightのコンソールの確認を行い、スクリーンショットも確認してください。
+```
+
+- フィルタが動作していない
+
+```
+│ > issueフィルタのstate:openedを選択してもフィルタリングされない。類似含め修正完了後、playwrightのコンソールの確認を行い、スクリーンショットも確認してください。
+```
+
+- dashboard の chart と issue の表示対象を合致させる
+
+```
+│ > dashboardのburndown/burnupの表示対象期間で、issuesの表示対象をフィルタしてください
+│ > デフォルトの表示期間は 今四半期 とし、カスタムの期間も今四半期の日付としてください。
+│ > dashboardのissues表示条件は、quaterが表示期間に含まれていること。 例) 2025-06-30 〜 2025-07-01 の場合、 '@FY25Q2' と '@FY25Q3' の
+│ > dashboardのissuesとpbl-viewerの表示項目Created Atの前にQuarterを追加する
+│ > burndown/burnupチャートの理想線は、日本の休日（土日祝）はポイント消化を0とする。祝日の判定は、holiday_jpを利用する。
+```

@@ -12,6 +12,7 @@ interface PeriodSelectorProps {
 
 export const PeriodSelector = ({ value, onChange }: PeriodSelectorProps) => {
   const [isCustom, setIsCustom] = useState(false)
+  const [selectedPreset, setSelectedPreset] = useState('this-quarter')
 
   const handlePresetPeriod = (preset: string) => {
     const today = new Date()
@@ -52,29 +53,60 @@ export const PeriodSelector = ({ value, onChange }: PeriodSelectorProps) => {
       end: format(end, 'yyyy-MM-dd')
     })
     setIsCustom(false)
+    setSelectedPreset(preset)
   }
 
   return (
     <div className="period-selector">
       <div className="period-presets">
-        <button onClick={() => handlePresetPeriod('this-month')}>
+        <button 
+          className={!isCustom && selectedPreset === 'this-month' ? 'active' : ''}
+          onClick={() => handlePresetPeriod('this-month')}
+        >
           今月
         </button>
-        <button onClick={() => handlePresetPeriod('last-month')}>
+        <button 
+          className={!isCustom && selectedPreset === 'last-month' ? 'active' : ''}
+          onClick={() => handlePresetPeriod('last-month')}
+        >
           先月
         </button>
-        <button onClick={() => handlePresetPeriod('this-quarter')}>
+        <button 
+          className={!isCustom && selectedPreset === 'this-quarter' ? 'active' : ''}
+          onClick={() => handlePresetPeriod('this-quarter')}
+        >
           今四半期
         </button>
-        <button onClick={() => handlePresetPeriod('last-quarter')}>
+        <button 
+          className={!isCustom && selectedPreset === 'last-quarter' ? 'active' : ''}
+          onClick={() => handlePresetPeriod('last-quarter')}
+        >
           前四半期
         </button>
-        <button onClick={() => handlePresetPeriod('this-year')}>
+        <button 
+          className={!isCustom && selectedPreset === 'this-year' ? 'active' : ''}
+          onClick={() => handlePresetPeriod('this-year')}
+        >
           今年
         </button>
         <button 
           className={isCustom ? 'active' : ''}
-          onClick={() => setIsCustom(!isCustom)}
+          onClick={() => {
+            if (!isCustom) {
+              // When opening custom mode, set to current quarter if no specific period is selected
+              const today = new Date()
+              const quarterMonth = Math.floor(today.getMonth() / 3) * 3
+              const start = new Date(today.getFullYear(), quarterMonth, 1)
+              const end = endOfMonth(addMonths(start, 2))
+              
+              onChange({
+                start: format(start, 'yyyy-MM-dd'),
+                end: format(end, 'yyyy-MM-dd')
+              })
+              setSelectedPreset('')
+            }
+            setIsCustom(!isCustom)
+          }}
         >
           カスタム
         </button>

@@ -237,6 +237,16 @@
   font-weight: 500;
 }
 
+.quarter-badge {
+  background-color: #f3e5f5;
+  color: #7b1fa2;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+  border: 1px solid #e1bee7;
+}
+
 .kanban-badge {
   padding: 2px 8px;
   border-radius: 4px;

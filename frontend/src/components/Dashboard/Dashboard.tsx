@@ -8,21 +8,22 @@ import { useApp } from '../../contexts/AppContext'
 import './Dashboard.css'
 
 export const Dashboard = () => {
-  const { state } = useApp()
+  const { state, dispatch } = useApp()
   const { issues, loading, fetchIssues, exportIssues } = useIssues()
-  const [selectedPeriod, setSelectedPeriod] = useState({
-    start: '2024-12-01',
-    end: '2024-12-31'
-  })
+  const [showEditConfig, setShowEditConfig] = useState(false)
+
+  const handlePeriodChange = (newPeriod: { start: string; end: string }) => {
+    dispatch({ type: 'SET_CHART_PERIOD', payload: newPeriod })
+  }
 
   useEffect(() => {
     if (state.gitlabConfig.isConnected) {
       fetchIssues({
         ...state.filters,
-        period: selectedPeriod
+        period: state.chartPeriod
       })
     }
-  }, [state.gitlabConfig.isConnected, state.filters, selectedPeriod, fetchIssues])
+  }, [state.gitlabConfig.isConnected, state.filters, state.chartPeriod, fetchIssues])
 
   if (!state.gitlabConfig.isConnected) {
     return (
@@ -33,31 +34,57 @@ export const Dashboard = () => {
     )
   }
 
+  if (showEditConfig) {
+    return (
+      <div className="dashboard">
+        <h1>Dashboard</h1>
+        <GitLabConfig 
+          editMode={true}
+          onConfigured={() => setShowEditConfig(false)}
+          onCancel={() => setShowEditConfig(false)}
+        />
+      </div>
+    )
+  }
+
   return (
     <div className="dashboard">
       <header className="dashboard-header">
         <h1>Dashboard</h1>
         <div className="dashboard-controls">
           <div className="gitlab-status">
-            ✓ GitLab接続済み: {state.gitlabConfig.url}
+            <span>✓ GitLab接続済み: {state.gitlabConfig.url}</span>
+            <button 
+              className="edit-config-btn"
+              onClick={() => setShowEditConfig(true)}
+              title="GitLab設定を変更"
+            >
+              設定変更
+            </button>
           </div>
           <PeriodSelector 
-            value={selectedPeriod}
-            onChange={setSelectedPeriod}
+            value={state.chartPeriod}
+            onChange={handlePeriodChange}
           />
         </div>
       </header>
 
       <div className="dashboard-content">
         <ChartSection 
-          period={selectedPeriod}
+          period={state.chartPeriod}
           issues={issues}
           loading={loading}
         />
         
         <div className="issues-section">
           <div className="issues-section-header">
-            <h2>Issues</h2>
+            <div className="issues-title-group">
+              <h2>Issues</h2>
+              <div className="period-indicator">
+                <span className="period-label">期間:</span>
+                <span className="period-dates">{state.chartPeriod.start} 〜 {state.chartPeriod.end}</span>
+              </div>
+            </div>
             <button 
               className="export-btn"
               onClick={() => exportIssues('csv')}

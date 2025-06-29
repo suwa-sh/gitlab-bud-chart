@@ -22,6 +22,7 @@ export const issuesApi = {
     min_point?: number
     max_point?: number
     quarter?: string
+    labels?: string
     created_after?: string
     created_before?: string
     completed_after?: string
@@ -120,6 +121,7 @@ export const gitlabApi = {
     gitlab_url: string
     gitlab_token: string
     project_id: string
+    api_version?: string
   }) => {
     const response = await api.post('/gitlab/connect', config)
     return response.data
@@ -132,6 +134,24 @@ export const gitlabApi = {
   
   getSampleIssues: async () => {
     const response = await api.get('/gitlab/issues/sample')
+    return response.data
+  },
+  
+  validate: async (config: {
+    gitlab_url: string
+    gitlab_token: string
+    api_version?: string
+  }) => {
+    const response = await api.post('/gitlab/validate', config)
+    return response.data
+  },
+  
+  getProjects: async (config: {
+    gitlab_url: string
+    gitlab_token: string
+    api_version?: string
+  }) => {
+    const response = await api.post('/gitlab/projects', config)
     return response.data
   },
 }

@@ -1,22 +1,92 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { gitlabApi } from '../../services/api'
 import { useApp } from '../../contexts/AppContext'
 import './GitLabConfig.css'
 
 interface GitLabConfigProps {
   onConfigured?: () => void
+  editMode?: boolean
+  onCancel?: () => void
 }
 
-export const GitLabConfig = ({ onConfigured }: GitLabConfigProps) => {
-  const { dispatch } = useApp()
+interface Project {
+  id: number
+  name: string
+  path: string
+  path_with_namespace: string
+  description: string
+  web_url: string
+}
+
+export const GitLabConfig = ({ onConfigured, editMode = false, onCancel }: GitLabConfigProps) => {
+  const { state, dispatch } = useApp()
+  
+  // Initialize config from context when in edit mode
   const [config, setConfig] = useState({
-    gitlab_url: import.meta.env.VITE_GITLAB_URL || 'http://localhost:8080',
-    gitlab_token: import.meta.env.VITE_GITLAB_TOKEN || '',
-    project_id: import.meta.env.VITE_GITLAB_PROJECT_ID || '1'
+    gitlab_url: editMode && state.gitlabConfig.url ? state.gitlabConfig.url : 
+                (import.meta.env.VITE_GITLAB_URL || 'http://localhost:8080'),
+    gitlab_token: editMode && state.gitlabConfig.token ? state.gitlabConfig.token : 
+                  (import.meta.env.VITE_GITLAB_TOKEN || ''),
+    project_id: editMode && state.gitlabConfig.projectId ? state.gitlabConfig.projectId : 
+                (import.meta.env.VITE_GITLAB_PROJECT_ID || '1'),
+    api_version: editMode && state.gitlabConfig.apiVersion ? state.gitlabConfig.apiVersion : 
+                 (import.meta.env.VITE_GITLAB_API_VERSION || '4')
   })
+  
   const [isConnecting, setIsConnecting] = useState(false)
+  const [isLoadingProjects, setIsLoadingProjects] = useState(false)
   const [status, setStatus] = useState<string>('')
   const [error, setError] = useState<string>('')
+  const [projects, setProjects] = useState<Project[]>([])
+  const [showProjectDropdown, setShowProjectDropdown] = useState(false)
+  const [credentialsValid, setCredentialsValid] = useState(false)
+
+  // Validate credentials and fetch projects when URL and token change
+  useEffect(() => {
+    const validateAndFetchProjects = async () => {
+      if (config.gitlab_url && config.gitlab_token && config.gitlab_url.length > 5 && config.gitlab_token.length > 10) {
+        setIsLoadingProjects(true)
+        try {
+          const validation = await gitlabApi.validate({
+            gitlab_url: config.gitlab_url,
+            gitlab_token: config.gitlab_token,
+            api_version: config.api_version
+          })
+          
+          if (validation.valid) {
+            setCredentialsValid(true)
+            const projectsResult = await gitlabApi.getProjects({
+              gitlab_url: config.gitlab_url,
+              gitlab_token: config.gitlab_token,
+              api_version: config.api_version
+            })
+            setProjects(projectsResult.projects || [])
+            setShowProjectDropdown(true)
+            setError('')
+          } else {
+            setCredentialsValid(false)
+            setProjects([])
+            setShowProjectDropdown(false)
+            setError(validation.message)
+          }
+        } catch (err: any) {
+          setCredentialsValid(false)
+          setProjects([])
+          setShowProjectDropdown(false)
+          setError('認証情報の確認に失敗しました')
+        } finally {
+          setIsLoadingProjects(false)
+        }
+      } else {
+        setCredentialsValid(false)
+        setProjects([])
+        setShowProjectDropdown(false)
+      }
+    }
+
+    const debounce = setTimeout(validateAndFetchProjects, 500)
+    return () => clearTimeout(debounce)
+  }, [config.gitlab_url, config.gitlab_token, config.api_version])
 
   const handleConnect = async () => {
     setIsConnecting(true)
@@ -28,13 +98,16 @@ export const GitLabConfig = ({ onConfigured }: GitLabConfigProps) => {
       setStatus(`✓ GitLab接続済み: ${result.project_info.project?.name || 'Unknown'}`)
       
       // AppContextを更新
+      const selectedProject = projects.find(p => p.id.toString() === config.project_id)
       dispatch({
         type: 'SET_GITLAB_CONFIG',
         payload: {
           isConnected: true,
           url: config.gitlab_url,
           token: config.gitlab_token,
-          projectId: config.project_id
+          projectId: config.project_id,
+          projectName: selectedProject?.name || result.project_info.project?.name || config.project_id,
+          apiVersion: config.api_version
         }
       })
       
@@ -63,9 +136,26 @@ export const GitLabConfig = ({ onConfigured }: GitLabConfigProps) => {
     }
   }
 
+  const handleDisconnect = () => {
+    dispatch({
+      type: 'SET_GITLAB_CONFIG',
+      payload: {
+        isConnected: false,
+        url: '',
+        token: '',
+        projectId: '',
+        projectName: '',
+        apiVersion: '4'
+      }
+    })
+    setStatus('')
+    setError('')
+    onCancel?.()
+  }
+
   return (
     <div className="gitlab-config">
-      <h3>GitLab Configuration</h3>
+      <h3>{editMode ? 'GitLab設定変更' : 'GitLab Configuration'}</h3>
       
       <div className="config-form">
         <div className="form-group">
@@ -91,13 +181,59 @@ export const GitLabConfig = ({ onConfigured }: GitLabConfigProps) => {
         </div>
         
         <div className="form-group">
-          <label htmlFor="project-id">Project ID:</label>
+          <label htmlFor="project-selector">Project:</label>
+          <div className="project-selector">
+            {showProjectDropdown && projects.length > 0 ? (
+              <div className="project-dropdown-container">
+                <select
+                  id="project-selector"
+                  value={config.project_id}
+                  onChange={(e) => setConfig(prev => ({ ...prev, project_id: e.target.value }))}
+                  className="project-dropdown"
+                >
+                  <option value="">プロジェクトを選択...</option>
+                  {projects.map(project => (
+                    <option key={project.id} value={project.id.toString()}>
+                      {project.name} ({project.path_with_namespace})
+                    </option>
+                  ))}
+                </select>
+                <div className="project-dropdown-info">
+                  {isLoadingProjects ? (
+                    <span className="loading">プロジェクト読み込み中...</span>
+                  ) : (
+                    <span className="project-count">{projects.length}個のプロジェクトが利用可能</span>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <div className="project-manual-input">
+                <input
+                  id="project-id"
+                  type="text"
+                  value={config.project_id}
+                  onChange={(e) => setConfig(prev => ({ ...prev, project_id: e.target.value }))}
+                  placeholder="プロジェクトIDまたは名前"
+                />
+                {isLoadingProjects && (
+                  <div className="loading-indicator">認証確認中...</div>
+                )}
+                {!credentialsValid && config.gitlab_url && config.gitlab_token && (
+                  <div className="validation-hint">有効なURLとトークンを入力するとプロジェクト一覧が表示されます</div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+        
+        <div className="form-group">
+          <label htmlFor="api-version">API Version:</label>
           <input
-            id="project-id"
+            id="api-version"
             type="text"
-            value={config.project_id}
-            onChange={(e) => setConfig(prev => ({ ...prev, project_id: e.target.value }))}
-            placeholder="1"
+            value={config.api_version}
+            onChange={(e) => setConfig(prev => ({ ...prev, api_version: e.target.value }))}
+            placeholder="4"
           />
         </div>
         
@@ -105,13 +241,27 @@ export const GitLabConfig = ({ onConfigured }: GitLabConfigProps) => {
           <button 
             onClick={handleConnect} 
             disabled={isConnecting || !config.gitlab_token || !config.project_id}
+            className="connect-button"
           >
-            {isConnecting ? '接続中...' : '接続'}
+            {isConnecting ? '接続中...' : (editMode ? '設定更新' : '接続')}
           </button>
           
-          <button onClick={handleTestConnection}>
-            接続確認
-          </button>
+          {!editMode && (
+            <button onClick={handleTestConnection} className="test-button">
+              接続確認
+            </button>
+          )}
+          
+          {editMode && (
+            <>
+              <button onClick={onCancel} className="cancel-button">
+                キャンセル
+              </button>
+              <button onClick={handleDisconnect} className="disconnect-button">
+                接続解除
+              </button>
+            </>
+          )}
         </div>
       </div>
       
@@ -124,6 +274,12 @@ export const GitLabConfig = ({ onConfigured }: GitLabConfigProps) => {
       {error && (
         <div className="status error">
           {error}
+        </div>
+      )}
+      
+      {credentialsValid && projects.length > 0 && (
+        <div className="status info">
+          ✓ 認証成功 - {projects.length}個のプロジェクトが利用可能
         </div>
       )}
     </div>

@@ -9,6 +9,12 @@ class GitLabConfigRequest(BaseModel):
     gitlab_url: str
     gitlab_token: str
     project_id: str
+    api_version: str = "4"
+
+class GitLabValidateRequest(BaseModel):
+    gitlab_url: str
+    gitlab_token: str
+    api_version: str = "4"
 
 class GitLabConfigResponse(BaseModel):
     success: bool
@@ -21,7 +27,8 @@ async def connect_gitlab(config: GitLabConfigRequest):
     success = gitlab_client.connect(
         config.gitlab_url,
         config.gitlab_token,
-        config.project_id
+        config.project_id,
+        config.api_version
     )
     
     if success:
@@ -57,3 +64,43 @@ async def get_sample_issues():
         "count": len(issues),
         "issues": issues
     }
+
+@router.post("/validate")
+async def validate_gitlab_credentials(config: GitLabValidateRequest):
+    """GitLab URL とトークンの有効性を検証"""
+    try:
+        # プロジェクト一覧取得で認証を確認
+        projects = gitlab_client.get_projects(
+            config.gitlab_url,
+            config.gitlab_token,
+            config.api_version
+        )
+        return {
+            "valid": True,
+            "message": "GitLab認証成功",
+            "project_count": len(projects)
+        }
+    except Exception as e:
+        return {
+            "valid": False,
+            "message": str(e)
+        }
+
+@router.post("/projects")
+async def get_gitlab_projects(config: GitLabValidateRequest):
+    """GitLab プロジェクト一覧取得"""
+    try:
+        projects = gitlab_client.get_projects(
+            config.gitlab_url,
+            config.gitlab_token,
+            config.api_version
+        )
+        return {
+            "success": True,
+            "projects": projects
+        }
+    except Exception as e:
+        raise HTTPException(
+            status_code=400,
+            detail=str(e)
+        )

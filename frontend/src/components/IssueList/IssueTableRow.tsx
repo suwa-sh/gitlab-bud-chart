@@ -62,6 +62,11 @@ export const IssueTableRow = ({ issue }: IssueTableRowProps) => {
         </span>
       </td>
       <td>{issue.assignee || '-'}</td>
+      <td>
+        {issue.quarter ? (
+          <span className="quarter-badge">{issue.quarter}</span>
+        ) : '-'}
+      </td>
       <td>{formatDate(issue.created_at)}</td>
       <td>{formatDate(issue.completed_at)}</td>
       <td>

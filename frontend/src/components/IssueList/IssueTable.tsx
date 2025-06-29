@@ -52,6 +52,9 @@ export const IssueTable = ({
       if (filters.service && issue.service !== filters.service) {
         return false
       }
+      if (filters.state && issue.state !== filters.state) {
+        return false
+      }
       return true
     })
   }, [issues, filters])
@@ -142,6 +145,12 @@ export const IssueTable = ({
               <th onClick={() => handleSort('assignee')}>
                 Assignee
                 {sortConfig?.key === 'assignee' && (
+                  <span className={`sort-icon ${sortConfig.direction}`}>↕</span>
+                )}
+              </th>
+              <th onClick={() => handleSort('quarter')}>
+                Quarter
+                {sortConfig?.key === 'quarter' && (
                   <span className={`sort-icon ${sortConfig.direction}`}>↕</span>
                 )}
               </th>
