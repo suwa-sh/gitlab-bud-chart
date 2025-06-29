@@ -69,4 +69,5 @@ gitlab の issue を分析し、burn-up/burn-down チャート表示＆product b
 │ > テスト用のGitLabインスタンスは起動しています。コマンドの結果を参考に、テストコードを見直してください。
 │ > test-chartプロジェクトにissue1〜issue20のデータを登録し、burn-down,burn-up,issueリスト,pbl-viewerの動作を確認するe2eテストを作成し、実行してください。playwrightのコンソールの確認を行い、スクリーンショットも確認してください。
 │ > pbl-viewerのセッション管理の課題を解消してください。playwrightのコンソールの確認を行い、スクリーンショットも確認してください。
+│ > frontend/Dockerfile, backend/Dockerfile を整備し、 docker/docker-compose.yml に、forntendとbackendの起動設定を作成してください
 ```

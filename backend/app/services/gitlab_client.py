@@ -70,7 +70,7 @@ class GitLabClient:
             return {
                 "connected": True,
                 "project": project_info,
-                "user": self.gl.user.name if self.gl.user else "Unknown"
+                "user": "Connected"
             }
         except Exception as e:
             logger.error(f"GitLab接続テスト失敗: {e}")

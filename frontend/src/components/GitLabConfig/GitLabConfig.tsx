@@ -10,9 +10,9 @@ interface GitLabConfigProps {
 export const GitLabConfig = ({ onConfigured }: GitLabConfigProps) => {
   const { dispatch } = useApp()
   const [config, setConfig] = useState({
-    gitlab_url: 'http://localhost:8080',
-    gitlab_token: 'glpat-cnHyDV8kvvz4Z_3ASq8g',
-    project_id: '1'
+    gitlab_url: import.meta.env.VITE_GITLAB_URL || 'http://localhost:8080',
+    gitlab_token: import.meta.env.VITE_GITLAB_TOKEN || '',
+    project_id: import.meta.env.VITE_GITLAB_PROJECT_ID || '1'
   })
   const [isConnecting, setIsConnecting] = useState(false)
   const [status, setStatus] = useState<string>('')

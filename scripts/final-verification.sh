@@ -86,7 +86,7 @@ sleep 10
 
 # Frontend疎通確認
 echo "Frontend疎通確認..."
-curl -f http://localhost:3002 || {
+curl -f http://localhost:3000 || {
     echo "Frontend疎通確認失敗"
     kill $BACKEND_PID 2>/dev/null || true
     kill $FRONTEND_PID 2>/dev/null || true

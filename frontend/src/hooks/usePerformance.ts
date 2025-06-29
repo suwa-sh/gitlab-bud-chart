@@ -86,11 +86,11 @@ export const usePerformance = () => {
       }
       
       // ポイント範囲フィルタ
-      if (filters.min_point !== undefined && (issue.story_points || 0) < filters.min_point) {
+      if (filters.min_point !== undefined && (issue.point || 0) < filters.min_point) {
         return false
       }
       
-      if (filters.max_point !== undefined && (issue.story_points || 0) > filters.max_point) {
+      if (filters.max_point !== undefined && (issue.point || 0) > filters.max_point) {
         return false
       }
       
@@ -112,12 +112,12 @@ export const usePerformance = () => {
           bValue = new Date(b.created_at).getTime()
           break
         case 'updated_at':
-          aValue = new Date(a.updated_at).getTime()
-          bValue = new Date(b.updated_at).getTime()
+          aValue = a.updated_at ? new Date(a.updated_at).getTime() : 0
+          bValue = b.updated_at ? new Date(b.updated_at).getTime() : 0
           break
         case 'story_points':
-          aValue = a.story_points || 0
-          bValue = b.story_points || 0
+          aValue = a.point || 0
+          bValue = b.point || 0
           break
         case 'title':
           aValue = a.title.toLowerCase()
@@ -152,7 +152,7 @@ export const usePerformance = () => {
         switch (issue.kanban_status) {
           case '#完了':
             stats.completed++
-            stats.completed_points += issue.story_points || 0
+            stats.completed_points += issue.point || 0
             break
           case '#作業中':
             stats.in_progress++
@@ -162,7 +162,7 @@ export const usePerformance = () => {
         }
         
         // ポイント合計
-        stats.total_points += issue.story_points || 0
+        stats.total_points += issue.point || 0
         
         // サービス別カウント
         if (issue.service) {

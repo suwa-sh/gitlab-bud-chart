@@ -1,6 +1,6 @@
 # GitLab Bud Chart
 
-GitLabのissueを分析し、burn-up/burn-downチャート表示とproduct backlog表示を行うWebアプリケーション。
+GitLab の issue を分析し、burn-up/burn-down チャート表示と product backlog 表示を行う Web アプリケーション。
 
 ## 動作イメージ
 
@@ -9,10 +9,10 @@ GitLabのissueを分析し、burn-up/burn-downチャート表示とproduct backl
 
 ## 機能
 
-- **GitLab連携**: Self-hosted GitLabからのissue取得
-- **Issue分析**: ラベルベースの自動分析（point, kanban_status, service, quarter）
-- **Burn-up/Burn-downチャート**: プロジェクト進捗可視化
-- **Product Backlog管理**: Issue一覧表示・フィルタ・検索
+- **GitLab 連携**: Self-hosted GitLab からの issue 取得
+- **Issue 分析**: ラベルベースの自動分析（point, kanban_status, service, quarter）
+- **Burn-up/Burn-down チャート**: プロジェクト進捗可視化
+- **Product Backlog 管理**: Issue 一覧表示・フィルタ・検索
 - **統計分析**: 完了率、ベロシティ等の統計情報
 
 ## 技術スタック
@@ -26,6 +26,7 @@ GitLabのissueを分析し、burn-up/burn-downチャート表示とproduct backl
 ## セットアップ
 
 ### 前提条件
+
 - Node.js 18+
 - Python 3.8+
 - GitLab Personal Access Token
@@ -61,60 +62,69 @@ cd frontend
 npm run dev
 ```
 
-アプリケーションは http://localhost:3002 でアクセス可能です。
+アプリケーションは http://localhost:3000 でアクセス可能です。
 
-### GitLab設定
+### GitLab 設定
 
-1. GitLab Personal Access Tokenを作成
+1. GitLab Personal Access Token を作成
+
    - GitLab > Settings > Access Tokens
    - 権限: `api`, `read_repository`, `read_user`
 
-2. アプリケーションでGitLab設定
+2. アプリケーションで GitLab 設定
+
    - GitLab URL: `http://your-gitlab-url`
    - Access Token: 作成したトークン
-   - Project ID: 対象プロジェクトのID
+   - Project ID: 対象プロジェクトの ID
 
-3. Issue分析用ラベル設定（詳細は `docs/develop/specs/issue_rules.md` 参照）
+3. Issue 分析用ラベル設定（詳細は `docs/develop/specs/issue_rules.md` 参照）
 
 ## Issue ラベル規則
 
-GitLab Bud Chartは以下のラベル規則に基づいてIssueを自動分析します：
+GitLab Bud Chart は以下のラベル規則に基づいて Issue を自動分析します：
 
 ### ポイント設定
-- `p:1.0`, `p:2.5`, `p:5.0` - ストーリーポイント
-- 例: `p:3.0` = 3.0ポイント
 
-### Kanbanステータス
+- `p:1.0`, `p:2.5`, `p:5.0` - ストーリーポイント
+- 例: `p:3.0` = 3.0 ポイント
+
+### Kanban ステータス
+
 - `#作業中` - 進行中のタスク
 - `#完了` - 完了したタスク
 - `#レビュー中` - レビュー待ち
 
 ### サービス分類
+
 - `s:backend` - バックエンド関連
 - `s:frontend` - フロントエンド関連
 - `s:infrastructure` - インフラ関連
 
 ### 四半期分類
-- `@FY2501Q1` - 2025年度第1四半期
-- `@FY2501Q2` - 2025年度第2四半期
+
+- `@FY2501Q1` - 2025 年度第 1 四半期
+- `@FY2501Q2` - 2025 年度第 2 四半期
 
 ## 画面構成
 
 ### Dashboard
+
 - プロジェクト全体の進捗状況
-- Burn-up/Burn-downチャート
+- Burn-up/Burn-down チャート
 - 期間選択・フィルタリング
 - 統計情報表示
 
 ### PBL Viewer
-- Product Backlog一覧
+
+- Product Backlog 一覧
 - 詳細フィルタ・検索
-- Issue詳細表示
+- Issue 詳細表示
 - CSV エクスポート
 
 ## 開発
 
 ### ディレクトリ構造
+
 ```
 ├── backend/          # Python FastAPI
 │   ├── app/
@@ -153,37 +163,43 @@ npx playwright test
 ### API エンドポイント
 
 #### GitLab Connection
-- `POST /api/gitlab/connect` - GitLab接続設定
+
+- `POST /api/gitlab/connect` - GitLab 接続設定
 - `GET /api/gitlab/status` - 接続状態確認
 
 #### Issues
-- `GET /api/issues` - Issue一覧取得
-- `GET /api/issues/{id}` - Issue詳細取得
-- `GET /api/issues/analyzed` - 分析済みIssue取得
-- `GET /api/issues/statistics` - Issue統計情報
+
+- `GET /api/issues` - Issue 一覧取得
+- `GET /api/issues/{id}` - Issue 詳細取得
+- `GET /api/issues/analyzed` - 分析済み Issue 取得
+- `GET /api/issues/statistics` - Issue 統計情報
 
 #### Charts
-- `GET /api/charts/burn-down` - Burn-downチャートデータ
-- `GET /api/charts/burn-up` - Burn-upチャートデータ
+
+- `GET /api/charts/burn-down` - Burn-down チャートデータ
+- `GET /api/charts/burn-up` - Burn-up チャートデータ
 - `GET /api/charts/velocity` - ベロシティデータ
 
-詳細なAPIドキュメントは http://localhost:8000/docs で確認できます。
+詳細な API ドキュメントは http://localhost:8000/docs で確認できます。
 
 ## パフォーマンス
 
 ### 最適化機能
+
 - **Backend**: キャッシュ機能、並列処理、メモリ最適化
 - **Frontend**: 仮想化、メモ化、遅延読み込み
 - **Charts**: データ点数制限、効率的な描画
 
 ### 性能要件
-- 1000件Issue処理: < 10秒
-- チャート描画: < 3秒
-- UI応答性: < 1秒
+
+- 1000 件 Issue 処理: < 10 秒
+- チャート描画: < 3 秒
+- UI 応答性: < 1 秒
 
 ## デプロイ
 
 ### Docker（推奨）
+
 ```bash
 # Backend
 cd backend
@@ -193,10 +209,11 @@ docker run -p 8000:8000 gitlab-bud-chart-backend
 # Frontend
 cd frontend
 docker build -t gitlab-bud-chart-frontend .
-docker run -p 3002:3002 gitlab-bud-chart-frontend
+docker run -p 3000:3000 gitlab-bud-chart-frontend
 ```
 
 ### 手動デプロイ
+
 ```bash
 # Backend
 cd backend
@@ -215,22 +232,26 @@ npm run preview
 
 ### よくある問題
 
-**GitLab接続エラー**
-- Access Tokenの権限確認
-- GitLab URLの正確性確認
+**GitLab 接続エラー**
+
+- Access Token の権限確認
+- GitLab URL の正確性確認
 - ネットワーク接続確認
 
 **チャート表示されない**
+
 - Issue にポイントラベルが設定されているか確認
 - 期間選択が適切か確認
 - ブラウザのコンソールエラー確認
 
 **パフォーマンス問題**
+
 - 大量データの場合は期間を絞る
 - ブラウザのキャッシュクリア
 - メモリ使用量確認
 
 ### ログ確認
+
 ```bash
 # Backend ログ
 tail -f backend/logs/app.log
@@ -241,16 +262,17 @@ tail -f backend/logs/app.log
 
 ## 貢献
 
-1. Issueで課題・機能要望を作成
+1. Issue で課題・機能要望を作成
 2. フィーチャーブランチで開発
 3. テスト実行・確認
-4. Pull Request作成
+4. Pull Request 作成
 5. レビュー後マージ
 
 ### 開発ガイドライン
-- TypeScript型安全性の維持
-- テストカバレッジ80%以上
-- ESLint/Prettier設定に従う
+
+- TypeScript 型安全性の維持
+- テストカバレッジ 80%以上
+- ESLint/Prettier 設定に従う
 - セキュリティ要件の遵守
 
 ## 設計
@@ -263,7 +285,7 @@ MIT License
 
 ## サポート
 
-- Issue報告: GitHub Issues
+- Issue 報告: GitHub Issues
 - ドキュメント: `docs/` ディレクトリ
 - 開発者向け: `docs/develop/` ディレクトリ
 
