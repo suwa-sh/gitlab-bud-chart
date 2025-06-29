@@ -64,4 +64,7 @@ gitlab の issue を分析し、burn-up/burn-down チャート表示＆product b
 │ > e2eテストを実施してください
 │ > @docs/develop/tasks/task-10-chart-analysis.md の作業を実施後、検証項目を確認し、対応状況を更新してください
 │ > @docs/develop/tasks/task-11-dashboard-chart-ui.md の作業を実施後、検証項目を確認し、対応状況を更新してください
+│ > @docs/develop/tasks/task-12-integration.md の作業を実施後、検証項目を確認し、対応状況を更新してください
+│ > e2eテストの接続情報は @/workspace/test_config.json の情報を利用してください。playwrightのコンソールの確認を行い、スクリーンショットも確認してください。
+│ > テスト用のGitLabインスタンスは起動しています。コマンドの結果を参考に、テストコードを見直してください。
 ```

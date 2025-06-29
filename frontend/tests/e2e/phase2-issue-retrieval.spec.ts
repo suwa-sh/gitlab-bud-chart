@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test'
+import testConfig from '/workspace/test_config.json'
 
 test.describe('Phase 2: Issue Retrieval E2E Tests', () => {
   test.beforeEach(async ({ page }) => {
@@ -23,7 +24,7 @@ test.describe('Phase 2: Issue Retrieval E2E Tests', () => {
 
   test('should analyze issue labels correctly', async ({ page }) => {
     // API直接テスト - 分析済みissue取得
-    const response = await page.request.get('http://localhost:8000/api/issues/analyzed')
+    const response = await page.request.get(`${testConfig.backend_url}/api/issues/analyzed`)
     expect(response.status()).toBe(200)
     
     const data = await response.json()
@@ -43,7 +44,7 @@ test.describe('Phase 2: Issue Retrieval E2E Tests', () => {
 
   test('should filter issues by milestone', async ({ page }) => {
     // マイルストーンフィルタテスト
-    const response = await page.request.get('http://localhost:8000/api/issues?milestone=v1.0')
+    const response = await page.request.get(`${testConfig.backend_url}/api/issues?milestone=v1.0`)
     expect(response.status()).toBe(200)
     
     const data = await response.json()
@@ -57,7 +58,7 @@ test.describe('Phase 2: Issue Retrieval E2E Tests', () => {
 
   test('should filter issues by service', async ({ page }) => {
     // サービスフィルタテスト
-    const response = await page.request.get('http://localhost:8000/api/issues?service=backend')
+    const response = await page.request.get(`${testConfig.backend_url}/api/issues?service=backend`)
     expect(response.status()).toBe(200)
     
     const data = await response.json()
@@ -71,7 +72,7 @@ test.describe('Phase 2: Issue Retrieval E2E Tests', () => {
 
   test('should filter issues by quarter', async ({ page }) => {
     // Quarterフィルタテスト
-    const response = await page.request.get('http://localhost:8000/api/issues?quarter=FY25Q1')
+    const response = await page.request.get(`${testConfig.backend_url}/api/issues?quarter=FY25Q1`)
     expect(response.status()).toBe(200)
     
     const data = await response.json()
@@ -84,7 +85,7 @@ test.describe('Phase 2: Issue Retrieval E2E Tests', () => {
   })
 
   test('should provide issue statistics', async ({ page }) => {
-    const response = await page.request.get('http://localhost:8000/api/issues/statistics')
+    const response = await page.request.get(`${testConfig.backend_url}/api/issues/statistics`)
     expect(response.status()).toBe(200)
     
     const stats = await response.json()
@@ -96,7 +97,7 @@ test.describe('Phase 2: Issue Retrieval E2E Tests', () => {
   })
 
   test('should validate issue data quality', async ({ page }) => {
-    const response = await page.request.get('http://localhost:8000/api/issues/validation')
+    const response = await page.request.get(`${testConfig.backend_url}/api/issues/validation`)
     expect(response.status()).toBe(200)
     
     const validation = await response.json()
@@ -119,7 +120,7 @@ test.describe('Phase 2: Issue Retrieval E2E Tests', () => {
       per_page: 10
     }
     
-    const response = await page.request.post('http://localhost:8000/api/issues/search', {
+    const response = await page.request.post(`${testConfig.backend_url}/api/issues/search`, {
       data: searchRequest
     })
     expect(response.status()).toBe(200)
@@ -136,7 +137,7 @@ test.describe('Phase 2: Issue Retrieval E2E Tests', () => {
 
   test('should support pagination', async ({ page }) => {
     // ページネーションテスト
-    const response = await page.request.get('http://localhost:8000/api/issues?page=1&per_page=5')
+    const response = await page.request.get(`${testConfig.backend_url}/api/issues?page=1&per_page=5`)
     expect(response.status()).toBe(200)
     
     const data = await response.json()
@@ -153,7 +154,7 @@ test.describe('Phase 2: Issue Retrieval E2E Tests', () => {
 
   test('should support sorting', async ({ page }) => {
     // ソート機能テスト
-    const response = await page.request.get('http://localhost:8000/api/issues?sort_by=point&sort_order=desc')
+    const response = await page.request.get(`${testConfig.backend_url}/api/issues?sort_by=point&sort_order=desc`)
     expect(response.status()).toBe(200)
     
     const data = await response.json()
@@ -173,7 +174,7 @@ test.describe('Phase 2: Issue Retrieval E2E Tests', () => {
 
   test('should export CSV', async ({ page }) => {
     // CSV エクスポートテスト
-    const response = await page.request.get('http://localhost:8000/api/issues/export/csv')
+    const response = await page.request.get(`${testConfig.backend_url}/api/issues/export/csv`)
     expect(response.status()).toBe(200)
     expect(response.headers()['content-type']).toContain('text/csv')
     expect(response.headers()['content-disposition']).toContain('attachment; filename="issues.csv"')
@@ -184,7 +185,7 @@ test.describe('Phase 2: Issue Retrieval E2E Tests', () => {
 
   test('should provide detailed metadata', async ({ page }) => {
     // メタデータAPIテスト
-    const response = await page.request.get('http://localhost:8000/api/issues')
+    const response = await page.request.get(`${testConfig.backend_url}/api/issues`)
     expect(response.status()).toBe(200)
     
     const data = await response.json()

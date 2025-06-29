@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { gitlabApi } from '../../services/api'
+import { useApp } from '../../contexts/AppContext'
 import './GitLabConfig.css'
 
 interface GitLabConfigProps {
@@ -7,10 +8,11 @@ interface GitLabConfigProps {
 }
 
 export const GitLabConfig = ({ onConfigured }: GitLabConfigProps) => {
+  const { dispatch } = useApp()
   const [config, setConfig] = useState({
     gitlab_url: 'http://localhost:8080',
-    gitlab_token: '',
-    project_id: ''
+    gitlab_token: 'glpat-cnHyDV8kvvz4Z_3ASq8g',
+    project_id: '1'
   })
   const [isConnecting, setIsConnecting] = useState(false)
   const [status, setStatus] = useState<string>('')
@@ -23,7 +25,19 @@ export const GitLabConfig = ({ onConfigured }: GitLabConfigProps) => {
     
     try {
       const result = await gitlabApi.connect(config)
-      setStatus(`接続成功: ${result.project_info.project?.name}`)
+      setStatus(`✓ GitLab接続済み: ${result.project_info.project?.name || 'Unknown'}`)
+      
+      // AppContextを更新
+      dispatch({
+        type: 'SET_GITLAB_CONFIG',
+        payload: {
+          isConnected: true,
+          url: config.gitlab_url,
+          token: config.gitlab_token,
+          projectId: config.project_id
+        }
+      })
+      
       onConfigured?.()
     } catch (err: any) {
       setError(err.response?.data?.detail || '接続に失敗しました')

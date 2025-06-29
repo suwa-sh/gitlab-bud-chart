@@ -1,11 +1,5 @@
 import { test, expect } from '@playwright/test'
-
-// Test configuration from /workspace/test_config.json
-const testConfig = {
-  gitlab_url: "http://localhost:8080",
-  project_id: 1,
-  access_token: "glpat-cnHyDV8kvvz4Z_3ASq8g"
-}
+import testConfig from '/workspace/test_config.json'
 
 test.describe('Phase 3: Search & Filter E2E Tests (with GitLab Connection)', () => {
   test.beforeEach(async ({ page }) => {
@@ -13,7 +7,7 @@ test.describe('Phase 3: Search & Filter E2E Tests (with GitLab Connection)', () 
     await page.goto('/dashboard')
     
     // Check if already connected
-    const gitlabStatus = await page.request.get('http://localhost:8000/api/gitlab/status')
+    const gitlabStatus = await page.request.get(`${testConfig.backend_url}/api/gitlab/status`)
     const statusData = await gitlabStatus.json()
     
     if (!statusData.connected) {
@@ -177,7 +171,7 @@ test.describe('Phase 3: Search & Filter E2E Tests (with GitLab Connection)', () 
 
   test('should test API endpoints with real data', async ({ page }) => {
     // Test issues API
-    const issuesResponse = await page.request.get('http://localhost:8000/api/issues/')
+    const issuesResponse = await page.request.get(`${testConfig.backend_url}/api/issues/`)
     expect(issuesResponse.status()).toBe(200)
     
     const issuesData = await issuesResponse.json()
@@ -185,7 +179,7 @@ test.describe('Phase 3: Search & Filter E2E Tests (with GitLab Connection)', () 
     console.log('Issues API response length:', Array.isArray(issuesData) ? issuesData.length : 'Not an array')
     
     // Test GitLab status
-    const statusResponse = await page.request.get('http://localhost:8000/api/gitlab/status')
+    const statusResponse = await page.request.get(`${testConfig.backend_url}/api/gitlab/status`)
     expect(statusResponse.status()).toBe(200)
     
     const statusData = await statusResponse.json()
@@ -193,7 +187,7 @@ test.describe('Phase 3: Search & Filter E2E Tests (with GitLab Connection)', () 
     console.log('GitLab connected:', statusData.connected)
     
     // Test search endpoint if available
-    const searchResponse = await page.request.post('http://localhost:8000/api/issues/search', {
+    const searchResponse = await page.request.post(`${testConfig.backend_url}/api/issues/search`, {
       data: {
         query: 'test',
         state: 'all'
@@ -231,7 +225,7 @@ test.describe('Phase 3: Performance and Error Handling', () => {
     await page.goto('/dashboard')
     
     // Connect to GitLab first
-    const gitlabStatus = await page.request.get('http://localhost:8000/api/gitlab/status')
+    const gitlabStatus = await page.request.get(`${testConfig.backend_url}/api/gitlab/status`)
     const statusData = await gitlabStatus.json()
     
     if (!statusData.connected) {

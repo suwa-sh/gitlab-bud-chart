@@ -1,29 +1,30 @@
 import { test, expect } from '@playwright/test'
+import testConfig from '/workspace/test_config.json'
 
 test.describe('Phase 3: Implementation Summary & Verification', () => {
   test('should verify backend APIs are working correctly', async ({ page }) => {
     // Test backend health
-    const healthResponse = await page.request.get('http://localhost:8000/health')
+    const healthResponse = await page.request.get(`${testConfig.backend_url}/health`)
     expect(healthResponse.status()).toBe(200)
     const healthData = await healthResponse.json()
     expect(healthData.status).toBe('healthy')
     console.log('✅ Backend health check passed')
 
     // Test GitLab status API
-    const statusResponse = await page.request.get('http://localhost:8000/api/gitlab/status')
+    const statusResponse = await page.request.get(`${testConfig.backend_url}/api/gitlab/status`)
     expect(statusResponse.status()).toBe(200)
     const statusData = await statusResponse.json()
     expect(statusData).toHaveProperty('connected')
     console.log(`✅ GitLab status API working - connected: ${statusData.connected}`)
 
     // Test issues API
-    const issuesResponse = await page.request.get('http://localhost:8000/api/issues/')
+    const issuesResponse = await page.request.get(`${testConfig.backend_url}/api/issues/`)
     expect(issuesResponse.status()).toBe(200)
     const issuesData = await issuesResponse.json()
     console.log(`✅ Issues API working - response type: ${typeof issuesData}`)
 
     // Test search API (if implemented)
-    const searchResponse = await page.request.post('http://localhost:8000/api/issues/search', {
+    const searchResponse = await page.request.post(`${testConfig.backend_url}/api/issues/search`, {
       data: { query: 'test' }
     })
     if (searchResponse.status() === 200) {
@@ -33,7 +34,7 @@ test.describe('Phase 3: Implementation Summary & Verification', () => {
     }
 
     // Test export API
-    const exportResponse = await page.request.get('http://localhost:8000/api/issues/export/csv')
+    const exportResponse = await page.request.get(`${testConfig.backend_url}/api/issues/export/csv`)
     if (exportResponse.status() === 200) {
       console.log('✅ Export API working')
     } else {
@@ -192,16 +193,16 @@ test.describe('Phase 3: Implementation Verification Summary', () => {
     // Backend verification
     console.log('🔧 BACKEND COMPONENTS:')
     try {
-      const healthCheck = await page.request.get('http://localhost:8000/health')
+      const healthCheck = await page.request.get(`${testConfig.backend_url}/health`)
       console.log(`  ✅ Backend server: ${healthCheck.status() === 200 ? 'Running' : 'Error'}`)
       
-      const gitlabStatus = await page.request.get('http://localhost:8000/api/gitlab/status')
+      const gitlabStatus = await page.request.get(`${testConfig.backend_url}/api/gitlab/status`)
       console.log(`  ✅ GitLab status API: ${gitlabStatus.status() === 200 ? 'Working' : 'Error'}`)
       
-      const issuesAPI = await page.request.get('http://localhost:8000/api/issues/')
+      const issuesAPI = await page.request.get(`${testConfig.backend_url}/api/issues/`)
       console.log(`  ✅ Issues API: ${issuesAPI.status() === 200 ? 'Working' : 'Error'}`)
       
-      const searchAPI = await page.request.post('http://localhost:8000/api/issues/search', {
+      const searchAPI = await page.request.post(`${testConfig.backend_url}/api/issues/search`, {
         data: { query: 'test' }
       })
       console.log(`  ${searchAPI.status() === 200 ? '✅' : 'ℹ️ '} Search API: ${searchAPI.status() === 200 ? 'Implemented' : 'Partial/Pending'}`)

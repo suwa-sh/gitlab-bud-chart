@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test'
+import testConfig from '/workspace/test_config.json'
 
 test.describe('Phase 3: Search & Filter UI Tests', () => {
   test('should display dashboard page correctly', async ({ page }) => {
@@ -24,7 +25,7 @@ test.describe('Phase 3: Search & Filter UI Tests', () => {
     await expect(page.getByLabel('Project ID')).toBeVisible()
     
     // Connect button should be disabled initially
-    await expect(page.getByRole('button', { name: '接続' })).toBeDisabled()
+    await expect(page.getByRole('button', { name: '接続', exact: true })).toBeDisabled()
     
     await page.screenshot({ path: 'test-results/phase3-gitlab-config.png' })
   })
@@ -54,17 +55,17 @@ test.describe('Phase 3: Search & Filter UI Tests', () => {
     await page.goto('/dashboard')
     
     // Fill out GitLab form
-    await page.getByLabel('GitLab URL').fill('http://localhost:8080')
-    await page.getByLabel('Access Token').fill('test-token')
-    await page.getByLabel('Project ID').fill('1')
+    await page.getByLabel('GitLab URL').fill(testConfig.gitlab_url)
+    await page.getByLabel('Access Token').fill(testConfig.access_token)
+    await page.getByLabel('Project ID').fill(testConfig.project_id.toString())
     
     // Connect button should now be enabled
-    await expect(page.getByRole('button', { name: '接続' })).toBeEnabled()
+    await expect(page.getByRole('button', { name: '接続', exact: true })).toBeEnabled()
     
     await page.screenshot({ path: 'test-results/phase3-gitlab-form-filled.png' })
     
     // Try to connect (this will likely fail but tests the UI)
-    await page.getByRole('button', { name: '接続' }).click()
+    await page.getByRole('button', { name: '接続', exact: true }).click()
     
     // Should show loading state
     await expect(page.getByRole('button', { name: '接続中...' })).toBeVisible()
@@ -79,18 +80,18 @@ test.describe('Phase 3: Search & Filter UI Tests', () => {
 
   test('should test backend API endpoints', async ({ page }) => {
     // Test backend health check
-    const healthResponse = await page.request.get('http://localhost:8000/health')
+    const healthResponse = await page.request.get(`${testConfig.backend_url}/health`)
     expect(healthResponse.status()).toBe(200)
     
     const healthData = await healthResponse.json()
     expect(healthData.status).toBe('healthy')
     
     // Test GitLab status endpoint
-    const statusResponse = await page.request.get('http://localhost:8000/api/gitlab/status')
+    const statusResponse = await page.request.get(`${testConfig.backend_url}/api/gitlab/status`)
     expect(statusResponse.status()).toBe(200)
     
     // Test issues endpoint (may return empty array if not connected)
-    const issuesResponse = await page.request.get('http://localhost:8000/api/issues/')
+    const issuesResponse = await page.request.get(`${testConfig.backend_url}/api/issues/`)
     expect(issuesResponse.status()).toBe(200)
   })
 

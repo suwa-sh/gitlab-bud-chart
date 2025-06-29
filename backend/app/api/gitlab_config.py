@@ -29,7 +29,7 @@ async def connect_gitlab(config: GitLabConfigRequest):
         if test_result["connected"]:
             return GitLabConfigResponse(
                 success=True,
-                message="GitLab接続成功",
+                message=f"GitLab接続成功: {test_result['project']['name']}",
                 project_info=test_result
             )
         else:
@@ -40,7 +40,7 @@ async def connect_gitlab(config: GitLabConfigRequest):
     else:
         raise HTTPException(
             status_code=400,
-            detail="GitLab接続失敗"
+            detail="GitLab接続に失敗しました"
         )
 
 @router.get("/status")

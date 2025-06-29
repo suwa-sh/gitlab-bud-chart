@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test'
+import testConfig from '/workspace/test_config.json'
 
 test.describe('Phase 1: GitLab Connection E2E Tests', () => {
   test.beforeEach(async ({ page }) => {
@@ -19,15 +20,15 @@ test.describe('Phase 1: GitLab Connection E2E Tests', () => {
     await expect(connectButton).toBeDisabled()
     
     // Fill URL only
-    await page.getByLabel('GitLab URL').fill('http://localhost:8080')
+    await page.getByLabel('GitLab URL').fill(testConfig.gitlab_url)
     await expect(connectButton).toBeDisabled()
     
     // Fill token
-    await page.getByLabel('Access Token').fill('test-token')
+    await page.getByLabel('Access Token').fill(testConfig.access_token)
     await expect(connectButton).toBeDisabled()
     
     // Fill project ID
-    await page.getByLabel('Project ID').fill('1')
+    await page.getByLabel('Project ID').fill(testConfig.project_id.toString())
     await expect(connectButton).toBeEnabled()
     
     await page.screenshot({ path: 'test-results/phase1-form-validation.png' })
@@ -47,7 +48,7 @@ test.describe('Phase 1: GitLab Connection E2E Tests', () => {
   })
 
   test('should test connection status endpoint', async ({ page }) => {
-    const response = await page.request.get('http://localhost:8000/api/gitlab/status')
+    const response = await page.request.get(`${testConfig.backend_url}/api/gitlab/status`)
     expect(response.status()).toBe(200)
     
     const data = await response.json()
@@ -66,7 +67,7 @@ test.describe('Phase 1: GitLab Connection E2E Tests', () => {
   })
 
   test('should display API documentation', async ({ page }) => {
-    await page.goto('http://localhost:8000/docs')
+    await page.goto(`${testConfig.backend_url}/docs`)
     await expect(page.getByText('GitLab Bud Chart API')).toBeVisible()
     await page.screenshot({ path: 'test-results/phase1-api-docs.png' })
   })
@@ -74,7 +75,7 @@ test.describe('Phase 1: GitLab Connection E2E Tests', () => {
 
 test.describe('Phase 1: API Integration Tests', () => {
   test('backend health check', async ({ page }) => {
-    const response = await page.request.get('http://localhost:8000/health')
+    const response = await page.request.get(`${testConfig.backend_url}/health`)
     expect(response.status()).toBe(200)
     
     const data = await response.json()
@@ -82,7 +83,7 @@ test.describe('Phase 1: API Integration Tests', () => {
   })
 
   test('issues API basic response', async ({ page }) => {
-    const response = await page.request.get('http://localhost:8000/api/issues/')
+    const response = await page.request.get(`${testConfig.backend_url}/api/issues/`)
     expect(response.status()).toBe(200)
     
     const issues = await response.json()
@@ -90,7 +91,7 @@ test.describe('Phase 1: API Integration Tests', () => {
   })
 
   test('charts API basic response', async ({ page }) => {
-    const response = await page.request.get('http://localhost:8000/api/charts/burn-down?milestone=v1.0&start_date=2024-01-01&end_date=2024-12-31')
+    const response = await page.request.get(`${testConfig.backend_url}/api/charts/burn-down?milestone=v1.0&start_date=2024-01-01&end_date=2024-12-31`)
     expect(response.status()).toBe(200)
     
     const chartData = await response.json()
@@ -98,7 +99,7 @@ test.describe('Phase 1: API Integration Tests', () => {
   })
 
   test('gitlab status API', async ({ page }) => {
-    const response = await page.request.get('http://localhost:8000/api/gitlab/status')
+    const response = await page.request.get(`${testConfig.backend_url}/api/gitlab/status`)
     expect(response.status()).toBe(200)
     
     const status = await response.json()
@@ -107,7 +108,7 @@ test.describe('Phase 1: API Integration Tests', () => {
 
   test('gitlab connect API structure', async ({ page }) => {
     // Test with invalid data to check error handling
-    const response = await page.request.post('http://localhost:8000/api/gitlab/connect', {
+    const response = await page.request.post(`${testConfig.backend_url}/api/gitlab/connect`, {
       data: {
         gitlab_url: 'http://invalid-url',
         gitlab_token: 'invalid-token',
@@ -128,9 +129,9 @@ test.describe('Phase 1: UI Interaction Tests', () => {
     await page.goto('/dashboard')
     
     // Fill form with invalid data to test loading state
-    await page.getByLabel('GitLab URL').fill('http://localhost:8080')
-    await page.getByLabel('Access Token').fill('test-token')
-    await page.getByLabel('Project ID').fill('1')
+    await page.getByLabel('GitLab URL').fill(testConfig.gitlab_url)
+    await page.getByLabel('Access Token').fill(testConfig.access_token)
+    await page.getByLabel('Project ID').fill(testConfig.project_id.toString())
     
     // Click connect and immediately check for loading state
     await page.getByRole('button', { name: '接続', exact: true }).click()
@@ -143,7 +144,7 @@ test.describe('Phase 1: UI Interaction Tests', () => {
 
   test('should allow configuration changes', async ({ page }) => {
     // Skip this test if not connected (since we can't actually connect in CI)
-    const statusResponse = await page.request.get('http://localhost:8000/api/gitlab/status')
+    const statusResponse = await page.request.get(`${testConfig.backend_url}/api/gitlab/status`)
     const statusData = await statusResponse.json()
     
     if (!statusData.connected) {

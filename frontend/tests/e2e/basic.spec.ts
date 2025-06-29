@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test'
+import testConfig from '/workspace/test_config.json'
 
 test.describe('Basic App Functionality', () => {
   test('should load homepage and display dashboard', async ({ page }) => {
@@ -69,14 +70,14 @@ test.describe('Basic App Functionality', () => {
 test.describe('API Integration', () => {
   test('should connect to backend API', async ({ page }) => {
     // Backend health check
-    const response = await page.request.get('http://localhost:8000/health')
+    const response = await page.request.get(`${testConfig.backend_url}/health`)
     expect(response.status()).toBe(200)
     const data = await response.json()
     expect(data.status).toBe('healthy')
   })
 
   test('should get issues from API', async ({ page }) => {
-    const response = await page.request.get('http://localhost:8000/api/issues/')
+    const response = await page.request.get(`${testConfig.backend_url}/api/issues/`)
     expect(response.status()).toBe(200)
     const issues = await response.json()
     expect(Array.isArray(issues)).toBe(true)

@@ -13,13 +13,37 @@ class GitLabClient:
     def connect(self, gitlab_url: str, gitlab_token: str, project_id: str) -> bool:
         """GitLab接続"""
         try:
-            self.gl = gitlab.Gitlab(gitlab_url, private_token=gitlab_token)
+            # API v4を明示的に指定し、SSL検証とタイムアウトを設定
+            self.gl = gitlab.Gitlab(
+                gitlab_url, 
+                private_token=gitlab_token,
+                api_version='4',
+                ssl_verify=True,
+                timeout=30
+            )
+            
+            # 認証テスト
+            logger.info(f"GitLab認証開始: {gitlab_url}")
             self.gl.auth()
+            logger.info(f"GitLab認証成功")
+            
+            # プロジェクト取得テスト
+            logger.info(f"プロジェクト取得開始: project_id={project_id}")
             self.project = self.gl.projects.get(project_id)
-            logger.info(f"GitLab接続成功: {gitlab_url}, project: {project_id}")
+            logger.info(f"GitLab接続成功: {gitlab_url}, project: {self.project.name} (id: {project_id})")
             return True
+        except gitlab.exceptions.GitlabAuthenticationError as e:
+            logger.error(f"GitLab認証失敗: {e}")
+            self.gl = None
+            self.project = None
+            return False
+        except gitlab.exceptions.GitlabGetError as e:
+            logger.error(f"GitLabプロジェクト取得失敗: {e}")
+            self.gl = None
+            self.project = None
+            return False
         except Exception as e:
-            logger.error(f"GitLab接続失敗: {e}")
+            logger.error(f"GitLab接続失敗: {type(e).__name__}: {e}")
             self.gl = None
             self.project = None
             return False

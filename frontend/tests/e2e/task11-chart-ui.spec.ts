@@ -1,18 +1,19 @@
 import { test, expect } from '@playwright/test'
+import testConfig from '/workspace/test_config.json'
 
 test.describe('Task 11: Dashboard Chart UI Tests', () => {
   test('should display chart components when GitLab is connected', async ({ page }) => {
     // Navigate to dashboard
-    await page.goto('http://localhost:3002/dashboard')
+    await page.goto(`${testConfig.frontend_url}/dashboard`)
     
     // Check if GitLab configuration form is visible (means not connected)
     const gitlabConfig = page.locator('.gitlab-config')
     
     if (await gitlabConfig.isVisible()) {
       // Connect to GitLab using test config
-      await page.getByLabel('GitLab URL').fill('http://localhost:8080')
-      await page.getByLabel('Access Token').fill('glpat-cnHyDV8kvvz4Z_3ASq8g')
-      await page.getByLabel('Project ID').fill('1')
+      await page.getByLabel('GitLab URL').fill(testConfig.gitlab_url)
+      await page.getByLabel('Access Token').fill(testConfig.access_token)
+      await page.getByLabel('Project ID').fill(testConfig.project_id.toString())
       
       // Click connect button
       await page.getByRole('button', { name: '接続', exact: true }).click()
@@ -32,7 +33,7 @@ test.describe('Task 11: Dashboard Chart UI Tests', () => {
   })
 
   test('should show period selector with preset options', async ({ page }) => {
-    await page.goto('http://localhost:3002/dashboard')
+    await page.goto(`${testConfig.frontend_url}/dashboard`)
     
     // Wait for page load
     await page.waitForTimeout(2000)
@@ -59,7 +60,7 @@ test.describe('Task 11: Dashboard Chart UI Tests', () => {
   })
 
   test('should display chart controls and toggle views', async ({ page }) => {
-    await page.goto('http://localhost:3002/dashboard')
+    await page.goto(`${testConfig.frontend_url}/dashboard`)
     
     // Wait for page load and potential GitLab connection
     await page.waitForTimeout(3000)
@@ -95,7 +96,7 @@ test.describe('Task 11: Dashboard Chart UI Tests', () => {
   })
 
   test('should render chart components when data is available', async ({ page }) => {
-    await page.goto('http://localhost:3002/dashboard')
+    await page.goto(`${testConfig.frontend_url}/dashboard`)
     
     // Wait for page load
     await page.waitForTimeout(3000)
@@ -147,7 +148,7 @@ test.describe('Task 11: Dashboard Chart UI Tests', () => {
     // Set mobile viewport
     await page.setViewportSize({ width: 375, height: 667 })
     
-    await page.goto('http://localhost:3002/dashboard')
+    await page.goto(`${testConfig.frontend_url}/dashboard`)
     await page.waitForTimeout(2000)
     
     // Check that dashboard loads on mobile
@@ -170,7 +171,7 @@ test.describe('Task 11: Dashboard Chart UI Tests', () => {
   })
 
   test('should validate chart data and statistics display', async ({ page }) => {
-    await page.goto('http://localhost:3002/dashboard')
+    await page.goto(`${testConfig.frontend_url}/dashboard`)
     await page.waitForTimeout(3000)
     
     // Look for chart summary sections
@@ -198,7 +199,7 @@ test.describe('Task 11: Dashboard Chart UI Tests', () => {
 test.describe('Task 11: Chart API Integration', () => {
   test('should successfully fetch chart data from backend APIs', async ({ page }) => {
     // Test burn down API
-    const burnDownResponse = await page.request.get('http://localhost:8000/api/charts/burn-down?start_date=2024-01-01&end_date=2024-01-07')
+    const burnDownResponse = await page.request.get(`${testConfig.backend_url}/api/charts/burn-down?start_date=2024-01-01&end_date=2024-01-07`)
     expect(burnDownResponse.status()).toBe(200)
     
     const burnDownData = await burnDownResponse.json()
@@ -210,7 +211,7 @@ test.describe('Task 11: Chart API Integration', () => {
     console.log('✅ Burn Down API working:', burnDownData.chart_data.length, 'data points')
     
     // Test burn up API
-    const burnUpResponse = await page.request.get('http://localhost:8000/api/charts/burn-up?start_date=2024-01-01&end_date=2024-01-07')
+    const burnUpResponse = await page.request.get(`${testConfig.backend_url}/api/charts/burn-up?start_date=2024-01-01&end_date=2024-01-07`)
     expect(burnUpResponse.status()).toBe(200)
     
     const burnUpData = await burnUpResponse.json()
@@ -222,7 +223,7 @@ test.describe('Task 11: Chart API Integration', () => {
     console.log('✅ Burn Up API working:', burnUpData.chart_data.length, 'data points')
     
     // Test velocity API
-    const velocityResponse = await page.request.get('http://localhost:8000/api/charts/velocity?weeks=4')
+    const velocityResponse = await page.request.get(`${testConfig.backend_url}/api/charts/velocity?weeks=4`)
     expect(velocityResponse.status()).toBe(200)
     
     const velocityData = await velocityResponse.json()
