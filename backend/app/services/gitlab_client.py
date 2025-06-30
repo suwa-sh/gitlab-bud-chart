@@ -2,6 +2,7 @@ import gitlab
 from typing import Optional, List, Dict, Any
 from app.config import settings
 import logging
+import os
 
 logger = logging.getLogger(__name__)
 
@@ -10,15 +11,34 @@ class GitLabClient:
         self.gl: Optional[gitlab.Gitlab] = None
         self.project = None
         
-    def connect(self, gitlab_url: str, gitlab_token: str, project_identifier: str, api_version: str = "4") -> bool:
+    def connect(self, gitlab_url: str, gitlab_token: str, project_identifier: str, api_version: str = "4", 
+                http_proxy: str = "", https_proxy: str = "", no_proxy: str = "") -> bool:
         """GitLab接続（プロジェクトIDまたは名前で指定可能）"""
         try:
+            # Proxy設定を環境変数に設定（パラメータ優先、次に設定ファイル）
+            proxy_http = http_proxy or settings.http_proxy
+            proxy_https = https_proxy or settings.https_proxy
+            proxy_no = no_proxy or settings.no_proxy
+            
+            if proxy_http:
+                os.environ['HTTP_PROXY'] = proxy_http
+                os.environ['http_proxy'] = proxy_http
+                logger.info(f"HTTP Proxy設定: {proxy_http}")
+            if proxy_https:
+                os.environ['HTTPS_PROXY'] = proxy_https
+                os.environ['https_proxy'] = proxy_https
+                logger.info(f"HTTPS Proxy設定: {proxy_https}")
+            if proxy_no:
+                os.environ['NO_PROXY'] = proxy_no
+                os.environ['no_proxy'] = proxy_no
+                logger.info(f"No Proxy設定: {proxy_no}")
+            
             # API versionを明示的に指定し、SSL検証とタイムアウトを設定
             self.gl = gitlab.Gitlab(
                 gitlab_url, 
                 private_token=gitlab_token,
                 api_version=api_version,
-                ssl_verify=True,
+                ssl_verify=settings.gitlab_ssl_verify,
                 timeout=30
             )
             
@@ -115,15 +135,31 @@ class GitLabClient:
             logger.error(f"Issues取得失敗: {e}")
             return []
     
-    def get_projects(self, gitlab_url: str, gitlab_token: str, api_version: str = "4") -> List[Dict[str, Any]]:
+    def get_projects(self, gitlab_url: str, gitlab_token: str, api_version: str = "4",
+                     http_proxy: str = "", https_proxy: str = "", no_proxy: str = "") -> List[Dict[str, Any]]:
         """ユーザーがアクセス可能なプロジェクト一覧を取得"""
         try:
+            # Proxy設定を環境変数に設定（パラメータ優先、次に設定ファイル）
+            proxy_http = http_proxy or settings.http_proxy
+            proxy_https = https_proxy or settings.https_proxy
+            proxy_no = no_proxy or settings.no_proxy
+            
+            if proxy_http:
+                os.environ['HTTP_PROXY'] = proxy_http
+                os.environ['http_proxy'] = proxy_http
+            if proxy_https:
+                os.environ['HTTPS_PROXY'] = proxy_https
+                os.environ['https_proxy'] = proxy_https
+            if proxy_no:
+                os.environ['NO_PROXY'] = proxy_no
+                os.environ['no_proxy'] = proxy_no
+            
             # 一時的なGitLabクライアントを作成
             temp_gl = gitlab.Gitlab(
                 gitlab_url,
                 private_token=gitlab_token,
                 api_version=api_version,
-                ssl_verify=True,
+                ssl_verify=settings.gitlab_ssl_verify,
                 timeout=30
             )
             

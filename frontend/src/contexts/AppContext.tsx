@@ -32,6 +32,9 @@ interface AppState {
     projectName?: string
     projectNamespace?: string
     apiVersion?: string
+    httpProxy?: string
+    httpsProxy?: string
+    noProxy?: string
   }
 }
 
@@ -70,7 +73,10 @@ const loadGitLabConfigFromStorage = (): AppState['gitlabConfig'] => {
         projectId: config.projectId,
         projectName: config.projectName,
         projectNamespace: config.projectNamespace,
-        apiVersion: config.apiVersion
+        apiVersion: config.apiVersion,
+        httpProxy: config.httpProxy,
+        httpsProxy: config.httpsProxy,
+        noProxy: config.noProxy
       }
     }
   } catch (error) {
@@ -83,7 +89,10 @@ const loadGitLabConfigFromStorage = (): AppState['gitlabConfig'] => {
     projectId: undefined,
     projectName: undefined,
     projectNamespace: undefined,
-    apiVersion: undefined
+    apiVersion: undefined,
+    httpProxy: undefined,
+    httpsProxy: undefined,
+    noProxy: undefined
   }
 }
 

@@ -11,6 +11,10 @@ services:
       - GITLAB_URL=http://host.docker.internal:8080
       - GITLAB_TOKEN=glpat-cnHyDV8kvvz4Z_3ASq8g
       - GITLAB_PROJECT_ID=1
+      - HTTP_PROXY=${HTTP_PROXY}
+      - HTTPS_PROXY=${HTTPS_PROXY}
+      - NO_PROXY=${NO_PROXY}
+      - GITLAB_SSL_VERIFY=${GITLAB_SSL_VERIFY:-true}
     volumes:
       - ../backend:/app
     extra_hosts:
@@ -34,6 +38,9 @@ services:
       - VITE_GITLAB_URL=http://host.docker.internal:8080
       - VITE_GITLAB_TOKEN=glpat-cnHyDV8kvvz4Z_3ASq8g
       - VITE_GITLAB_PROJECT_ID=1
+      - VITE_HTTP_PROXY=${HTTP_PROXY}
+      - VITE_HTTPS_PROXY=${HTTPS_PROXY}
+      - VITE_NO_PROXY=${NO_PROXY}
     extra_hosts:
       - "host.docker.internal:host-gateway"
     restart: unless-stopped

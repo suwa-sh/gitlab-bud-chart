@@ -16,6 +16,12 @@ async def get_burn_down_data(
     milestone: Optional[str] = Query(None)
 ):
     """Burn-downチャートデータ取得"""
+    if start_date >= end_date:
+        raise HTTPException(
+            status_code=400,
+            detail="終了日は開始日より後の日付を指定してください"
+        )
+    
     try:
         # Issue取得・分析
         issues, _ = await issue_service.get_analyzed_issues(
@@ -58,6 +64,12 @@ async def get_burn_up_data(
     milestone: Optional[str] = Query(None)
 ):
     """Burn-upチャートデータ取得"""
+    if start_date >= end_date:
+        raise HTTPException(
+            status_code=400,
+            detail="終了日は開始日より後の日付を指定してください"
+        )
+    
     try:
         issues, _ = await issue_service.get_analyzed_issues(
             milestone=milestone,
@@ -99,7 +111,7 @@ async def get_velocity_data(weeks: int = Query(12, ge=1, le=52)):
         
         return {
             'velocity_data': velocity_data,
-            'average_velocity': sum(v['completed_points'] for v in velocity_data) / len(velocity_data) if velocity_data else 0,
+            'average_velocity': sum(v['completed_points'] for v in velocity_data) / len(velocity_data) if len(velocity_data) > 0 else 0,
             'weeks_analyzed': len(velocity_data)
         }
         

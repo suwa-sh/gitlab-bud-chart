@@ -113,3 +113,12 @@ gitlab の issue を分析し、burn-up/burn-down チャート表示＆product b
 ```
 ghcr で @docker/docker-compose.yml で自己ビルドする docker イメージを管理したい
 ```
+
+- proxy 経由の考慮と issue が無い場合の表示調整
+
+```
+│ > エラーの原因と対策案は？Burn-upチャートAPI失敗: division by zero
+│ > gitlabがproxy経由の場合もあるため、configで指定したい
+│ > frontendでもproxyの指定を可能としたい
+│ > frontendの Dashboard "Gitlab Configuration" でもgitlabアクセス用のproxy指定したい
+```

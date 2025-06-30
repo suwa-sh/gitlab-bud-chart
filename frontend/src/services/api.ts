@@ -1,7 +1,8 @@
 import axios from 'axios'
 import { Issue, BurnChartResponse, VelocityResponse } from '../types/api'
+import { getApiBaseUrl } from '../utils/proxyConfig'
 
-const API_BASE_URL = 'http://localhost:8000/api'
+const API_BASE_URL = `${getApiBaseUrl()}/api`
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -122,6 +123,9 @@ export const gitlabApi = {
     gitlab_token: string
     project_id: string
     api_version?: string
+    http_proxy?: string
+    https_proxy?: string
+    no_proxy?: string
   }) => {
     const response = await api.post('/gitlab/connect', config)
     return response.data
@@ -141,6 +145,9 @@ export const gitlabApi = {
     gitlab_url: string
     gitlab_token: string
     api_version?: string
+    http_proxy?: string
+    https_proxy?: string
+    no_proxy?: string
   }) => {
     const response = await api.post('/gitlab/validate', config)
     return response.data
@@ -150,6 +157,9 @@ export const gitlabApi = {
     gitlab_url: string
     gitlab_token: string
     api_version?: string
+    http_proxy?: string
+    https_proxy?: string
+    no_proxy?: string
   }) => {
     const response = await api.post('/gitlab/projects', config)
     return response.data

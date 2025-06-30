@@ -270,6 +270,57 @@
   grid-column: 1 / -1;
 }
 
+/* Advanced section styles */
+.advanced-section {
+  margin-top: 20px;
+  border-top: 1px solid #e9ecef;
+  padding-top: 20px;
+}
+
+.advanced-toggle {
+  background: none;
+  border: none;
+  color: #007bff;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 8px 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: color 0.2s ease;
+  width: 100%;
+  text-align: left;
+}
+
+.advanced-toggle:hover {
+  color: #0056b3;
+}
+
+.advanced-fields {
+  margin-top: 15px;
+  padding: 20px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
+}
+
+.advanced-fields .form-group {
+  margin-bottom: 15px;
+}
+
+.advanced-fields .form-group:last-child {
+  margin-bottom: 0;
+}
+
+.field-hint {
+  display: block;
+  margin-top: 4px;
+  color: #6c757d;
+  font-size: 12px;
+  font-style: italic;
+}
+
 /* Responsive design */
 @media (max-width: 768px) {
   .gitlab-config {
@@ -287,5 +338,9 @@
   
   .form-actions.edit-mode {
     grid-template-columns: 1fr;
+  }
+  
+  .advanced-fields {
+    padding: 15px;
   }
 }

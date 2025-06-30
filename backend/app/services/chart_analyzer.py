@@ -169,6 +169,9 @@ class ChartAnalyzer:
             return 0.0
         
         total_days = (end_date - start_date).days
+        if total_days == 0:
+            return 0.0
+        
         elapsed_days = (current_date - start_date).days
         progress_ratio = elapsed_days / total_days
         
@@ -188,6 +191,9 @@ class ChartAnalyzer:
             return total_points
         
         total_days = (end_date - start_date).days
+        if total_days == 0:
+            return total_points
+        
         elapsed_days = (current_date - start_date).days
         progress_ratio = elapsed_days / total_days
         

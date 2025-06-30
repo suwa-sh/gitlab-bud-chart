@@ -30,7 +30,13 @@ export const GitLabConfig = ({ onConfigured, editMode = false, onCancel }: GitLa
     project_id: editMode && state.gitlabConfig.projectId ? state.gitlabConfig.projectId : 
                 (import.meta.env.VITE_GITLAB_PROJECT_ID || '1'),
     api_version: editMode && state.gitlabConfig.apiVersion ? state.gitlabConfig.apiVersion : 
-                 (import.meta.env.VITE_GITLAB_API_VERSION || '4')
+                 (import.meta.env.VITE_GITLAB_API_VERSION || '4'),
+    http_proxy: editMode && state.gitlabConfig.httpProxy ? state.gitlabConfig.httpProxy :
+                (import.meta.env.VITE_HTTP_PROXY || ''),
+    https_proxy: editMode && state.gitlabConfig.httpsProxy ? state.gitlabConfig.httpsProxy :
+                 (import.meta.env.VITE_HTTPS_PROXY || ''),
+    no_proxy: editMode && state.gitlabConfig.noProxy ? state.gitlabConfig.noProxy :
+              (import.meta.env.VITE_NO_PROXY || '')
   })
   
   const [isConnecting, setIsConnecting] = useState(false)
@@ -40,6 +46,7 @@ export const GitLabConfig = ({ onConfigured, editMode = false, onCancel }: GitLa
   const [projects, setProjects] = useState<Project[]>([])
   const [showProjectDropdown, setShowProjectDropdown] = useState(false)
   const [credentialsValid, setCredentialsValid] = useState(false)
+  const [showAdvanced, setShowAdvanced] = useState(false)
 
   // Validate credentials and fetch projects when URL and token change
   useEffect(() => {
@@ -50,7 +57,10 @@ export const GitLabConfig = ({ onConfigured, editMode = false, onCancel }: GitLa
           const validation = await gitlabApi.validate({
             gitlab_url: config.gitlab_url,
             gitlab_token: config.gitlab_token,
-            api_version: config.api_version
+            api_version: config.api_version,
+            http_proxy: config.http_proxy,
+            https_proxy: config.https_proxy,
+            no_proxy: config.no_proxy
           })
           
           if (validation.valid) {
@@ -58,7 +68,10 @@ export const GitLabConfig = ({ onConfigured, editMode = false, onCancel }: GitLa
             const projectsResult = await gitlabApi.getProjects({
               gitlab_url: config.gitlab_url,
               gitlab_token: config.gitlab_token,
-              api_version: config.api_version
+              api_version: config.api_version,
+              http_proxy: config.http_proxy,
+              https_proxy: config.https_proxy,
+              no_proxy: config.no_proxy
             })
             setProjects(projectsResult.projects || [])
             setShowProjectDropdown(true)
@@ -119,7 +132,10 @@ export const GitLabConfig = ({ onConfigured, editMode = false, onCancel }: GitLa
           projectId: config.project_id,
           projectName: selectedProject?.name || result.project_info.project?.name || config.project_id,
           projectNamespace: projectNamespace,
-          apiVersion: config.api_version
+          apiVersion: config.api_version,
+          httpProxy: config.http_proxy,
+          httpsProxy: config.https_proxy,
+          noProxy: config.no_proxy
         }
       })
       
@@ -248,6 +264,56 @@ export const GitLabConfig = ({ onConfigured, editMode = false, onCancel }: GitLa
             onChange={(e) => setConfig(prev => ({ ...prev, api_version: e.target.value }))}
             placeholder="4"
           />
+        </div>
+        
+        <div className="advanced-section">
+          <button
+            type="button"
+            className="advanced-toggle"
+            onClick={() => setShowAdvanced(!showAdvanced)}
+          >
+            {showAdvanced ? '▼' : '▶'} プロキシ設定（高度な設定）
+          </button>
+          
+          {showAdvanced && (
+            <div className="advanced-fields">
+              <div className="form-group">
+                <label htmlFor="http-proxy">HTTP Proxy:</label>
+                <input
+                  id="http-proxy"
+                  type="text"
+                  value={config.http_proxy}
+                  onChange={(e) => setConfig(prev => ({ ...prev, http_proxy: e.target.value }))}
+                  placeholder="http://proxy.example.com:8080"
+                />
+              </div>
+              
+              <div className="form-group">
+                <label htmlFor="https-proxy">HTTPS Proxy:</label>
+                <input
+                  id="https-proxy"
+                  type="text"
+                  value={config.https_proxy}
+                  onChange={(e) => setConfig(prev => ({ ...prev, https_proxy: e.target.value }))}
+                  placeholder="https://proxy.example.com:8080"
+                />
+              </div>
+              
+              <div className="form-group">
+                <label htmlFor="no-proxy">No Proxy:</label>
+                <input
+                  id="no-proxy"
+                  type="text"
+                  value={config.no_proxy}
+                  onChange={(e) => setConfig(prev => ({ ...prev, no_proxy: e.target.value }))}
+                  placeholder="localhost,127.0.0.1,.example.com"
+                />
+                <small className="field-hint">
+                  カンマ区切りでプロキシを使用しないホストを指定
+                </small>
+              </div>
+            </div>
+          )}
         </div>
         
         <div className="form-actions">

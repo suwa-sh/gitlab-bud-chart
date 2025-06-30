@@ -10,11 +10,17 @@ class GitLabConfigRequest(BaseModel):
     gitlab_token: str
     project_id: str
     api_version: str = "4"
+    http_proxy: str = ""
+    https_proxy: str = ""
+    no_proxy: str = ""
 
 class GitLabValidateRequest(BaseModel):
     gitlab_url: str
     gitlab_token: str
     api_version: str = "4"
+    http_proxy: str = ""
+    https_proxy: str = ""
+    no_proxy: str = ""
 
 class GitLabConfigResponse(BaseModel):
     success: bool
@@ -28,7 +34,10 @@ async def connect_gitlab(config: GitLabConfigRequest):
         config.gitlab_url,
         config.gitlab_token,
         config.project_id,
-        config.api_version
+        config.api_version,
+        config.http_proxy,
+        config.https_proxy,
+        config.no_proxy
     )
     
     if success:
@@ -73,7 +82,10 @@ async def validate_gitlab_credentials(config: GitLabValidateRequest):
         projects = gitlab_client.get_projects(
             config.gitlab_url,
             config.gitlab_token,
-            config.api_version
+            config.api_version,
+            config.http_proxy,
+            config.https_proxy,
+            config.no_proxy
         )
         return {
             "valid": True,
@@ -93,7 +105,10 @@ async def get_gitlab_projects(config: GitLabValidateRequest):
         projects = gitlab_client.get_projects(
             config.gitlab_url,
             config.gitlab_token,
-            config.api_version
+            config.api_version,
+            config.http_proxy,
+            config.https_proxy,
+            config.no_proxy
         )
         return {
             "success": True,
