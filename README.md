@@ -11,25 +11,36 @@ GitLab の issue を分析し、burn-up/burn-down チャート表示と product 
 
 - 最新のビルド済みイメージを利用する場合
 
-   ```bash
-   # 前提: port 3000, 8000が空いていること
-   git clone https://github.com/suwa-sh/gitlab-bud-chart.git
-   cd gitlab-bud-chart/docker
+  ```bash
+  # 前提: port 3000 が空いていること
+  git clone https://github.com/suwa-sh/gitlab-bud-chart.git
+  cd gitlab-bud-chart/docker
 
-   docker compose pull
-   docker compose up
+  cat << __EOF__ > .env
+  SERVER_PORT=3000
+  # gitlab接続の初期値
+  #VITE_GITLAB_URL=
+  #VITE_GITLAB_TOKEN=
+  #VITE_GITLAB_PROJECT_ID=
+  #VITE_HTTP_PROXY=
+  #VITE_HTTPS_PROXY=
+  #VITE_NO_PROXY=
+  __EOF__
 
-   open http://localhost:3000
-   ```
+  docker compose pull
+  docker compose up
+
+  open http://localhost:3000
+  ```
 
 - ローカルビルドを使用したい場合
 
-   ```bash
-   # gitlab containerを利用する場合、事前に起動
-   docker compose -f docker-compose.gitlab.yml up
+  ```bash
+  # gitlab containerを利用する場合、事前に起動
+  docker compose -f docker-compose.gitlab.yml up
 
-   docker compose -f docker-compose.local.yml up
-   ```
+  docker compose -f docker-compose.local.yml up
+  ```
 
 ## 設計
 

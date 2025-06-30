@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { gitlabApi } from '../../services/api'
 import { useApp } from '../../contexts/AppContext'
+import { getEnv } from '../../config/env'
 import './GitLabConfig.css'
 
 interface GitLabConfigProps {
@@ -24,19 +25,19 @@ export const GitLabConfig = ({ onConfigured, editMode = false, onCancel }: GitLa
   // Initialize config from context when in edit mode
   const [config, setConfig] = useState({
     gitlab_url: editMode && state.gitlabConfig.url ? state.gitlabConfig.url : 
-                (import.meta.env.VITE_GITLAB_URL || 'http://localhost:8080'),
+                (getEnv('VITE_GITLAB_URL', 'http://localhost:8080')),
     gitlab_token: editMode && state.gitlabConfig.token ? state.gitlabConfig.token : 
-                  (import.meta.env.VITE_GITLAB_TOKEN || ''),
+                  (getEnv('VITE_GITLAB_TOKEN', '')),
     project_id: editMode && state.gitlabConfig.projectId ? state.gitlabConfig.projectId : 
-                (import.meta.env.VITE_GITLAB_PROJECT_ID || '1'),
+                (getEnv('VITE_GITLAB_PROJECT_ID', '1')),
     api_version: editMode && state.gitlabConfig.apiVersion ? state.gitlabConfig.apiVersion : 
-                 (import.meta.env.VITE_GITLAB_API_VERSION || '4'),
+                 (getEnv('VITE_GITLAB_API_VERSION', '4')),
     http_proxy: editMode && state.gitlabConfig.httpProxy ? state.gitlabConfig.httpProxy :
-                (import.meta.env.VITE_HTTP_PROXY || ''),
+                (getEnv('VITE_HTTP_PROXY', '')),
     https_proxy: editMode && state.gitlabConfig.httpsProxy ? state.gitlabConfig.httpsProxy :
-                 (import.meta.env.VITE_HTTPS_PROXY || ''),
+                 (getEnv('VITE_HTTPS_PROXY', '')),
     no_proxy: editMode && state.gitlabConfig.noProxy ? state.gitlabConfig.noProxy :
-              (import.meta.env.VITE_NO_PROXY || '')
+              (getEnv('VITE_NO_PROXY', ''))
   })
   
   const [isConnecting, setIsConnecting] = useState(false)

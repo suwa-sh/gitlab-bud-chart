@@ -1,24 +1,49 @@
 version: "3.8"
 
 services:
+  # Nginx Reverse Proxy
+  nginx:
+    image: nginx:alpine
+    container_name: gitlab-bud-chart-nginx
+    ports:
+      - "${SERVER_PORT:-8081}:80"
+    volumes:
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - frontend
+      - backend
+    networks:
+      - app-network
+    restart: unless-stopped
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "wget",
+          "--no-verbose",
+          "--tries=1",
+          "--spider",
+          "http://localhost/nginx-health",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
   backend:
     build:
       context: ../backend
       dockerfile: Dockerfile
     container_name: gitlab-bud-chart-backend
-    ports:
-      - "8000:8000"
+    expose:
+      - "8000"
     environment:
       - PYTHONPATH=/app
-      - GITLAB_URL=http://host.docker.internal:8080
-      - GITLAB_TOKEN=glpat-cnHyDV8kvvz4Z_3ASq8g
-      - GITLAB_PROJECT_ID=1
-      - HTTP_PROXY=${HTTP_PROXY}
-      - HTTPS_PROXY=${HTTPS_PROXY}
-      - NO_PROXY=${NO_PROXY}
       - GITLAB_SSL_VERIFY=${GITLAB_SSL_VERIFY:-true}
+      - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost}
     volumes:
       - ../backend:/app
+    networks:
+      - app-network
     extra_hosts:
       - "host.docker.internal:host-gateway"
     restart: unless-stopped
@@ -33,18 +58,20 @@ services:
       context: ../frontend
       dockerfile: Dockerfile
     container_name: gitlab-bud-chart-frontend
-    ports:
-      - "3000:3000"
+    expose:
+      - "3000"
     depends_on:
       - backend
     environment:
-      - VITE_API_URL=http://localhost:8000
-      - VITE_GITLAB_URL=http://host.docker.internal:8080
-      - VITE_GITLAB_TOKEN=glpat-cnHyDV8kvvz4Z_3ASq8g
-      - VITE_GITLAB_PROJECT_ID=1
+      - VITE_API_URL=${VITE_API_URL}
+      - VITE_GITLAB_URL=${VITE_GITLAB_URL}
+      - VITE_GITLAB_TOKEN=${VITE_GITLAB_TOKEN}
+      - VITE_GITLAB_PROJECT_ID=${VITE_GITLAB_PROJECT_ID}
       - VITE_HTTP_PROXY=${HTTP_PROXY}
       - VITE_HTTPS_PROXY=${HTTPS_PROXY}
       - VITE_NO_PROXY=${NO_PROXY}
+    networks:
+      - app-network
     extra_hosts:
       - "host.docker.internal:host-gateway"
     restart: unless-stopped
@@ -53,3 +80,7 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
+
+networks:
+  app-network:
+    driver: bridge
