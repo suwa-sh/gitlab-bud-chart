@@ -1,5 +1,6 @@
 export interface Issue {
   id: number
+  iid: number
   title: string
   description?: string
   state: string

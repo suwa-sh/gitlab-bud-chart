@@ -41,13 +41,13 @@ export const IssueTableRow = ({ issue }: IssueTableRowProps) => {
     }
   }
 
-  const getGitLabIssueUrl = (issueId: number) => {
+  const getGitLabIssueUrl = (issueIid: number) => {
     const { gitlabConfig } = state
     if (gitlabConfig.url && gitlabConfig.projectNamespace) {
-      return `${gitlabConfig.url}/${gitlabConfig.projectNamespace}/-/issues/${issueId}`
+      return `${gitlabConfig.url}/${gitlabConfig.projectNamespace}/-/issues/${issueIid}`
     }
     // Fallback to hash URL if GitLab config is not available
-    return `#/issue/${issueId}`
+    return `#/issue/${issueIid}`
   }
 
   return (
@@ -55,7 +55,7 @@ export const IssueTableRow = ({ issue }: IssueTableRowProps) => {
       <td>{issue.milestone || '-'}</td>
       <td>
         <a 
-          href={getGitLabIssueUrl(issue.id)} 
+          href={getGitLabIssueUrl(issue.iid)} 
           className="issue-title"
           title={issue.description}
           target="_blank"

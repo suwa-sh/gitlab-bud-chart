@@ -81,6 +81,7 @@ def _issue_to_response(issue: IssueModel) -> IssueResponse:
     """IssueModel → IssueResponse変換"""
     return IssueResponse(
         id=issue.id,
+        iid=issue.iid,
         title=issue.title,
         description=issue.description,
         state=issue.state,
@@ -187,6 +188,7 @@ async def get_analyzed_issues(
         issue_responses = [
             IssueResponse(
                 id=issue.id,
+                iid=issue.iid,
                 title=issue.title,
                 description=issue.description,
                 state=issue.state,
@@ -480,6 +482,7 @@ async def get_issues_by_milestone(milestone_name: str):
         issue_responses = [
             IssueResponse(
                 id=issue.id,
+                iid=issue.iid,
                 title=issue.title,
                 description=issue.description,
                 state=issue.state,
@@ -524,6 +527,7 @@ async def get_issue(issue_id: int):
         
         return IssueResponse(
             id=issue.id,
+            iid=issue.iid,
             title=issue.title,
             description=issue.description,
             state=issue.state,

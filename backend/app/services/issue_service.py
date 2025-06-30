@@ -106,6 +106,7 @@ class IssueService:
         try:
             return IssueModel(
                 id=gitlab_issue.id,
+                iid=gitlab_issue.iid,
                 title=gitlab_issue.title,
                 description=gitlab_issue.description or "",
                 state=gitlab_issue.state,

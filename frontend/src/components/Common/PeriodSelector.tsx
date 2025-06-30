@@ -14,6 +14,17 @@ export const PeriodSelector = ({ value, onChange }: PeriodSelectorProps) => {
   const [isCustom, setIsCustom] = useState(false)
   const [selectedPreset, setSelectedPreset] = useState('this-quarter')
 
+  const formatPeriodDisplay = (start: string, end: string): string => {
+    const startDate = new Date(start)
+    const endDate = new Date(end)
+    
+    const formatDate = (date: Date) => {
+      return format(date, 'yyyy/MM/dd')
+    }
+    
+    return `${formatDate(startDate)} 〜 ${formatDate(endDate)}`
+  }
+
   const handlePresetPeriod = (preset: string) => {
     const today = new Date()
     let start: Date
@@ -90,25 +101,16 @@ export const PeriodSelector = ({ value, onChange }: PeriodSelectorProps) => {
           今年
         </button>
         <button 
-          className={isCustom ? 'active' : ''}
+          className={`period-display-button ${isCustom ? 'active' : ''}`}
           onClick={() => {
             if (!isCustom) {
-              // When opening custom mode, set to current quarter if no specific period is selected
-              const today = new Date()
-              const quarterMonth = Math.floor(today.getMonth() / 3) * 3
-              const start = new Date(today.getFullYear(), quarterMonth, 1)
-              const end = endOfMonth(addMonths(start, 2))
-              
-              onChange({
-                start: format(start, 'yyyy-MM-dd'),
-                end: format(end, 'yyyy-MM-dd')
-              })
               setSelectedPreset('')
             }
             setIsCustom(!isCustom)
           }}
+          title="クリックしてカスタム期間を設定"
         >
-          カスタム
+          📅 {formatPeriodDisplay(value.start, value.end)}
         </button>
       </div>
       
@@ -129,10 +131,6 @@ export const PeriodSelector = ({ value, onChange }: PeriodSelectorProps) => {
           />
         </div>
       )}
-      
-      <div className="current-period">
-        <span>{value.start} 〜 {value.end}</span>
-      </div>
     </div>
   )
 }

@@ -130,3 +130,23 @@ ghcr で @docker/docker-compose.yml で自己ビルドする docker イメージ
 │ > CORSの考慮もしてください
 │ > @docker/docker-compose.local.yml も @docker/docker-compose.yml 同様リバースプロキシ対応してください
 ```
+
+- issue 一覧に表示されない＆動作不具合解消
+  - 手作業で docker-compose.yml に `pull_policy: always` 追加し、起動ごとに最新イメージ取得が行われるようにした
+
+```
+│ > gitlab設定変更直後、Issuesの内容がgitlab設定変更前の状態のままとなっている。
+│ > @docs/develop/sample で、ラベル解析とデータ変換のルールをdocs/sample_label_rule.mdにまとめて
+│ > issue一覧のtitleリンクはiidを利用
+│ > dashboardの issue一覧のtitleリンクが http://192.168.0.105:8080/root/test-project/-/issues/undefined となっている。
+```
+
+- 表示の brushup
+
+```
+│ > Dashboardのgitlab接続済み ラベルにリポジトリの情報も表示したい。また、接続状態の表示をコンパクトにしたい。
+│ > projectNameを表示。リンク先を gitlabのURL + projectNamespace とする
+│ > 接続設定は、PBL viewerのようにタイトルの右側に表示したい
+│ > Dashboardのチャートの表示はissue一覧と同じようなレイアウトで、タイトル、表示条件、エクスポート、フィルタ のように統一感を出してください
+│ > 表示期間選択のカスタムボタンと具体的な表示期間を１まとめにしたい
+```

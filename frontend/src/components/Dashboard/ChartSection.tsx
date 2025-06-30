@@ -100,10 +100,36 @@ export const ChartSection = ({ period, issues, loading }: ChartSectionProps) => 
 
   return (
     <div className="chart-section">
-      <div className="chart-controls">
-        <div className="control-group">
-          <label>マイルストーン:</label>
+      {/* タイトルと基本情報 */}
+      <div className="chart-section-header">
+        <div className="chart-title-group">
+          <h2>Charts</h2>
+          <div className="chart-indicator">
+            <span className="chart-label">期間:</span>
+            <span className="chart-dates">{period.start} 〜 {period.end}</span>
+          </div>
+          {selectedMilestone && (
+            <div className="milestone-indicator">
+              <span className="milestone-label">マイルストーン:</span>
+              <span className="milestone-name">{selectedMilestone}</span>
+            </div>
+          )}
+        </div>
+        <button 
+          className="export-btn"
+          onClick={handleExportChart}
+          disabled={chartLoading || (!burnDownData.length && !burnUpData.length)}
+        >
+          📊 チャートエクスポート
+        </button>
+      </div>
+
+      {/* フィルタ・表示条件 */}
+      <div className="chart-filters">
+        <div className="filter-group">
+          <label htmlFor="milestone-select">マイルストーン:</label>
           <select 
+            id="milestone-select"
             value={selectedMilestone}
             onChange={(e) => setSelectedMilestone(e.target.value)}
             className="milestone-select"
@@ -115,8 +141,8 @@ export const ChartSection = ({ period, issues, loading }: ChartSectionProps) => 
           </select>
         </div>
         
-        <div className="control-group">
-          <label>表示:</label>
+        <div className="filter-group">
+          <label>表示タイプ:</label>
           <div className="view-toggle">
             <button 
               className={chartView === 'both' ? 'active' : ''}
@@ -138,16 +164,9 @@ export const ChartSection = ({ period, issues, loading }: ChartSectionProps) => 
             </button>
           </div>
         </div>
-        
-        <button 
-          className="export-button"
-          onClick={handleExportChart}
-          disabled={chartLoading || (!burnDownData.length && !burnUpData.length)}
-        >
-          📊 チャートをエクスポート
-        </button>
       </div>
 
+      {/* チャート表示エリア */}
       <div className={`charts-container ${chartView}`}>
         {(chartView === 'both' || chartView === 'burndown') && (
           <div className="chart-wrapper">
@@ -175,10 +194,10 @@ export const ChartSection = ({ period, issues, loading }: ChartSectionProps) => 
         )}
       </div>
       
+      {/* 統計情報 */}
       {selectedMilestone && (
-        <div className="milestone-info">
-          <p>選択中のマイルストーン: <strong>{selectedMilestone}</strong></p>
-          <p>対象Issue数: {issues.filter(i => i.milestone === selectedMilestone).length}件</p>
+        <div className="chart-info">
+          <span>対象Issue数: {issues.filter(i => i.milestone === selectedMilestone).length}件</span>
         </div>
       )}
     </div>

@@ -4,6 +4,7 @@ from datetime import datetime
 
 class IssueModel(BaseModel):
     id: int
+    iid: int
     title: str
     description: str
     state: str  # opened, closed
@@ -25,6 +26,7 @@ class IssueModel(BaseModel):
 class IssueResponse(BaseModel):
     """API レスポンス用"""
     id: int
+    iid: int
     title: str
     description: str
     state: str

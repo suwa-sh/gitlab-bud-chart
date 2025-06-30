@@ -15,7 +15,14 @@ export const PBLViewer = () => {
     if (state.gitlabConfig.isConnected) {
       fetchIssues(state.filters)
     }
-  }, [state.gitlabConfig.isConnected, state.filters, fetchIssues])
+  }, [
+    state.gitlabConfig.isConnected,
+    state.gitlabConfig.url,
+    state.gitlabConfig.token,
+    state.gitlabConfig.projectId,
+    state.filters, 
+    fetchIssues
+  ])
 
   if (!state.gitlabConfig.isConnected) {
     return (
