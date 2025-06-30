@@ -1,8 +1,8 @@
 import axios from 'axios'
 import { Issue, BurnChartResponse, VelocityResponse } from '../types/api'
-import { getApiBaseUrl } from '../utils/proxyConfig'
+import { getApiUrl } from '../config/env'
 
-const API_BASE_URL = `${getApiBaseUrl()}/api`
+const API_BASE_URL = getApiUrl() ? `${getApiUrl()}/api` : '/api'
 
 const api = axios.create({
   baseURL: API_BASE_URL,

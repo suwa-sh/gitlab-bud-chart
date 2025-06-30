@@ -122,3 +122,11 @@ ghcr で @docker/docker-compose.yml で自己ビルドする docker イメージ
 │ > frontendでもproxyの指定を可能としたい
 │ > frontendの Dashboard "Gitlab Configuration" でもgitlabアクセス用のproxy指定したい
 ```
+
+- reverse proxy
+
+```
+│ > @docker/docker-compose.yml構成でリバースプロキシを用意し、外部からは１ポートのみでアクセス可能とする。また、VITE_環境変数については、実行時に適用されるようにしたい。
+│ > CORSの考慮もしてください
+│ > @docker/docker-compose.local.yml も @docker/docker-compose.yml 同様リバースプロキシ対応してください
+```
