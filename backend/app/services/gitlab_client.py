@@ -10,6 +10,11 @@ class GitLabClient:
     def __init__(self):
         self.gl: Optional[gitlab.Gitlab] = None
         self.project = None
+    
+    @property
+    def is_connected(self) -> bool:
+        """GitLab接続状態を返す"""
+        return self.gl is not None and self.project is not None
         
     def connect(self, gitlab_url: str, gitlab_token: str, project_identifier: str, api_version: str = "4", 
                 http_proxy: str = "", https_proxy: str = "", no_proxy: str = "") -> bool:
@@ -218,3 +223,6 @@ class GitLabClient:
             logger.error(f"プロジェクト名検索失敗: {e}")
             return None
 
+
+# GitLabクライアントのシングルトンインスタンス
+gitlab_client = GitLabClient()

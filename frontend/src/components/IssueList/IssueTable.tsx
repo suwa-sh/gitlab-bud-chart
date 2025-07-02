@@ -11,13 +11,15 @@ interface IssueTableProps {
   loading: boolean
   showFilters?: boolean
   pageSize?: number
+  allowShowAll?: boolean
 }
 
 export const IssueTable = ({ 
   issues, 
   loading, 
   showFilters = false, 
-  pageSize = 20 
+  pageSize = 20,
+  allowShowAll = false 
 }: IssueTableProps) => {
   const [filters, setFilters] = useState({
     search: '',
@@ -28,6 +30,7 @@ export const IssueTable = ({
     state: ''
   })
   const [currentPage, setCurrentPage] = useState(1)
+  const [showAll, setShowAll] = useState(false)
   const [sortConfig, setSortConfig] = useState<{
     key: keyof Issue
     direction: 'asc' | 'desc'
@@ -82,9 +85,12 @@ export const IssueTable = ({
 
   // ページネーション
   const paginatedIssues = useMemo(() => {
+    if (showAll) {
+      return sortedIssues
+    }
     const startIndex = (currentPage - 1) * pageSize
     return sortedIssues.slice(startIndex, startIndex + pageSize)
-  }, [sortedIssues, currentPage, pageSize])
+  }, [sortedIssues, currentPage, pageSize, showAll])
 
   const handleSort = (key: keyof Issue) => {
     setSortConfig({
@@ -108,13 +114,36 @@ export const IssueTable = ({
       )}
       
       <div className="table-info">
-        <span>総数: {filteredIssues.length}件</span>
-        {filteredIssues.length !== issues.length && (
-          <span>(全{issues.length}件中)</span>
+        <div className="table-info-left">
+          <span>総数: {filteredIssues.length}件</span>
+          {filteredIssues.length !== issues.length && (
+            <span>(全{issues.length}件中)</span>
+          )}
+          {showAll && (
+            <span className="show-all-indicator">
+              （全量表示中）
+              {filteredIssues.length > 1000 && (
+                <span className="performance-warning"> - 大量データ注意</span>
+              )}
+            </span>
+          )}
+        </div>
+        {allowShowAll && (
+          <div className="table-info-right">
+            <button
+              onClick={() => {
+                setShowAll(!showAll)
+                setCurrentPage(1) // Reset to first page when toggling
+              }}
+              className="show-all-toggle"
+            >
+              {showAll ? 'ページ表示' : '全量表示'}
+            </button>
+          </div>
         )}
       </div>
       
-      <div className="table-wrapper">
+      <div className={`table-wrapper ${showAll ? 'show-all' : ''}`}>
         <table className="issue-table">
           <thead>
             <tr>
@@ -182,7 +211,7 @@ export const IssueTable = ({
         </table>
       </div>
       
-      {sortedIssues.length > pageSize && (
+      {!showAll && sortedIssues.length > pageSize && (
         <TablePagination 
           currentPage={currentPage}
           totalItems={sortedIssues.length}

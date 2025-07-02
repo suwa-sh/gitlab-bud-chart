@@ -75,14 +75,29 @@ async def get_burn_down_data(
 async def get_burn_up_data(
     start_date: date = Query(...),
     end_date: date = Query(...),
-    milestone: Optional[str] = Query(None)
+    milestone: Optional[str] = Query(None),
+    x_session_id: Optional[str] = Header(None)
 ):
     """Burn-upチャートデータ取得"""
+    if not x_session_id:
+        raise HTTPException(status_code=401, detail="セッションIDが必要です")
+    
+    gitlab_client = session_manager.get_gitlab_client(x_session_id)
+    if not gitlab_client:
+        raise HTTPException(status_code=404, detail="セッションが見つかりません")
+    
     if start_date >= end_date:
         raise HTTPException(
             status_code=400,
             detail="終了日は開始日より後の日付を指定してください"
         )
+    
+    # issue_serviceとchart_analyzerをセッション用に作成
+    from app.services.issue_service import IssueService
+    from app.services.chart_analyzer import ChartAnalyzer
+    issue_service = IssueService()
+    issue_service.client = gitlab_client
+    chart_analyzer = ChartAnalyzer()
     
     try:
         issues, _ = await issue_service.get_analyzed_issues(
@@ -117,8 +132,25 @@ async def get_burn_up_data(
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/velocity")
-async def get_velocity_data(weeks: int = Query(12, ge=1, le=52)):
+async def get_velocity_data(
+    weeks: int = Query(12, ge=1, le=52),
+    x_session_id: Optional[str] = Header(None)
+):
     """ベロシティデータ取得"""
+    if not x_session_id:
+        raise HTTPException(status_code=401, detail="セッションIDが必要です")
+    
+    gitlab_client = session_manager.get_gitlab_client(x_session_id)
+    if not gitlab_client:
+        raise HTTPException(status_code=404, detail="セッションが見つかりません")
+    
+    # issue_serviceとchart_analyzerをセッション用に作成
+    from app.services.issue_service import IssueService
+    from app.services.chart_analyzer import ChartAnalyzer
+    issue_service = IssueService()
+    issue_service.client = gitlab_client
+    chart_analyzer = ChartAnalyzer()
+    
     try:
         issues, _ = await issue_service.get_analyzed_issues(analyze=True)
         velocity_data = chart_analyzer.generate_velocity_data(issues, weeks)

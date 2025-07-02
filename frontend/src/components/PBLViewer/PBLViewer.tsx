@@ -8,12 +8,23 @@ import './PBLViewer.css'
 
 export const PBLViewer = () => {
   const { state } = useApp()
-  const { issues, loading, fetchIssues, exportIssues } = useIssues()
+  const { issues, loading, fetchIssues, exportIssues, hasCachedData } = useIssues()
   const [showStatistics, setShowStatistics] = useState(true)
+  const [isInitialLoad, setIsInitialLoad] = useState(true)
 
   useEffect(() => {
     if (state.gitlabConfig.isConnected) {
-      fetchIssues(state.filters)
+      // 初回ロード時はキャッシュデータがあるかチェック
+      if (isInitialLoad) {
+        setIsInitialLoad(false)
+        // キャッシュデータがない場合のみAPI呼び出し
+        if (!hasCachedData()) {
+          fetchIssues(state.filters)
+        }
+      } else {
+        // 設定変更時は常にAPI呼び出し
+        fetchIssues(state.filters)
+      }
     }
   }, [
     state.gitlabConfig.isConnected,
@@ -21,7 +32,9 @@ export const PBLViewer = () => {
     state.gitlabConfig.token,
     state.gitlabConfig.projectId,
     state.filters, 
-    fetchIssues
+    fetchIssues,
+    hasCachedData,
+    isInitialLoad
   ])
 
   if (!state.gitlabConfig.isConnected) {
@@ -38,6 +51,11 @@ export const PBLViewer = () => {
       <header className="pbl-header">
         <h1>Product Backlog Viewer</h1>
         <div className="pbl-controls">
+          {hasCachedData() && !loading && (
+            <span className="cache-indicator" title="データはキャッシュから復元されました">
+              📄 キャッシュデータ
+            </span>
+          )}
           <button 
             onClick={() => setShowStatistics(!showStatistics)}
             className="toggle-stats-btn"
@@ -66,11 +84,23 @@ export const PBLViewer = () => {
         </div>
         
         <div className="issues-section">
+          {!loading && issues.length === 0 && state.gitlabConfig.isConnected && (
+            <div className="no-issues-message">
+              <p>イシューが見つかりません。フィルターを確認するか、データを再取得してください。</p>
+              <button 
+                onClick={() => fetchIssues(state.filters)}
+                className="refresh-btn"
+              >
+                データを再取得
+              </button>
+            </div>
+          )}
           <IssueTable 
             issues={issues}
             loading={loading}
             showFilters={false}
             pageSize={50}
+            allowShowAll={true}
           />
         </div>
       </div>

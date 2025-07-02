@@ -1,7 +1,7 @@
 from typing import List, Optional, Dict, Any, Tuple
 from datetime import datetime
 import logging
-from app.services.gitlab_client import gitlab_client
+from app.services.gitlab_client import GitLabClient
 from app.models.issue import IssueModel, IssueResponse
 from app.utils.retry import async_retry
 from app.services.issue_analyzer import issue_analyzer
@@ -9,8 +9,8 @@ from app.services.issue_analyzer import issue_analyzer
 logger = logging.getLogger(__name__)
 
 class IssueService:
-    def __init__(self):
-        self.client = gitlab_client
+    def __init__(self, client: Optional[GitLabClient] = None):
+        self.client = client
     
     @async_retry(max_attempts=3, delay=1.0, exceptions=(Exception,))
     async def get_all_issues(
@@ -22,7 +22,7 @@ class IssueService:
         per_page: int = 100
     ) -> List[IssueModel]:
         """全issue取得（ページネーション対応）"""
-        if not self.client.gl or not self.client.project:
+        if not self.client or not self.client.gl or not self.client.project:
             raise ValueError("GitLab接続が設定されていません")
         
         try:
@@ -80,7 +80,7 @@ class IssueService:
     @async_retry(max_attempts=3, delay=1.0, exceptions=(Exception,))
     async def get_issue_by_id(self, issue_id: int) -> Optional[IssueModel]:
         """特定issue取得"""
-        if not self.client.gl or not self.client.project:
+        if not self.client or not self.client.gl or not self.client.project:
             raise ValueError("GitLab接続が設定されていません")
         
         try:
@@ -212,5 +212,3 @@ class IssueService:
             logger.error(f"統計情報生成失敗: {e}")
             return {}
 
-# グローバルインスタンス
-issue_service = IssueService()

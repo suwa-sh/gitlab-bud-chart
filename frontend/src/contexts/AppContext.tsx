@@ -107,15 +107,106 @@ const saveGitLabConfigToStorage = (config: AppState['gitlabConfig']) => {
   }
 }
 
-const initialState: AppState = {
-  issues: [],
-  loading: false,
-  error: null,
-  filters: {},
-  chartPeriod: getCurrentQuarterPeriod(),
-  gitlabConfig: loadGitLabConfigFromStorage(),
-  sessionId: localStorage.getItem('gitlab-dashboard-session-id') || undefined
+// LocalStorageからissuesデータを読み込む関数
+const loadIssuesFromStorage = (sessionId?: string): Issue[] => {
+  if (!sessionId) return []
+  
+  try {
+    const stored = localStorage.getItem(`issues-${sessionId}`)
+    if (stored) {
+      const data = JSON.parse(stored)
+      // 1時間以内のキャッシュのみ有効
+      if (data.timestamp && Date.now() - data.timestamp < 3600000) {
+        return data.issues || []
+      }
+    }
+  } catch (error) {
+    console.warn('Failed to load issues from localStorage:', error)
+  }
+  return []
 }
+
+// LocalStorageにissuesデータを保存する関数
+const saveIssuesToStorage = (issues: Issue[], sessionId?: string) => {
+  if (!sessionId) return
+  
+  try {
+    const data = {
+      issues,
+      timestamp: Date.now()
+    }
+    localStorage.setItem(`issues-${sessionId}`, JSON.stringify(data))
+  } catch (error) {
+    console.warn('Failed to save issues to localStorage:', error)
+  }
+}
+
+// LocalStorageからfiltersデータを読み込む関数
+const loadFiltersFromStorage = (sessionId?: string): AppState['filters'] => {
+  if (!sessionId) return {}
+  
+  try {
+    const stored = localStorage.getItem(`filters-${sessionId}`)
+    if (stored) {
+      const data = JSON.parse(stored)
+      // 1時間以内のキャッシュのみ有効
+      if (data.timestamp && Date.now() - data.timestamp < 3600000) {
+        return data.filters || {}
+      }
+    }
+  } catch (error) {
+    console.warn('Failed to load filters from localStorage:', error)
+  }
+  return {}
+}
+
+// LocalStorageにfiltersデータを保存する関数
+const saveFiltersToStorage = (filters: AppState['filters'], sessionId?: string) => {
+  if (!sessionId) return
+  
+  try {
+    const data = {
+      filters,
+      timestamp: Date.now()
+    }
+    localStorage.setItem(`filters-${sessionId}`, JSON.stringify(data))
+  } catch (error) {
+    console.warn('Failed to save filters to localStorage:', error)
+  }
+}
+
+// 古いセッションのキャッシュをクリーンアップする関数
+const cleanupOldCache = (currentSessionId?: string) => {
+  try {
+    const keysToRemove: string[] = []
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i)
+      if (key && (key.startsWith('issues-') || key.startsWith('filters-'))) {
+        if (!currentSessionId || !key.endsWith(currentSessionId)) {
+          keysToRemove.push(key)
+        }
+      }
+    }
+    keysToRemove.forEach(key => localStorage.removeItem(key))
+  } catch (error) {
+    console.warn('Failed to cleanup old cache:', error)
+  }
+}
+
+const createInitialState = (): AppState => {
+  const sessionId = localStorage.getItem('gitlab-dashboard-session-id') || undefined
+  return {
+    issues: loadIssuesFromStorage(sessionId),
+    loading: false,
+    error: null,
+    filters: loadFiltersFromStorage(sessionId),
+    chartPeriod: getCurrentQuarterPeriod(),
+    gitlabConfig: loadGitLabConfigFromStorage(),
+    sessionId: sessionId
+  }
+}
+
+const initialState: AppState = createInitialState()
 
 const AppContext = createContext<{
   state: AppState
@@ -153,6 +244,25 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     saveGitLabConfigToStorage(state.gitlabConfig)
   }, [state.gitlabConfig])
+  
+  // issuesが変更されたときにlocalStorageに保存
+  useEffect(() => {
+    if (state.issues.length > 0) {
+      saveIssuesToStorage(state.issues, state.sessionId)
+    }
+  }, [state.issues, state.sessionId])
+  
+  // filtersが変更されたときにlocalStorageに保存
+  useEffect(() => {
+    saveFiltersToStorage(state.filters, state.sessionId)
+  }, [state.filters, state.sessionId])
+  
+  // sessionIdが変更されたときに古いキャッシュをクリーンアップ
+  useEffect(() => {
+    if (state.sessionId) {
+      cleanupOldCache(state.sessionId)
+    }
+  }, [state.sessionId])
   
   return (
     <AppContext.Provider value={{ state, dispatch }}>
