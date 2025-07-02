@@ -107,7 +107,12 @@ export const usePBLViewerIssues = () => {
       
       return response
     } catch (error: any) {
-      dispatch({ type: 'SET_PBL_VIEWER_ERROR', payload: error.message })
+      // セッション期限切れのチェック
+      if (error.response?.status === 401 || error.response?.status === 403) {
+        dispatch({ type: 'SESSION_EXPIRED' })
+      } else {
+        dispatch({ type: 'SET_PBL_VIEWER_ERROR', payload: error.message })
+      }
       throw error
     } finally {
       dispatch({ type: 'SET_PBL_VIEWER_LOADING', payload: false })
@@ -195,7 +200,12 @@ export const usePBLViewerIssues = () => {
       
       return response
     } catch (error: any) {
-      dispatch({ type: 'SET_PBL_VIEWER_ERROR', payload: error.message })
+      // セッション期限切れのチェック
+      if (error.response?.status === 401 || error.response?.status === 403) {
+        dispatch({ type: 'SESSION_EXPIRED' })
+      } else {
+        dispatch({ type: 'SET_PBL_VIEWER_ERROR', payload: error.message })
+      }
       throw error
     } finally {
       dispatch({ type: 'SET_PBL_VIEWER_LOADING', payload: false })
@@ -218,7 +228,12 @@ export const usePBLViewerIssues = () => {
       }
       return response
     } catch (error: any) {
-      dispatch({ type: 'SET_PBL_VIEWER_ERROR', payload: error.message })
+      // セッション期限切れのチェック
+      if (error.response?.status === 401 || error.response?.status === 403) {
+        dispatch({ type: 'SESSION_EXPIRED' })
+      } else {
+        dispatch({ type: 'SET_PBL_VIEWER_ERROR', payload: error.message })
+      }
       throw error
     } finally {
       setIsSearching(false)
@@ -237,7 +252,12 @@ export const usePBLViewerIssues = () => {
       a.click()
       URL.revokeObjectURL(url)
     } catch (error: any) {
-      dispatch({ type: 'SET_PBL_VIEWER_ERROR', payload: error.message })
+      // セッション期限切れのチェック
+      if (error.response?.status === 401 || error.response?.status === 403) {
+        dispatch({ type: 'SESSION_EXPIRED' })
+      } else {
+        dispatch({ type: 'SET_PBL_VIEWER_ERROR', payload: error.message })
+      }
     }
   }, [state.pblViewerFilters, dispatch])
   

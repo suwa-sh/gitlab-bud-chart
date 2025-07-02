@@ -38,6 +38,7 @@ class IssueAnalyzer:
             issue.kanban_status = analysis_result['kanban_status']
             issue.service = analysis_result['service']
             issue.quarter = analysis_result['quarter']
+            issue.is_epic = analysis_result['is_epic']
             
             # completed_at設定
             issue.completed_at = self._determine_completed_at(issue)
@@ -55,6 +56,7 @@ class IssueAnalyzer:
             issue.service = None
             issue.quarter = None
             issue.completed_at = None
+            issue.is_epic = None
             return issue
     
     def analyze_issues_batch(self, issues: List[IssueModel]) -> List[IssueModel]:
@@ -80,7 +82,8 @@ class IssueAnalyzer:
             'point': None,
             'kanban_status': None,
             'service': None,
-            'quarter': None
+            'quarter': None,
+            'is_epic': False
         }
         
         for label in labels:
@@ -110,6 +113,11 @@ class IssueAnalyzer:
             if quarter_match:
                 result['quarter'] = quarter_match.group(1)
                 logger.debug(f"Quarter解析: {label} -> {result['quarter']}")
+            
+            # Epic解析 (ラベルに"epic"が含まれる場合)
+            if 'epic' in label.lower():
+                result['is_epic'] = True
+                logger.debug(f"Epic解析: {label} -> Epic issue detected")
         
         return result
     

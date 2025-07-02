@@ -95,7 +95,8 @@ def _issue_to_response(issue: IssueModel) -> IssueResponse:
         kanban_status=issue.kanban_status,
         service=issue.service,
         quarter=issue.quarter,
-        completed_at=issue.completed_at
+        completed_at=issue.completed_at,
+        is_epic=issue.is_epic
     )
 
 @router.get("/", response_model=Dict[str, Any])
@@ -230,7 +231,8 @@ async def get_analyzed_issues(
                 kanban_status=issue.kanban_status,
                 service=issue.service,
                 quarter=issue.quarter,
-                completed_at=issue.completed_at
+                completed_at=issue.completed_at,
+                is_epic=issue.is_epic
             )
             for issue in issues
         ]
@@ -522,7 +524,7 @@ async def export_issues_csv(
         # ヘッダー
         writer.writerow([
             'ID', 'Title', 'State', 'Created At', 'Updated At', 'Due Date',
-            'Assignee', 'Milestone', 'Point', 'Kanban Status', 'Service',
+            'Assignee', 'Milestone', 'Epic', 'Point', 'Kanban Status', 'Service',
             'Quarter', 'Completed At', 'Web URL'
         ])
         
@@ -537,6 +539,7 @@ async def export_issues_csv(
                 issue.due_date.isoformat() if issue.due_date else '',
                 issue.assignee or '',
                 issue.milestone or '',
+                'Epic' if issue.is_epic else '',
                 issue.point or '',
                 issue.kanban_status or '',
                 issue.service or '',
@@ -596,7 +599,8 @@ async def get_issues_by_milestone(
                 kanban_status=issue.kanban_status,
                 service=issue.service,
                 quarter=issue.quarter,
-                completed_at=issue.completed_at
+                completed_at=issue.completed_at,
+                is_epic=issue.is_epic
             )
             for issue in issues
         ]
@@ -656,7 +660,8 @@ async def get_issue(
             kanban_status=issue.kanban_status,
             service=issue.service,
             quarter=issue.quarter,
-            completed_at=issue.completed_at
+            completed_at=issue.completed_at,
+            is_epic=issue.is_epic
         )
         
     except HTTPException:

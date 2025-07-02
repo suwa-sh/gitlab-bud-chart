@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { IssueTable } from '../IssueList/IssueTable'
 import { IssueFilters } from '../IssueList/IssueFilters'
 import { IssueStatistics } from '../IssueList/IssueStatistics'
+import { GitLabConfig } from '../GitLabConfig/GitLabConfig'
 import { usePBLViewerIssues } from '../../hooks/usePBLViewerIssues'
 import { useApp } from '../../contexts/AppContext'
 import './PBLViewer.css'
@@ -11,6 +12,7 @@ export const PBLViewer = () => {
   const { issues, loading, fetchAllIssues, exportIssues, hasCachedData } = usePBLViewerIssues()
   const [showStatistics, setShowStatistics] = useState(true)
   const [isInitialLoad, setIsInitialLoad] = useState(true)
+  const [showEditConfig, setShowEditConfig] = useState(false)
 
   useEffect(() => {
     if (state.gitlabConfig.isConnected) {
@@ -54,11 +56,45 @@ export const PBLViewer = () => {
     isInitialLoad
   ])
 
-  if (!state.gitlabConfig.isConnected) {
+  // セッション期限切れイベントをリッスン
+  useEffect(() => {
+    const handleSessionExpired = () => {
+      setShowEditConfig(true)
+    }
+
+    window.addEventListener('session-expired', handleSessionExpired)
+    return () => {
+      window.removeEventListener('session-expired', handleSessionExpired)
+    }
+  }, [])
+
+  // セッション期限切れエラーをチェック
+  useEffect(() => {
+    if (state.pblViewerError?.includes('セッションが期限切れ')) {
+      setShowEditConfig(true)
+    }
+  }, [state.pblViewerError])
+
+  if (!state.gitlabConfig.isConnected || showEditConfig) {
     return (
       <div className="pbl-viewer">
         <h1>Product Backlog Viewer</h1>
-        <p>GitLab接続設定が必要です。Dashboardで設定してください。</p>
+        <GitLabConfig 
+          editMode={showEditConfig}
+          onConfigured={() => {
+            setShowEditConfig(false)
+            // 設定変更後に強制的にIssuesを再取得
+            if (state.gitlabConfig.isConnected) {
+              const filtersWithoutPeriod = { ...state.pblViewerFilters }
+              delete filtersWithoutPeriod.created_after
+              delete filtersWithoutPeriod.created_before
+              delete filtersWithoutPeriod.completed_after
+              delete filtersWithoutPeriod.quarter
+              fetchAllIssues(filtersWithoutPeriod)
+            }
+          }}
+          onCancel={showEditConfig ? () => setShowEditConfig(false) : undefined}
+        />
       </div>
     )
   }

@@ -107,7 +107,12 @@ export const useDashboardIssues = () => {
       
       return response
     } catch (error: any) {
-      dispatch({ type: 'SET_DASHBOARD_ERROR', payload: error.message })
+      // セッション期限切れのチェック
+      if (error.response?.status === 401 || error.response?.status === 403) {
+        dispatch({ type: 'SESSION_EXPIRED' })
+      } else {
+        dispatch({ type: 'SET_DASHBOARD_ERROR', payload: error.message })
+      }
       throw error
     } finally {
       dispatch({ type: 'SET_DASHBOARD_LOADING', payload: false })
@@ -130,7 +135,12 @@ export const useDashboardIssues = () => {
       }
       return response
     } catch (error: any) {
-      dispatch({ type: 'SET_DASHBOARD_ERROR', payload: error.message })
+      // セッション期限切れのチェック
+      if (error.response?.status === 401 || error.response?.status === 403) {
+        dispatch({ type: 'SESSION_EXPIRED' })
+      } else {
+        dispatch({ type: 'SET_DASHBOARD_ERROR', payload: error.message })
+      }
       throw error
     } finally {
       setIsSearching(false)
@@ -149,7 +159,12 @@ export const useDashboardIssues = () => {
       a.click()
       URL.revokeObjectURL(url)
     } catch (error: any) {
-      dispatch({ type: 'SET_DASHBOARD_ERROR', payload: error.message })
+      // セッション期限切れのチェック
+      if (error.response?.status === 401 || error.response?.status === 403) {
+        dispatch({ type: 'SESSION_EXPIRED' })
+      } else {
+        dispatch({ type: 'SET_DASHBOARD_ERROR', payload: error.message })
+      }
     }
   }, [state.dashboardFilters, dispatch])
   

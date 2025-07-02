@@ -78,6 +78,8 @@ type AppAction =
   | { type: 'SET_GITLAB_CONFIG'; payload: Partial<AppState['gitlabConfig']> }
   | { type: 'SET_METADATA'; payload: any }
   | { type: 'SET_SESSION_ID'; payload: string | undefined }
+  | { type: 'SESSION_EXPIRED' }
+  | { type: 'RESET_SESSION' }
   
   // 後方互換性のため残す（廃止予定）
   | { type: 'SET_ISSUES'; payload: Issue[] }
@@ -540,6 +542,30 @@ function appReducer(state: AppState, action: AppAction): AppState {
       return state
     case 'SET_SESSION_ID':
       return { ...state, sessionId: action.payload }
+    case 'SESSION_EXPIRED':
+      // セッション期限切れ時の処理
+      return {
+        ...state,
+        gitlabConfig: { ...state.gitlabConfig, isConnected: false },
+        dashboardIssues: [],
+        pblViewerIssues: [],
+        dashboardError: 'セッションが期限切れです。GitLab設定を再度行ってください。',
+        pblViewerError: 'セッションが期限切れです。GitLab設定を再度行ってください。',
+        sessionId: undefined
+      }
+    case 'RESET_SESSION':
+      // セッションリセット時の処理
+      return {
+        ...state,
+        gitlabConfig: { ...state.gitlabConfig, isConnected: false },
+        dashboardIssues: [],
+        pblViewerIssues: [],
+        dashboardError: null,
+        pblViewerError: null,
+        dashboardCacheTimestamp: null,
+        pblViewerCacheTimestamp: null,
+        sessionId: undefined
+      }
     
     // 後方互換性のため残す（廃止予定）
     case 'SET_ISSUES':
@@ -606,6 +632,51 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       localStorage.setItem('gitlab-dashboard-session-id', state.sessionId)
     }
   }, [state.sessionId])
+  
+  // アプリ起動時にセッション検証
+  useEffect(() => {
+    const validateSessionOnStartup = async () => {
+      if (state.sessionId && state.gitlabConfig.isConnected) {
+        try {
+          const { sessionApi } = await import('../services/api')
+          const validation = await sessionApi.validateSession()
+          
+          if (!validation.valid) {
+            console.warn('Session validation failed, attempting session recreation')
+            
+            // GitLab設定が残っている場合は自動的にセッション再作成を試行
+            if (state.gitlabConfig.url && state.gitlabConfig.token && state.gitlabConfig.projectId) {
+              try {
+                const recreateResult = await sessionApi.recreateSession({
+                  gitlab_url: state.gitlabConfig.url,
+                  gitlab_token: state.gitlabConfig.token,
+                  project_id: state.gitlabConfig.projectId,
+                  api_version: state.gitlabConfig.apiVersion,
+                  http_proxy: state.gitlabConfig.httpProxy,
+                  https_proxy: state.gitlabConfig.httpsProxy,
+                  no_proxy: state.gitlabConfig.noProxy
+                })
+                
+                console.log('Session recreated successfully:', recreateResult.session_id)
+                dispatch({ type: 'SET_SESSION_ID', payload: recreateResult.session_id })
+              } catch (recreateError) {
+                console.warn('Session recreation failed:', recreateError)
+                dispatch({ type: 'SESSION_EXPIRED' })
+              }
+            } else {
+              // GitLab設定が不完全な場合はセッション期限切れとして処理
+              dispatch({ type: 'SESSION_EXPIRED' })
+            }
+          }
+        } catch (error) {
+          console.warn('Session validation error:', error)
+          // ネットワークエラーなどの場合は何もしない（オフライン対応）
+        }
+      }
+    }
+    
+    validateSessionOnStartup()
+  }, []) // 起動時のみ実行
   
   return (
     <AppContext.Provider value={{ state, dispatch }}>

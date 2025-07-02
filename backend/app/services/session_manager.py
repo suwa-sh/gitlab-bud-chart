@@ -1,15 +1,22 @@
 import uuid
 import time
 import threading
+import json
+import os
 from typing import Dict, Optional
 from datetime import datetime, timedelta
 from .gitlab_client import GitLabClient
+import logging
+
+logger = logging.getLogger(__name__)
 
 class SessionManager:
-    def __init__(self, timeout_days: int = 7):
+    def __init__(self, timeout_days: int = 7, persistence_file: str = "/tmp/sessions.json"):
         self.sessions: Dict[str, Dict] = {}
         self.timeout_days = timeout_days
         self.cleanup_interval = 3600  # 1時間ごとにクリーンアップ
+        self.persistence_file = persistence_file
+        self._load_sessions()
         self._start_cleanup_thread()
     
     def create_session(self) -> str:
@@ -19,6 +26,7 @@ class SessionManager:
             'created_at': datetime.now(),
             'last_accessed': datetime.now()
         }
+        self._save_sessions()
         return session_id
     
     def get_gitlab_client(self, session_id: str) -> Optional[GitLabClient]:
@@ -27,11 +35,13 @@ class SessionManager:
         
         session = self.sessions[session_id]
         session['last_accessed'] = datetime.now()
+        self._save_sessions()
         return session['gitlab_client']
     
     def delete_session(self, session_id: str) -> bool:
         if session_id in self.sessions:
             del self.sessions[session_id]
+            self._save_sessions()
             return True
         return False
     
@@ -46,7 +56,7 @@ class SessionManager:
         
         for session_id in expired_sessions:
             self.delete_session(session_id)
-            print(f"Session {session_id} expired and removed")
+            logger.info(f"Session {session_id} expired and removed")
     
     def _cleanup_worker(self):
         while True:
@@ -68,6 +78,77 @@ class SessionManager:
             'last_accessed': session['last_accessed'].isoformat(),
             'is_connected': session['gitlab_client'].is_connected
         }
+
+    def _save_sessions(self):
+        """セッション情報をファイルに保存"""
+        try:
+            session_data = {}
+            for session_id, session in self.sessions.items():
+                gitlab_client = session['gitlab_client']
+                session_data[session_id] = {
+                    'created_at': session['created_at'].isoformat(),
+                    'last_accessed': session['last_accessed'].isoformat(),
+                    'gitlab_config': {
+                        'url': gitlab_client.url,
+                        'token': gitlab_client.token,
+                        'project_id': gitlab_client.project_id,
+                        'api_version': gitlab_client.api_version,
+                        'http_proxy': gitlab_client.http_proxy,
+                        'https_proxy': gitlab_client.https_proxy,
+                        'no_proxy': gitlab_client.no_proxy,
+                        'project_name': gitlab_client.project_name,
+                        'project_namespace': gitlab_client.project_namespace,
+                        'is_connected': gitlab_client.is_connected
+                    }
+                }
+            
+            with open(self.persistence_file, 'w') as f:
+                json.dump(session_data, f, indent=2)
+                
+        except Exception as e:
+            logger.warning(f"Failed to save sessions: {e}")
+
+    def _load_sessions(self):
+        """ファイルからセッション情報を復元"""
+        try:
+            if not os.path.exists(self.persistence_file):
+                logger.info("Session persistence file not found, starting with empty sessions")
+                return
+                
+            with open(self.persistence_file, 'r') as f:
+                session_data = json.load(f)
+                
+            for session_id, data in session_data.items():
+                # GitLabクライアントを復元
+                gitlab_client = GitLabClient()
+                config = data['gitlab_config']
+                
+                if config.get('url') and config.get('token') and config.get('project_id'):
+                    gitlab_client.configure(
+                        url=config['url'],
+                        token=config['token'],
+                        project_id=config['project_id'],
+                        api_version=config.get('api_version'),
+                        http_proxy=config.get('http_proxy'),
+                        https_proxy=config.get('https_proxy'),
+                        no_proxy=config.get('no_proxy')
+                    )
+                    gitlab_client.project_name = config.get('project_name')
+                    gitlab_client.project_namespace = config.get('project_namespace')
+                    gitlab_client.is_connected = config.get('is_connected', False)
+                
+                # セッション復元
+                self.sessions[session_id] = {
+                    'gitlab_client': gitlab_client,
+                    'created_at': datetime.fromisoformat(data['created_at']),
+                    'last_accessed': datetime.fromisoformat(data['last_accessed'])
+                }
+                
+            logger.info(f"Restored {len(self.sessions)} sessions from persistence file")
+            
+        except Exception as e:
+            logger.warning(f"Failed to load sessions: {e}")
+            self.sessions = {}
 
 # グローバルインスタンス
 session_manager = SessionManager()

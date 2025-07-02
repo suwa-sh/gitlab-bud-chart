@@ -20,13 +20,37 @@ api.interceptors.request.use((config) => {
   return config
 })
 
-// セッションIDをレスポンスから保存するインターセプター
-api.interceptors.response.use((response) => {
-  if (response.data?.session_id) {
-    localStorage.setItem('gitlab-dashboard-session-id', response.data.session_id)
+// セッション期限切れ通知用のイベント
+export const sessionExpiredEvent = new CustomEvent('session-expired')
+
+// セッションIDをレスポンスから保存・エラーハンドリングするインターセプター
+api.interceptors.response.use(
+  (response) => {
+    if (response.data?.session_id) {
+      localStorage.setItem('gitlab-dashboard-session-id', response.data.session_id)
+    }
+    return response
+  },
+  (error) => {
+    // セッション期限切れ・セッション無効の検出
+    if (error.response?.status === 401 || error.response?.status === 403) {
+      // セッションIDをクリア
+      localStorage.removeItem('gitlab-dashboard-session-id')
+      
+      // セッション期限切れイベントを発火
+      window.dispatchEvent(sessionExpiredEvent)
+    } else if (error.response?.status === 404 && 
+               error.response?.data?.detail?.includes('セッションが見つかりません')) {
+      // セッションが見つからない場合（Docker再起動後など）
+      console.warn('Session not found on backend, clearing local session')
+      localStorage.removeItem('gitlab-dashboard-session-id')
+      
+      // セッション期限切れイベントを発火
+      window.dispatchEvent(sessionExpiredEvent)
+    }
+    return Promise.reject(error)
   }
-  return response
-})
+)
 
 export const issuesApi = {
   getIssues: async (params?: {
@@ -179,6 +203,34 @@ export const gitlabApi = {
     no_proxy?: string
   }) => {
     const response = await api.post('/gitlab/projects', config)
+    return response.data
+  },
+}
+
+export const sessionApi = {
+  validateSession: async (): Promise<{ valid: boolean; session_id?: string }> => {
+    try {
+      const response = await api.get('/gitlab/status/')
+      return { valid: true, session_id: response.data.session_id }
+    } catch (error: any) {
+      if (error.response?.status === 401 || error.response?.status === 404) {
+        return { valid: false }
+      }
+      throw error
+    }
+  },
+  
+  recreateSession: async (gitlabConfig: {
+    gitlab_url: string
+    gitlab_token: string
+    project_id: string
+    api_version?: string
+    http_proxy?: string
+    https_proxy?: string
+    no_proxy?: string
+  }): Promise<{ session_id: string }> => {
+    // GitLab接続を再実行してセッションを再作成
+    const response = await api.post('/gitlab/connect', gitlabConfig)
     return response.data
   },
 }

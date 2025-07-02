@@ -52,7 +52,13 @@ export const IssueTableRow = ({ issue }: IssueTableRowProps) => {
 
   return (
     <tr>
+      <td>{issue.service || '-'}</td>
       <td>{issue.milestone || '-'}</td>
+      <td>
+        {issue.is_epic ? (
+          <span className="epic-badge" title="Epic Issue">📋</span>
+        ) : '-'}
+      </td>
       <td>
         <a 
           href={getGitLabIssueUrl(issue.iid)} 
