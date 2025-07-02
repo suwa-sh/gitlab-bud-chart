@@ -111,6 +111,11 @@ export const GitLabConfig = ({ onConfigured, editMode = false, onCancel }: GitLa
       const result = await gitlabApi.connect(config)
       setStatus(`✓ GitLab接続済み: ${result.project_info.project?.name || 'Unknown'}`)
       
+      // セッションIDを保存（APIインターセプターが自動的に処理するが、念のため手動でも保存）
+      if (result.session_id) {
+        dispatch({ type: 'SET_SESSION_ID', payload: result.session_id })
+      }
+      
       // AppContextを更新
       const selectedProject = projects.find(p => p.id.toString() === config.project_id)
       

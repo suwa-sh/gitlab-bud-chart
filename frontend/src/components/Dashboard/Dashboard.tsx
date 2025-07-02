@@ -3,13 +3,13 @@ import { ChartSection } from './ChartSection'
 import { IssueTable } from '../IssueList/IssueTable'
 import { GitLabConfig } from '../GitLabConfig/GitLabConfig'
 import { PeriodSelector } from '../Common/PeriodSelector'
-import { useIssues } from '../../hooks/useIssues'
+import { useDashboardIssues } from '../../hooks/useDashboardIssues'
 import { useApp } from '../../contexts/AppContext'
 import './Dashboard.css'
 
 export const Dashboard = () => {
   const { state, dispatch } = useApp()
-  const { issues, loading, fetchIssues, exportIssues } = useIssues()
+  const { issues, loading, fetchIssues, exportIssues, hasCachedData } = useDashboardIssues()
   const [showEditConfig, setShowEditConfig] = useState(false)
 
   const handlePeriodChange = (newPeriod: { start: string; end: string }) => {
@@ -19,7 +19,7 @@ export const Dashboard = () => {
   useEffect(() => {
     if (state.gitlabConfig.isConnected) {
       fetchIssues({
-        ...state.filters,
+        ...state.dashboardFilters,
         period: state.chartPeriod
       })
     }
@@ -28,7 +28,7 @@ export const Dashboard = () => {
     state.gitlabConfig.url,
     state.gitlabConfig.token,
     state.gitlabConfig.projectId,
-    state.filters, 
+    state.dashboardFilters, 
     state.chartPeriod, 
     fetchIssues
   ])
@@ -53,7 +53,7 @@ export const Dashboard = () => {
             // 設定変更後に強制的にIssuesを再取得
             if (state.gitlabConfig.isConnected) {
               fetchIssues({
-                ...state.filters,
+                ...state.dashboardFilters,
                 period: state.chartPeriod
               })
             }
@@ -68,7 +68,24 @@ export const Dashboard = () => {
     <div className="dashboard">
       <header className="dashboard-header">
         <h1>Dashboard</h1>
-        <div className="dashboard-controls">
+        <div className="dashboard-controls pbl-controls">
+          {hasCachedData() && !loading && state.dashboardCacheTimestamp && (
+            <span className="cache-indicator" title="データはキャッシュから復元されました">
+              📄 {state.dashboardCacheTimestamp.toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric' })} {state.dashboardCacheTimestamp.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })}時点
+            </span>
+          )}
+          <button 
+            onClick={() => {
+              fetchIssues({
+                ...state.dashboardFilters,
+                period: state.chartPeriod
+              })
+            }}
+            disabled={loading}
+            className="refresh-btn"
+          >
+            {loading ? '読み込み中...' : 'データ再取得'}
+          </button>
           <div className="gitlab-status">
             <div className="gitlab-status-badge">
               <div className="status-indicator">

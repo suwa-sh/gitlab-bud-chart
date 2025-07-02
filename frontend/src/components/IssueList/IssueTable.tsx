@@ -12,6 +12,7 @@ interface IssueTableProps {
   showFilters?: boolean
   pageSize?: number
   allowShowAll?: boolean
+  initialShowAll?: boolean
 }
 
 export const IssueTable = ({ 
@@ -19,7 +20,8 @@ export const IssueTable = ({
   loading, 
   showFilters = false, 
   pageSize = 20,
-  allowShowAll = false 
+  allowShowAll = false,
+  initialShowAll = false 
 }: IssueTableProps) => {
   const [filters, setFilters] = useState({
     search: '',
@@ -30,7 +32,7 @@ export const IssueTable = ({
     state: ''
   })
   const [currentPage, setCurrentPage] = useState(1)
-  const [showAll, setShowAll] = useState(false)
+  const [showAll, setShowAll] = useState(initialShowAll)
   const [sortConfig, setSortConfig] = useState<{
     key: keyof Issue
     direction: 'asc' | 'desc'

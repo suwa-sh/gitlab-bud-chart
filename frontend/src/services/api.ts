@@ -49,12 +49,12 @@ export const issuesApi = {
     sort_by?: string
     sort_order?: string
   }): Promise<Issue[] | any> => {
-    const response = await api.get('/issues', { params })
+    const response = await api.get('/issues/', { params })
     return response.data
   },
   
   getIssue: async (id: number): Promise<Issue> => {
-    const response = await api.get(`/issues/${id}`)
+    const response = await api.get(`/issues/${id}/`)
     return response.data
   },
   
@@ -84,17 +84,17 @@ export const issuesApi = {
   },
   
   getAnalyzedIssues: async (params?: any): Promise<any> => {
-    const response = await api.get('/issues/analyzed', { params })
+    const response = await api.get('/issues/analyzed/', { params })
     return response.data
   },
   
   getIssueStatistics: async (params?: any): Promise<any> => {
-    const response = await api.get('/issues/statistics', { params })
+    const response = await api.get('/issues/statistics/', { params })
     return response.data
   },
   
   validateIssues: async (): Promise<any> => {
-    const response = await api.get('/issues/validation')
+    const response = await api.get('/issues/validation/')
     return response.data
   }
 }
@@ -149,12 +149,12 @@ export const gitlabApi = {
   },
   
   getStatus: async () => {
-    const response = await api.get('/gitlab/status')
+    const response = await api.get('/gitlab/status/')
     return response.data
   },
   
   getSampleIssues: async () => {
-    const response = await api.get('/gitlab/issues/sample')
+    const response = await api.get('/gitlab/issues/sample/')
     return response.data
   },
   
