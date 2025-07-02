@@ -372,6 +372,35 @@ export const ChartSection = ({ period, issues, loading, onPeriodChange, issueFil
               </select>
             </div>
           </div>
+          
+          {/* フィルタリセットボタン */}
+          <div className="filter-reset-section">
+            <button 
+              className="filter-reset-btn"
+              onClick={() => {
+                if (onIssueFiltersChange) {
+                  onIssueFiltersChange({
+                    search: '',
+                    milestone: '',
+                    assignee: '',
+                    kanban_status: '',
+                    service: '',
+                    state: '',
+                    point_min: undefined,
+                    point_max: undefined,
+                    created_at_from: '',
+                    created_at_to: '',
+                    completed_at_from: '',
+                    completed_at_to: '',
+                    is_epic: ''
+                  })
+                }
+              }}
+            >
+              <span className="reset-icon">🔄</span>
+              フィルタをリセット
+            </button>
+          </div>
         </div>
       )}
 

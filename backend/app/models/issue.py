@@ -73,6 +73,7 @@ class IssueSearchRequest(BaseModel):
     kanban_status: Optional[str] = None
     min_point: Optional[float] = None
     max_point: Optional[float] = None
+    is_epic: Optional[str] = None
     date_from: Optional[datetime] = None
     date_to: Optional[datetime] = None
     sort_by: Optional[str] = 'created_at'

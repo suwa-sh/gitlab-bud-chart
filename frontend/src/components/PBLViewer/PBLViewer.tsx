@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react'
 import { IssueTable } from '../IssueList/IssueTable'
-import { IssueFilters } from '../IssueList/IssueFilters'
-import { IssueStatistics } from '../IssueList/IssueStatistics'
+import { PBLStatistics } from './PBLStatistics'
 import { GitLabConfig } from '../GitLabConfig/GitLabConfig'
+import { PBLFilters } from './PBLFilters'
 import { usePBLViewerIssues } from '../../hooks/usePBLViewerIssues'
 import { useApp } from '../../contexts/AppContext'
 import './PBLViewer.css'
@@ -10,9 +10,9 @@ import './PBLViewer.css'
 export const PBLViewer = () => {
   const { state } = useApp()
   const { issues, loading, fetchAllIssues, exportIssues, hasCachedData } = usePBLViewerIssues()
-  const [showStatistics, setShowStatistics] = useState(true)
   const [isInitialLoad, setIsInitialLoad] = useState(true)
   const [showEditConfig, setShowEditConfig] = useState(false)
+
 
   useEffect(() => {
     if (state.gitlabConfig.isConnected) {
@@ -124,12 +124,6 @@ export const PBLViewer = () => {
             {loading ? '読み込み中...' : 'データ再取得'}
           </button>
           <button 
-            onClick={() => setShowStatistics(!showStatistics)}
-            className="toggle-stats-btn"
-          >
-            {showStatistics ? '統計を非表示' : '統計を表示'}
-          </button>
-          <button 
             onClick={() => exportIssues('csv')}
             disabled={loading || issues.length === 0}
             className="export-btn"
@@ -140,14 +134,12 @@ export const PBLViewer = () => {
       </header>
 
       <div className="pbl-content">
-        {showStatistics && (
-          <div className="statistics-section">
-            <IssueStatistics issues={issues} />
-          </div>
-        )}
+        <div className="statistics-section">
+          <PBLStatistics issues={issues} />
+        </div>
         
         <div className="filters-section">
-          <IssueFilters useFetchAll={true} />
+          <PBLFilters issues={issues} />
         </div>
         
         <div className="issues-section">

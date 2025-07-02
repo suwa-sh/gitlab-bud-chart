@@ -541,3 +541,34 @@
   min-width: 20px;
   text-align: center;
 }
+
+/* フィルタリセットボタン */
+.filter-reset-section {
+  display: flex;
+  justify-content: center;
+  margin-top: 20px;
+  padding-top: 15px;
+  border-top: 1px solid #dee2e6;
+}
+
+.filter-reset-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  background: #6c757d;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.2s;
+}
+
+.filter-reset-btn:hover {
+  background: #5a6268;
+}
+
+.filter-reset-btn .reset-icon {
+  font-size: 14px;
+}

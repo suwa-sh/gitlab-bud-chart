@@ -15,6 +15,8 @@ interface IssueFilters {
   created_after?: string
   created_before?: string
   completed_after?: string
+  completed_before?: string
+  is_epic?: string
 }
 
 interface AppState {

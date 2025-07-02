@@ -23,9 +23,10 @@ export const usePBLViewerIssues = () => {
     
     try {
       // API パラメータ構築
+      // paramsが明示的に指定されている場合は、state.pblViewerFiltersを上書き
       const apiParams = {
-        ...params,
         ...state.pblViewerFilters,
+        ...params, // paramsを後から適用してstate.pblViewerFiltersを上書き
         page: params.page || 1,
         per_page: params.per_page || 50
       }
@@ -45,6 +46,7 @@ export const usePBLViewerIssues = () => {
             kanban_status: apiParams.kanban_status,
             min_point: apiParams.min_point,
             max_point: apiParams.max_point,
+            is_epic: apiParams.is_epic,
             page: apiParams.page,
             per_page: apiParams.per_page,
             sort_by: apiParams.sort_by,
@@ -125,9 +127,10 @@ export const usePBLViewerIssues = () => {
     
     try {
       // API パラメータ構築（大きなper_pageを設定）
+      // paramsが明示的に指定されている場合は、state.pblViewerFiltersを上書き
       const apiParams = {
-        ...params,
         ...state.pblViewerFilters,
+        ...params, // paramsを後から適用してstate.pblViewerFiltersを上書き
         page: 1,
         per_page: 10000 // 大量のデータを取得
       }
@@ -146,6 +149,7 @@ export const usePBLViewerIssues = () => {
             kanban_status: apiParams.kanban_status,
             min_point: apiParams.min_point,
             max_point: apiParams.max_point,
+            is_epic: apiParams.is_epic,
             page: apiParams.page,
             per_page: apiParams.per_page,
             sort_by: apiParams.sort_by,
@@ -212,13 +216,14 @@ export const usePBLViewerIssues = () => {
     }
   }, [dispatch, state.pblViewerFilters])
 
-  const searchIssues = useCallback(async (searchQuery: string) => {
+  const searchIssues = useCallback(async (searchQuery: string, overrideFilters: any = {}) => {
     setIsSearching(true)
     
     try {
       const response = await issuesApi.searchIssues({
-        query: searchQuery,
-        ...state.pblViewerFilters
+        ...state.pblViewerFilters,
+        ...overrideFilters, // overrideFiltersを後から適用
+        query: searchQuery
       })
       
       if (Array.isArray(response)) {

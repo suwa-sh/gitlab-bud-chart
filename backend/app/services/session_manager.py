@@ -89,15 +89,15 @@ class SessionManager:
                     'created_at': session['created_at'].isoformat(),
                     'last_accessed': session['last_accessed'].isoformat(),
                     'gitlab_config': {
-                        'url': gitlab_client.url,
-                        'token': gitlab_client.token,
-                        'project_id': gitlab_client.project_id,
-                        'api_version': gitlab_client.api_version,
-                        'http_proxy': gitlab_client.http_proxy,
-                        'https_proxy': gitlab_client.https_proxy,
-                        'no_proxy': gitlab_client.no_proxy,
-                        'project_name': gitlab_client.project_name,
-                        'project_namespace': gitlab_client.project_namespace,
+                        'url': getattr(gitlab_client, 'url', ''),
+                        'token': getattr(gitlab_client, 'token', ''),
+                        'project_id': getattr(gitlab_client, 'project_id', ''),
+                        'api_version': getattr(gitlab_client, 'api_version', '4'),
+                        'http_proxy': getattr(gitlab_client, 'http_proxy', ''),
+                        'https_proxy': getattr(gitlab_client, 'https_proxy', ''),
+                        'no_proxy': getattr(gitlab_client, 'no_proxy', ''),
+                        'project_name': getattr(gitlab_client, 'project_name', ''),
+                        'project_namespace': getattr(gitlab_client, 'project_namespace', ''),
                         'is_connected': gitlab_client.is_connected
                     }
                 }
@@ -124,18 +124,18 @@ class SessionManager:
                 config = data['gitlab_config']
                 
                 if config.get('url') and config.get('token') and config.get('project_id'):
-                    gitlab_client.configure(
-                        url=config['url'],
-                        token=config['token'],
-                        project_id=config['project_id'],
-                        api_version=config.get('api_version'),
-                        http_proxy=config.get('http_proxy'),
-                        https_proxy=config.get('https_proxy'),
-                        no_proxy=config.get('no_proxy')
+                    # GitLabクライアントを再接続
+                    success = gitlab_client.connect(
+                        gitlab_url=config['url'],
+                        gitlab_token=config['token'],
+                        project_identifier=config['project_id'],
+                        api_version=config.get('api_version', '4'),
+                        http_proxy=config.get('http_proxy', ''),
+                        https_proxy=config.get('https_proxy', ''),
+                        no_proxy=config.get('no_proxy', '')
                     )
-                    gitlab_client.project_name = config.get('project_name')
-                    gitlab_client.project_namespace = config.get('project_namespace')
-                    gitlab_client.is_connected = config.get('is_connected', False)
+                    if not success:
+                        logger.warning(f"Failed to restore GitLab connection for session {session_id}")
                 
                 # セッション復元
                 self.sessions[session_id] = {

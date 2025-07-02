@@ -68,6 +68,7 @@ export const issuesApi = {
     created_after?: string
     created_before?: string
     completed_after?: string
+    is_epic?: string
     page?: number
     per_page?: number
     sort_by?: string
@@ -92,6 +93,7 @@ export const issuesApi = {
     min_point?: number
     max_point?: number
     quarter?: string
+    is_epic?: string
     page?: number
     per_page?: number
   }): Promise<Issue[] | any> => {

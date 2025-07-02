@@ -18,7 +18,8 @@ def _apply_advanced_filters(
     min_point: Optional[float], 
     max_point: Optional[float], 
     search: Optional[str],
-    kanban_status: Optional[str]
+    kanban_status: Optional[str],
+    is_epic: Optional[str]
 ) -> List[IssueModel]:
     """高度フィルタ適用"""
     filtered = issues
@@ -40,6 +41,16 @@ def _apply_advanced_filters(
     # Kanbanステータスフィルタ（追加）
     if kanban_status:
         filtered = [i for i in filtered if i.kanban_status == kanban_status]
+    
+    # Epicフィルタ
+    if is_epic:
+        original_count = len(filtered)
+        if is_epic == 'epic':
+            # is_epic が True の場合のみ
+            filtered = [i for i in filtered if i.is_epic is True]
+        elif is_epic == 'normal':
+            # is_epic が False または None の場合
+            filtered = [i for i in filtered if i.is_epic is not True]
     
     return filtered
 
@@ -111,6 +122,7 @@ async def get_issues(
     min_point: Optional[float] = Query(None),
     max_point: Optional[float] = Query(None),
     search: Optional[str] = Query(None),
+    is_epic: Optional[str] = Query(None),
     sort_by: Optional[str] = Query('created_at'),
     sort_order: Optional[str] = Query('desc'),
     page: Optional[int] = Query(1),
@@ -132,28 +144,40 @@ async def get_issues(
     issue_analyzer = IssueAnalyzer()
     
     try:
+        # パラメータ正規化
+        normalized_state = state if state and state.strip() else 'all'
+        normalized_milestone = milestone if milestone and milestone.strip() else None
+        normalized_assignee = assignee if assignee and assignee.strip() else None
+        normalized_service = service if service and service.strip() else None
+        normalized_quarter = quarter if quarter and quarter.strip() else None
+        normalized_kanban_status = kanban_status if kanban_status and kanban_status.strip() else None
+        normalized_search = search if search and search.strip() else None
+        normalized_is_epic = is_epic if is_epic and is_epic.strip() else None
+        
         # フィルタ条件構築
         labels = []
-        if service:
-            labels.append(f"s:{service}")
-        if quarter:
-            labels.append(f"@{quarter}")
-        if kanban_status:
-            labels.append(f"#{kanban_status}")
+        if normalized_service:
+            labels.append(f"s:{normalized_service}")
+        if normalized_quarter:
+            labels.append(f"@{normalized_quarter}")
+        if normalized_kanban_status:
+            labels.append(f"#{normalized_kanban_status}")
         
         # Issue取得・分析
         issues, statistics = await issue_service.get_analyzed_issues(
-            state=state,
-            milestone=milestone,
-            assignee=assignee,
+            state=normalized_state,
+            milestone=normalized_milestone,
+            assignee=normalized_assignee,
             labels=labels if labels else None,
             analyze=True
         )
         
+        
         # 追加フィルタ適用
         filtered_issues = _apply_advanced_filters(
-            issues, min_point, max_point, search, kanban_status
+            issues, min_point, max_point, normalized_search, normalized_kanban_status, normalized_is_epic
         )
+        
         
         # ソート
         sorted_issues = _sort_issues(filtered_issues, sort_by, sort_order)
@@ -446,7 +470,7 @@ async def search_issues(
         # 追加フィルタ適用
         filtered_issues = _apply_advanced_filters(
             issues, search_request.min_point, search_request.max_point,
-            search_request.query, search_request.kanban_status
+            search_request.query, search_request.kanban_status, search_request.is_epic
         )
         
         # ソート
