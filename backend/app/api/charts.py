@@ -1,9 +1,8 @@
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Header
 from typing import List, Optional
 from datetime import date
 import logging
-from app.services.chart_analyzer import chart_analyzer
-from app.services.issue_service import issue_service
+from app.services.session_manager import session_manager
 from app.models.chart import BurnChartResponse, ChartDataModel
 
 logger = logging.getLogger(__name__)
@@ -13,14 +12,29 @@ router = APIRouter()
 async def get_burn_down_data(
     start_date: date = Query(...),
     end_date: date = Query(...),
-    milestone: Optional[str] = Query(None)
+    milestone: Optional[str] = Query(None),
+    x_session_id: Optional[str] = Header(None)
 ):
     """Burn-downチャートデータ取得"""
+    if not x_session_id:
+        raise HTTPException(status_code=401, detail="セッションIDが必要です")
+    
+    gitlab_client = session_manager.get_gitlab_client(x_session_id)
+    if not gitlab_client:
+        raise HTTPException(status_code=404, detail="セッションが見つかりません")
+    
     if start_date >= end_date:
         raise HTTPException(
             status_code=400,
             detail="終了日は開始日より後の日付を指定してください"
         )
+    
+    # issue_serviceとchart_analyzerをセッション用に作成
+    from app.services.issue_service import IssueService
+    from app.services.chart_analyzer import ChartAnalyzer
+    issue_service = IssueService()
+    issue_service.client = gitlab_client
+    chart_analyzer = ChartAnalyzer()
     
     try:
         # Issue取得・分析

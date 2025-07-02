@@ -1,7 +1,6 @@
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Header
 from typing import List, Optional, Dict, Any
-from app.services.issue_service import issue_service
-from app.services.issue_analyzer import issue_analyzer
+from app.services.session_manager import session_manager
 from app.models.issue import (
     IssueResponse, 
     IssueListRequest, 
@@ -101,6 +100,7 @@ def _issue_to_response(issue: IssueModel) -> IssueResponse:
 
 @router.get("/", response_model=Dict[str, Any])
 async def get_issues(
+    x_session_id: Optional[str] = Header(None),
     state: Optional[str] = Query('all'),
     milestone: Optional[str] = Query(None),
     assignee: Optional[str] = Query(None),
@@ -116,6 +116,20 @@ async def get_issues(
     per_page: Optional[int] = Query(50)
 ):
     """高度なフィルタ・検索対応Issues一覧取得"""
+    if not x_session_id:
+        raise HTTPException(status_code=401, detail="セッションIDが必要です")
+    
+    gitlab_client = session_manager.get_gitlab_client(x_session_id)
+    if not gitlab_client:
+        raise HTTPException(status_code=404, detail="セッションが見つかりません")
+    
+    # issue_serviceとissue_analyzerをセッション用に作成
+    from app.services.issue_service import IssueService
+    from app.services.issue_analyzer import IssueAnalyzer
+    issue_service = IssueService()
+    issue_service.client = gitlab_client
+    issue_analyzer = IssueAnalyzer()
+    
     try:
         # フィルタ条件構築
         labels = []
@@ -165,6 +179,7 @@ async def get_issues(
 
 @router.get("/analyzed", response_model=Dict[str, Any])
 async def get_analyzed_issues(
+    x_session_id: Optional[str] = Header(None),
     state: Optional[str] = Query('all'),
     milestone: Optional[str] = Query(None),
     assignee: Optional[str] = Query(None),
@@ -172,6 +187,18 @@ async def get_analyzed_issues(
     include_statistics: bool = Query(True, description="統計情報を含めるか")
 ):
     """分析済みissue一覧取得"""
+    if not x_session_id:
+        raise HTTPException(status_code=401, detail="セッションIDが必要です")
+    
+    gitlab_client = session_manager.get_gitlab_client(x_session_id)
+    if not gitlab_client:
+        raise HTTPException(status_code=404, detail="セッションが見つかりません")
+    
+    # issue_serviceをセッション用に作成
+    from app.services.issue_service import IssueService
+    issue_service = IssueService()
+    issue_service.client = gitlab_client
+    
     try:
         label_list = labels.split(',') if labels else None
         
@@ -223,8 +250,24 @@ async def get_analyzed_issues(
         raise HTTPException(status_code=500, detail=f"分析済みIssues取得に失敗しました: {str(e)}")
 
 @router.get("/validation", response_model=Dict[str, Any])
-async def validate_issues_data():
+async def validate_issues_data(
+    x_session_id: Optional[str] = Header(None)
+):
     """Issue分析データ検証"""
+    if not x_session_id:
+        raise HTTPException(status_code=401, detail="セッションIDが必要です")
+    
+    gitlab_client = session_manager.get_gitlab_client(x_session_id)
+    if not gitlab_client:
+        raise HTTPException(status_code=404, detail="セッションが見つかりません")
+    
+    # issue_serviceとissue_analyzerをセッション用に作成
+    from app.services.issue_service import IssueService
+    from app.services.issue_analyzer import IssueAnalyzer
+    issue_service = IssueService()
+    issue_service.client = gitlab_client
+    issue_analyzer = IssueAnalyzer()
+    
     try:
         # 全issue取得・分析
         issues = await issue_service.get_all_issues()
@@ -263,11 +306,24 @@ async def validate_issues_data():
 
 @router.get("/statistics", response_model=Dict[str, Any])
 async def get_issues_statistics(
+    x_session_id: Optional[str] = Header(None),
     milestone: Optional[str] = Query(None),
     quarter: Optional[str] = Query(None),
     service: Optional[str] = Query(None)
 ):
     """Issue統計情報取得"""
+    if not x_session_id:
+        raise HTTPException(status_code=401, detail="セッションIDが必要です")
+    
+    gitlab_client = session_manager.get_gitlab_client(x_session_id)
+    if not gitlab_client:
+        raise HTTPException(status_code=404, detail="セッションが見つかりません")
+    
+    # issue_serviceをセッション用に作成
+    from app.services.issue_service import IssueService
+    issue_service = IssueService()
+    issue_service.client = gitlab_client
+    
     try:
         # フィルタ条件構築
         labels = []
@@ -337,8 +393,23 @@ async def get_issues_statistics(
         raise HTTPException(status_code=500, detail=f"Issue統計取得に失敗しました: {str(e)}")
 
 @router.post("/search", response_model=Dict[str, Any])
-async def search_issues(search_request: IssueSearchRequest):
+async def search_issues(
+    search_request: IssueSearchRequest,
+    x_session_id: Optional[str] = Header(None)
+):
     """高度検索API"""
+    if not x_session_id:
+        raise HTTPException(status_code=401, detail="セッションIDが必要です")
+    
+    gitlab_client = session_manager.get_gitlab_client(x_session_id)
+    if not gitlab_client:
+        raise HTTPException(status_code=404, detail="セッションが見つかりません")
+    
+    # issue_serviceをセッション用に作成
+    from app.services.issue_service import IssueService
+    issue_service = IssueService()
+    issue_service.client = gitlab_client
+    
     try:
         # 検索条件をクエリパラメータ形式に変換
         labels = []
@@ -405,12 +476,25 @@ async def search_issues(search_request: IssueSearchRequest):
 
 @router.get("/export/csv")
 async def export_issues_csv(
+    x_session_id: Optional[str] = Header(None),
     state: Optional[str] = Query('all'),
     milestone: Optional[str] = Query(None),
     service: Optional[str] = Query(None),
     quarter: Optional[str] = Query(None)
 ):
     """Issues CSV エクスポート"""
+    if not x_session_id:
+        raise HTTPException(status_code=401, detail="セッションIDが必要です")
+    
+    gitlab_client = session_manager.get_gitlab_client(x_session_id)
+    if not gitlab_client:
+        raise HTTPException(status_code=404, detail="セッションが見つかりません")
+    
+    # issue_serviceをセッション用に作成
+    from app.services.issue_service import IssueService
+    issue_service = IssueService()
+    issue_service.client = gitlab_client
+    
     try:
         import csv
         import io
@@ -474,8 +558,23 @@ async def export_issues_csv(
         raise HTTPException(status_code=500, detail=f"CSV エクスポートに失敗しました: {str(e)}")
 
 @router.get("/milestone/{milestone_name}", response_model=IssueListResponse)
-async def get_issues_by_milestone(milestone_name: str):
+async def get_issues_by_milestone(
+    milestone_name: str,
+    x_session_id: Optional[str] = Header(None)
+):
     """マイルストーン別issue取得"""
+    if not x_session_id:
+        raise HTTPException(status_code=401, detail="セッションIDが必要です")
+    
+    gitlab_client = session_manager.get_gitlab_client(x_session_id)
+    if not gitlab_client:
+        raise HTTPException(status_code=404, detail="セッションが見つかりません")
+    
+    # issue_serviceをセッション用に作成
+    from app.services.issue_service import IssueService
+    issue_service = IssueService()
+    issue_service.client = gitlab_client
+    
     try:
         issues = await issue_service.get_issues_by_milestone(milestone_name)
         
@@ -517,8 +616,23 @@ async def get_issues_by_milestone(milestone_name: str):
         )
 
 @router.get("/{issue_id}", response_model=IssueResponse)
-async def get_issue(issue_id: int):
+async def get_issue(
+    issue_id: int,
+    x_session_id: Optional[str] = Header(None)
+):
     """特定issue詳細取得"""
+    if not x_session_id:
+        raise HTTPException(status_code=401, detail="セッションIDが必要です")
+    
+    gitlab_client = session_manager.get_gitlab_client(x_session_id)
+    if not gitlab_client:
+        raise HTTPException(status_code=404, detail="セッションが見つかりません")
+    
+    # issue_serviceをセッション用に作成
+    from app.services.issue_service import IssueService
+    issue_service = IssueService()
+    issue_service.client = gitlab_client
+    
     try:
         issue = await issue_service.get_issue_by_id(issue_id)
         

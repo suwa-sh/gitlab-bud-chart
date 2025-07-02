@@ -36,6 +36,7 @@ interface AppState {
     httpsProxy?: string
     noProxy?: string
   }
+  sessionId?: string
 }
 
 type AppAction = 
@@ -46,6 +47,7 @@ type AppAction =
   | { type: 'SET_CHART_PERIOD'; payload: { start: string; end: string } }
   | { type: 'SET_GITLAB_CONFIG'; payload: Partial<AppState['gitlabConfig']> }
   | { type: 'SET_METADATA'; payload: any }
+  | { type: 'SET_SESSION_ID'; payload: string | undefined }
 
 // 現在の四半期の開始日と終了日を計算する関数
 const getCurrentQuarterPeriod = (): { start: string; end: string } => {
@@ -111,7 +113,8 @@ const initialState: AppState = {
   error: null,
   filters: {},
   chartPeriod: getCurrentQuarterPeriod(),
-  gitlabConfig: loadGitLabConfigFromStorage()
+  gitlabConfig: loadGitLabConfigFromStorage(),
+  sessionId: localStorage.getItem('gitlab-dashboard-session-id') || undefined
 }
 
 const AppContext = createContext<{
@@ -136,6 +139,8 @@ function appReducer(state: AppState, action: AppAction): AppState {
     case 'SET_METADATA':
       // Handle metadata if we need to store it in state later
       return state
+    case 'SET_SESSION_ID':
+      return { ...state, sessionId: action.payload }
     default:
       return state
   }

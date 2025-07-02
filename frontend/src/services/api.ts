@@ -11,6 +11,23 @@ const api = axios.create({
   },
 })
 
+// セッションIDヘッダーを自動付与するインターセプター
+api.interceptors.request.use((config) => {
+  const sessionId = localStorage.getItem('gitlab-dashboard-session-id')
+  if (sessionId) {
+    config.headers['X-Session-Id'] = sessionId
+  }
+  return config
+})
+
+// セッションIDをレスポンスから保存するインターセプター
+api.interceptors.response.use((response) => {
+  if (response.data?.session_id) {
+    localStorage.setItem('gitlab-dashboard-session-id', response.data.session_id)
+  }
+  return response
+})
+
 export const issuesApi = {
   getIssues: async (params?: {
     milestone?: string

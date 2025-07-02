@@ -218,5 +218,3 @@ class GitLabClient:
             logger.error(f"プロジェクト名検索失敗: {e}")
             return None
 
-# グローバルインスタンス
-gitlab_client = GitLabClient()
