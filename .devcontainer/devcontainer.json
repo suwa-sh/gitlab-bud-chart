@@ -8,8 +8,9 @@
   },
   "runArgs": ["--cap-add=NET_ADMIN", "--cap-add=NET_RAW"],
   "features": {
-    "docker-in-docker": {
-      "version": "latest"
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {
+      "version": "latest",
+      "enableNonRootDocker": "true"
     },
     "python": {
       "version": "3.12.3"

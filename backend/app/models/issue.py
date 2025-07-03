@@ -22,6 +22,7 @@ class IssueModel(BaseModel):
     service: Optional[str] = None
     quarter: Optional[str] = None
     completed_at: Optional[datetime] = None
+    is_epic: Optional[bool] = None
 
 class IssueResponse(BaseModel):
     """API レスポンス用"""
@@ -44,6 +45,7 @@ class IssueResponse(BaseModel):
     service: Optional[str] = None
     quarter: Optional[str] = None
     completed_at: Optional[datetime] = None
+    is_epic: Optional[bool] = None
 
 class IssueListRequest(BaseModel):
     """Issue一覧取得リクエスト"""
@@ -71,6 +73,7 @@ class IssueSearchRequest(BaseModel):
     kanban_status: Optional[str] = None
     min_point: Optional[float] = None
     max_point: Optional[float] = None
+    is_epic: Optional[str] = None
     date_from: Optional[datetime] = None
     date_to: Optional[datetime] = None
     sort_by: Optional[str] = 'created_at'

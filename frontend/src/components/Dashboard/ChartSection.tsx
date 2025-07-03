@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { BurnDownChart } from '../Chart/BurnDownChart'
 import { BurnUpChart } from '../Chart/BurnUpChart'
+import { PeriodSelector } from '../Common/PeriodSelector'
 import { chartsApi } from '../../services/api'
 import { ChartData, Issue } from '../../types/api'
 import '../Chart/Chart.css'
@@ -12,24 +13,79 @@ interface ChartSectionProps {
   }
   issues: Issue[]
   loading: boolean
+  onPeriodChange: (period: { start: string; end: string }) => void
+  issueFilters?: {
+    search: string
+    milestone: string
+    assignee: string
+    kanban_status: string
+    service: string
+    state: string
+    point_min?: number
+    point_max?: number
+    created_at_from: string
+    created_at_to: string
+    completed_at_from: string
+    completed_at_to: string
+    is_epic: string
+  }
+  onIssueFiltersChange?: (filters: any) => void
+  onExportIssues?: () => void
 }
 
-export const ChartSection = ({ period, issues, loading }: ChartSectionProps) => {
+export const ChartSection = ({ period, issues, loading, onPeriodChange, issueFilters, onIssueFiltersChange, onExportIssues }: ChartSectionProps) => {
   const [burnDownData, setBurnDownData] = useState<ChartData[]>([])
   const [burnUpData, setBurnUpData] = useState<ChartData[]>([])
   const [chartLoading, setChartLoading] = useState(false)
-  const [selectedMilestone, setSelectedMilestone] = useState<string>('')
   const [chartView, setChartView] = useState<'both' | 'burndown' | 'burnup'>('both')
   const [error, setError] = useState<string>('')
+  const [showDetailFilters, setShowDetailFilters] = useState(false)
 
   // マイルストーン一覧
   const milestones = [...new Set(issues.map(i => i.milestone).filter(Boolean))]
+  
+  // Issueフィルタ用のユニークな値
+  const filterOptions = useMemo(() => {
+    const assignees = Array.from(new Set(issues.map(i => i.assignee).filter(Boolean)))
+    const kanbanStatuses = Array.from(new Set(issues.map(i => i.kanban_status).filter(Boolean)))
+    const services = Array.from(new Set(issues.map(i => i.service).filter(Boolean)))
+    
+    return {
+      assignees: assignees.sort(),
+      kanbanStatuses: kanbanStatuses.sort(),
+      services: services.sort()
+    }
+  }, [issues])
+
+  const handleIssueFilterChange = (key: string, value: string | number | undefined) => {
+    if (onIssueFiltersChange && issueFilters) {
+      onIssueFiltersChange({
+        ...issueFilters,
+        [key]: value
+      })
+    }
+  }
+
+  const activeDetailFilterCount = issueFilters ? 
+    Object.entries(issueFilters).filter(([key, value]) => 
+      key !== 'search' && value !== undefined && value !== null && value !== ''
+    ).length : 0
+
+  const hasActiveSearch = issueFilters?.search && issueFilters.search !== ''
 
   useEffect(() => {
     if (!loading && period.start && period.end) {
-      fetchChartData()
+      // フィルタリング後のissue数が0の場合、チャートデータをクリア
+      if (issues.length === 0) {
+        setBurnDownData([])
+        setBurnUpData([])
+        setChartLoading(false)
+        setError('')
+      } else {
+        fetchChartData()
+      }
     }
-  }, [period, selectedMilestone, loading])
+  }, [period, issueFilters, loading, issues.length])
 
   const fetchChartData = async () => {
     setChartLoading(true)
@@ -38,12 +94,12 @@ export const ChartSection = ({ period, issues, loading }: ChartSectionProps) => 
     try {
       const [burnDown, burnUp] = await Promise.all([
         chartsApi.getBurnDownData(
-          selectedMilestone || undefined,
+          issueFilters?.milestone || undefined,
           period.start,
           period.end
         ),
         chartsApi.getBurnUpData(
-          selectedMilestone || undefined,
+          issueFilters?.milestone || undefined,
           period.start,
           period.end
         )
@@ -59,22 +115,6 @@ export const ChartSection = ({ period, issues, loading }: ChartSectionProps) => 
     }
   }
 
-  const handleExportChart = () => {
-    // チャート画像エクスポート機能
-    const chartElements = document.querySelectorAll('.recharts-wrapper svg')
-    chartElements.forEach((svg, index) => {
-      const svgData = new XMLSerializer().serializeToString(svg)
-      const blob = new Blob([svgData], { type: 'image/svg+xml' })
-      const url = URL.createObjectURL(blob)
-      
-      const a = document.createElement('a')
-      a.href = url
-      a.download = `chart_${index === 0 ? 'burndown' : 'burnup'}_${new Date().toISOString().split('T')[0]}.svg`
-      a.click()
-      
-      URL.revokeObjectURL(url)
-    })
-  }
 
   if (loading) {
     return (
@@ -100,49 +140,19 @@ export const ChartSection = ({ period, issues, loading }: ChartSectionProps) => 
 
   return (
     <div className="chart-section">
-      {/* タイトルと基本情報 */}
-      <div className="chart-section-header">
-        <div className="chart-title-group">
-          <h2>Charts</h2>
-          <div className="chart-indicator">
-            <span className="chart-label">期間:</span>
-            <span className="chart-dates">{period.start} 〜 {period.end}</span>
-          </div>
-          {selectedMilestone && (
-            <div className="milestone-indicator">
-              <span className="milestone-label">マイルストーン:</span>
-              <span className="milestone-name">{selectedMilestone}</span>
-            </div>
-          )}
-        </div>
-        <button 
-          className="export-btn"
-          onClick={handleExportChart}
-          disabled={chartLoading || (!burnDownData.length && !burnUpData.length)}
-        >
-          📊 チャートエクスポート
-        </button>
-      </div>
 
       {/* フィルタ・表示条件 */}
       <div className="chart-filters">
+        {/* 期間フィルタ */}
         <div className="filter-group">
-          <label htmlFor="milestone-select">マイルストーン:</label>
-          <select 
-            id="milestone-select"
-            value={selectedMilestone}
-            onChange={(e) => setSelectedMilestone(e.target.value)}
-            className="milestone-select"
-          >
-            <option value="">すべて</option>
-            {milestones.map(m => (
-              <option key={m} value={m}>{m}</option>
-            ))}
-          </select>
+          <PeriodSelector 
+            value={period}
+            onChange={onPeriodChange}
+          />
         </div>
         
+        {/* 表示タイプフィルタ */}
         <div className="filter-group">
-          <label>表示タイプ:</label>
           <div className="view-toggle">
             <button 
               className={chartView === 'both' ? 'active' : ''}
@@ -164,7 +174,235 @@ export const ChartSection = ({ period, issues, loading }: ChartSectionProps) => 
             </button>
           </div>
         </div>
+        
+        {/* 詳細フィルタトグル */}
+        {issueFilters && onIssueFiltersChange && (
+          <div className="filter-group">
+            <button 
+              className="detail-filters-toggle"
+              onClick={() => setShowDetailFilters(!showDetailFilters)}
+            >
+              <span className="filter-icon">🔍</span>
+              詳細フィルタ
+              {(activeDetailFilterCount > 0 || hasActiveSearch) && (
+                <span className="active-filter-count">
+                  {activeDetailFilterCount + (hasActiveSearch ? 1 : 0)}
+                </span>
+              )}
+            </button>
+          </div>
+        )}
+        
+        {/* Issues CSVエクスポート */}
+        {onExportIssues && (
+          <div className="filter-group">
+            <button 
+              className="export-btn"
+              onClick={onExportIssues}
+              disabled={loading || issues.length === 0}
+            >
+              Issues CSV エクスポート
+            </button>
+          </div>
+        )}
       </div>
+
+      {/* 詳細フィルタエリア */}
+      {issueFilters && onIssueFiltersChange && showDetailFilters && (
+        <div className="detail-filters">
+          {/* Row 1: Service, Milestone, Title */}
+          <div className="detail-filters-row">
+            <div className="filter-group">
+              <label>Service:</label>
+              <select
+                value={issueFilters.service}
+                onChange={(e) => handleIssueFilterChange('service', e.target.value)}
+                className="filter-select"
+              >
+                <option value="">すべて</option>
+                {filterOptions.services.map(s => (
+                  <option key={s} value={s}>{s}</option>
+                ))}
+              </select>
+            </div>
+            
+            <div className="filter-group">
+              <label>Milestone:</label>
+              <select
+                value={issueFilters.milestone}
+                onChange={(e) => handleIssueFilterChange('milestone', e.target.value)}
+                className="filter-select"
+              >
+                <option value="">すべて</option>
+                {milestones.map(m => (
+                  <option key={m} value={m}>{m}</option>
+                ))}
+              </select>
+            </div>
+            
+            <div className="filter-group">
+              <label>Epic:</label>
+              <select
+                value={issueFilters.is_epic}
+                onChange={(e) => handleIssueFilterChange('is_epic', e.target.value)}
+                className="filter-select"
+              >
+                <option value="">すべて</option>
+                <option value="epic">Epic</option>
+                <option value="normal">通常</option>
+              </select>
+            </div>
+            
+            <div className="filter-group">
+              <label>Title:</label>
+              <input
+                type="text"
+                placeholder="タイトル検索..."
+                value={issueFilters.search}
+                onChange={(e) => handleIssueFilterChange('search', e.target.value)}
+                className="filter-input"
+              />
+            </div>
+          </div>
+          
+          {/* Row 2: Point, Kanban Status, Assignee */}
+          <div className="detail-filters-row">
+            <div className="filter-group">
+              <label>Point:</label>
+              <div className="point-range-inputs">
+                <input
+                  type="number"
+                  placeholder="最小"
+                  value={issueFilters.point_min || ''}
+                  onChange={(e) => handleIssueFilterChange('point_min', e.target.value ? Number(e.target.value) : undefined)}
+                  className="filter-input number-input"
+                  min="0"
+                />
+                <span className="range-separator">≤</span>
+                <input
+                  type="number"
+                  placeholder="最大"
+                  value={issueFilters.point_max || ''}
+                  onChange={(e) => handleIssueFilterChange('point_max', e.target.value ? Number(e.target.value) : undefined)}
+                  className="filter-input number-input"
+                  min="0"
+                />
+              </div>
+            </div>
+            
+            <div className="filter-group">
+              <label>Kanban Status:</label>
+              <select
+                value={issueFilters.kanban_status}
+                onChange={(e) => handleIssueFilterChange('kanban_status', e.target.value)}
+                className="filter-select"
+              >
+                <option value="">すべて</option>
+                {filterOptions.kanbanStatuses.map(k => (
+                  <option key={k} value={k}>{k}</option>
+                ))}
+              </select>
+            </div>
+            
+            <div className="filter-group">
+              <label>Assignee:</label>
+              <select
+                value={issueFilters.assignee}
+                onChange={(e) => handleIssueFilterChange('assignee', e.target.value)}
+                className="filter-select"
+              >
+                <option value="">すべて</option>
+                {filterOptions.assignees.map(a => (
+                  <option key={a} value={a}>{a}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+          
+          {/* Row 3: Created At, Completed At, State */}
+          <div className="detail-filters-row">
+            <div className="filter-group">
+              <label>Created At:</label>
+              <div className="date-range-inputs">
+                <input
+                  type="date"
+                  value={issueFilters.created_at_from}
+                  onChange={(e) => handleIssueFilterChange('created_at_from', e.target.value)}
+                  className="filter-input date-input"
+                />
+                <span className="range-separator">〜</span>
+                <input
+                  type="date"
+                  value={issueFilters.created_at_to}
+                  onChange={(e) => handleIssueFilterChange('created_at_to', e.target.value)}
+                  className="filter-input date-input"
+                />
+              </div>
+            </div>
+            
+            <div className="filter-group">
+              <label>Completed At:</label>
+              <div className="date-range-inputs">
+                <input
+                  type="date"
+                  value={issueFilters.completed_at_from}
+                  onChange={(e) => handleIssueFilterChange('completed_at_from', e.target.value)}
+                  className="filter-input date-input"
+                />
+                <span className="range-separator">〜</span>
+                <input
+                  type="date"
+                  value={issueFilters.completed_at_to}
+                  onChange={(e) => handleIssueFilterChange('completed_at_to', e.target.value)}
+                  className="filter-input date-input"
+                />
+              </div>
+            </div>
+            
+            <div className="filter-group">
+              <label>State:</label>
+              <select
+                value={issueFilters.state}
+                onChange={(e) => handleIssueFilterChange('state', e.target.value)}
+                className="filter-select"
+              >
+                <option value="">すべて</option>
+                <option value="opened">Opened</option>
+                <option value="closed">Closed</option>
+              </select>
+            </div>
+          </div>
+          
+          {/* フィルタリセットボタン */}
+          <div className="filter-reset-section">
+            <button 
+              className="filter-reset-btn"
+              onClick={() => {
+                if (onIssueFiltersChange) {
+                  onIssueFiltersChange({
+                    search: '',
+                    milestone: '',
+                    assignee: '',
+                    kanban_status: '',
+                    service: '',
+                    state: '',
+                    point_min: undefined,
+                    point_max: undefined,
+                    created_at_from: '',
+                    created_at_to: '',
+                    completed_at_from: '',
+                    completed_at_to: '',
+                    is_epic: ''
+                  })
+                }
+              }}
+            >
+              <span className="reset-icon">🔄</span>
+              フィルタをリセット
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* チャート表示エリア */}
       <div className={`charts-container ${chartView}`}>
@@ -194,12 +432,6 @@ export const ChartSection = ({ period, issues, loading }: ChartSectionProps) => 
         )}
       </div>
       
-      {/* 統計情報 */}
-      {selectedMilestone && (
-        <div className="chart-info">
-          <span>対象Issue数: {issues.filter(i => i.milestone === selectedMilestone).length}件</span>
-        </div>
-      )}
     </div>
   )
 }

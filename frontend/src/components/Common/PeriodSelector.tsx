@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { format, addMonths, startOfMonth, endOfMonth } from 'date-fns'
+import { useState, useEffect } from 'react'
+import { format, addMonths, endOfMonth } from 'date-fns'
 import './PeriodSelector.css'
 
 interface PeriodSelectorProps {
@@ -12,7 +12,7 @@ interface PeriodSelectorProps {
 
 export const PeriodSelector = ({ value, onChange }: PeriodSelectorProps) => {
   const [isCustom, setIsCustom] = useState(false)
-  const [selectedPreset, setSelectedPreset] = useState('this-quarter')
+  const [selectedPreset, setSelectedPreset] = useState('')
 
   const formatPeriodDisplay = (start: string, end: string): string => {
     const startDate = new Date(start)
@@ -25,21 +25,53 @@ export const PeriodSelector = ({ value, onChange }: PeriodSelectorProps) => {
     return `${formatDate(startDate)} 〜 ${formatDate(endDate)}`
   }
 
+  // 現在の期間がどのプリセットに一致するかを判定
+  const detectPreset = (start: string, end: string): string => {
+    const today = new Date()
+    
+    // 今四半期をチェック
+    const quarterMonth = Math.floor(today.getMonth() / 3) * 3
+    const thisQuarterStart = new Date(today.getFullYear(), quarterMonth, 1)
+    const thisQuarterEnd = endOfMonth(addMonths(thisQuarterStart, 2))
+    if (start === format(thisQuarterStart, 'yyyy-MM-dd') && 
+        end === format(thisQuarterEnd, 'yyyy-MM-dd')) {
+      return 'this-quarter'
+    }
+    
+    // 前四半期をチェック
+    const lastQuarterStart = addMonths(new Date(), -3)
+    const lastQuarterMonth = Math.floor(lastQuarterStart.getMonth() / 3) * 3
+    const prevQuarterStart = new Date(lastQuarterStart.getFullYear(), lastQuarterMonth, 1)
+    const prevQuarterEnd = endOfMonth(addMonths(prevQuarterStart, 2))
+    if (start === format(prevQuarterStart, 'yyyy-MM-dd') && 
+        end === format(prevQuarterEnd, 'yyyy-MM-dd')) {
+      return 'last-quarter'
+    }
+    
+    // 今年をチェック
+    const thisYearStart = new Date(today.getFullYear(), 0, 1)
+    const thisYearEnd = new Date(today.getFullYear(), 11, 31)
+    if (start === format(thisYearStart, 'yyyy-MM-dd') && 
+        end === format(thisYearEnd, 'yyyy-MM-dd')) {
+      return 'this-year'
+    }
+    
+    return ''
+  }
+
+  // valueが変更されたときにプリセットを再判定
+  useEffect(() => {
+    const preset = detectPreset(value.start, value.end)
+    setSelectedPreset(preset)
+    setIsCustom(preset === '')
+  }, [value.start, value.end])
+
   const handlePresetPeriod = (preset: string) => {
     const today = new Date()
     let start: Date
     let end: Date
 
     switch (preset) {
-      case 'this-month':
-        start = startOfMonth(today)
-        end = endOfMonth(today)
-        break
-      case 'last-month':
-        const lastMonth = addMonths(today, -1)
-        start = startOfMonth(lastMonth)
-        end = endOfMonth(lastMonth)
-        break
       case 'this-quarter':
         const quarterMonth = Math.floor(today.getMonth() / 3) * 3
         start = new Date(today.getFullYear(), quarterMonth, 1)
@@ -70,18 +102,6 @@ export const PeriodSelector = ({ value, onChange }: PeriodSelectorProps) => {
   return (
     <div className="period-selector">
       <div className="period-presets">
-        <button 
-          className={!isCustom && selectedPreset === 'this-month' ? 'active' : ''}
-          onClick={() => handlePresetPeriod('this-month')}
-        >
-          今月
-        </button>
-        <button 
-          className={!isCustom && selectedPreset === 'last-month' ? 'active' : ''}
-          onClick={() => handlePresetPeriod('last-month')}
-        >
-          先月
-        </button>
         <button 
           className={!isCustom && selectedPreset === 'this-quarter' ? 'active' : ''}
           onClick={() => handlePresetPeriod('this-quarter')}

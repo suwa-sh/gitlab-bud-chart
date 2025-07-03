@@ -102,7 +102,7 @@
 
 /* チャートセクション統合スタイル - Issue一覧と統一 */
 .chart-section {
-  margin-bottom: 40px;
+  margin-bottom: 0px;
 }
 
 /* ヘッダー部分（タイトル・期間・エクスポート） */
@@ -110,19 +110,10 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
+  margin-bottom: 15px;
+  min-height: 50px;
 }
 
-.chart-title-group {
-  display: flex;
-  align-items: center;
-  gap: 15px;
-}
-
-.chart-title-group h2 {
-  margin: 0;
-  color: #333;
-}
 
 .chart-indicator {
   display: flex;
@@ -185,6 +176,65 @@
   opacity: 0.6;
 }
 
+/* ヘッダー内の期間コントロール - コンパクト版 */
+.chart-section-header .period-controls .period-selector {
+  padding: 8px 12px;
+  margin-bottom: 0;
+  background: #f8f9fa;
+  border-radius: 6px;
+}
+
+.chart-section-header .period-controls .period-presets {
+  margin-bottom: 8px;
+  gap: 8px;
+}
+
+.chart-section-header .period-controls .period-presets button {
+  padding: 6px 12px;
+  font-size: 13px;
+}
+
+.chart-section-header .period-controls .period-display-button {
+  min-width: 180px;
+  padding: 6px 12px;
+  font-size: 13px;
+}
+
+.chart-section-header .period-controls .custom-period {
+  margin-bottom: 8px;
+  padding: 8px;
+}
+
+/* フィルタエリア内の期間セレクター */
+.chart-filters .filter-group .period-selector {
+  padding: 0;
+  margin-bottom: 0;
+  background: transparent;
+  border-radius: 0;
+}
+
+.chart-filters .filter-group .period-presets {
+  margin-bottom: 0;
+  gap: 8px;
+}
+
+.chart-filters .filter-group .period-presets button {
+  padding: 6px 12px;
+  font-size: 13px;
+}
+
+.chart-filters .filter-group .period-display-button {
+  min-width: 160px;
+  padding: 6px 12px;
+  font-size: 13px;
+}
+
+.chart-filters .filter-group .custom-period {
+  margin-bottom: 0;
+  padding: 8px;
+  margin-top: 8px;
+}
+
 /* フィルタ部分 */
 .chart-filters {
   display: flex;
@@ -195,6 +245,137 @@
   background: #f8f9fa;
   border-radius: 8px;
   flex-wrap: wrap;
+}
+
+.chart-filters .filter-input {
+  width: 180px;
+  padding: 6px 12px;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  font-size: 14px;
+  transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+.chart-filters .filter-input:focus {
+  outline: none;
+  border-color: #80bdff;
+  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+.chart-filters .filter-select {
+  width: 150px;
+  padding: 6px 12px;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  background-color: #fff;
+  font-size: 14px;
+  transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+.chart-filters .filter-select:focus {
+  outline: none;
+  border-color: #80bdff;
+  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+/* 詳細フィルタトグルボタン */
+.detail-filters-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: white;
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s;
+  position: relative;
+}
+
+.detail-filters-toggle:hover {
+  background: #e9ecef;
+  border-color: #adb5bd;
+}
+
+.detail-filters-toggle .filter-icon {
+  font-size: 16px;
+}
+
+.detail-filters-toggle .active-filter-count {
+  background: #dc3545;
+  color: white;
+  border-radius: 10px;
+  padding: 2px 6px;
+  font-size: 12px;
+  min-width: 18px;
+  text-align: center;
+}
+
+/* 詳細フィルタエリア */
+.detail-filters {
+  margin-top: 15px;
+  padding: 20px;
+  background: white;
+  border-radius: 8px;
+  border: 1px solid #dee2e6;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.detail-filters-row {
+  display: flex;
+  gap: 20px;
+  margin-bottom: 15px;
+  flex-wrap: wrap;
+}
+
+.detail-filters-row:last-child {
+  margin-bottom: 0;
+}
+
+.detail-filters .filter-group {
+  display: flex;
+  flex-direction: column;
+  min-width: 200px;
+  flex: 1;
+}
+
+.detail-filters .filter-group label {
+  margin-bottom: 6px;
+  font-weight: 500;
+  color: #495057;
+  font-size: 13px;
+}
+
+.detail-filters .filter-input {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  font-size: 14px;
+  transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+.detail-filters .filter-input:focus {
+  outline: none;
+  border-color: #80bdff;
+  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+.detail-filters .filter-select {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  background-color: #fff;
+  font-size: 14px;
+  transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+.detail-filters .filter-select:focus {
+  outline: none;
+  border-color: #80bdff;
+  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
 }
 
 .filter-group {
@@ -317,11 +498,6 @@
     gap: 15px;
   }
   
-  .chart-title-group {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 10px;
-  }
   
   .filter-group {
     flex-direction: column;
@@ -343,4 +519,56 @@
   .chart-indicator {
     font-size: 11px;
   }
+}
+
+/* 範囲入力スタイル */
+.point-range-inputs,
+.date-range-inputs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.number-input,
+.date-input {
+  width: 80px !important;
+  padding: 6px 8px !important;
+}
+
+.range-separator {
+  font-weight: bold;
+  color: #666;
+  min-width: 20px;
+  text-align: center;
+}
+
+/* フィルタリセットボタン */
+.filter-reset-section {
+  display: flex;
+  justify-content: center;
+  margin-top: 20px;
+  padding-top: 15px;
+  border-top: 1px solid #dee2e6;
+}
+
+.filter-reset-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  background: #6c757d;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.2s;
+}
+
+.filter-reset-btn:hover {
+  background: #5a6268;
+}
+
+.filter-reset-btn .reset-icon {
+  font-size: 14px;
 }

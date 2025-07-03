@@ -11,13 +11,33 @@ interface IssueTableProps {
   loading: boolean
   showFilters?: boolean
   pageSize?: number
+  allowShowAll?: boolean
+  initialShowAll?: boolean
+  issueFilters?: {
+    search: string
+    milestone: string
+    assignee: string
+    kanban_status: string
+    service: string
+    state: string
+    point_min?: number
+    point_max?: number
+    created_at_from: string
+    created_at_to: string
+    completed_at_from: string
+    completed_at_to: string
+    is_epic: string
+  }
 }
 
 export const IssueTable = ({ 
   issues, 
   loading, 
   showFilters = false, 
-  pageSize = 20 
+  pageSize = 20,
+  allowShowAll = false,
+  initialShowAll = false,
+  issueFilters
 }: IssueTableProps) => {
   const [filters, setFilters] = useState({
     search: '',
@@ -28,13 +48,19 @@ export const IssueTable = ({
     state: ''
   })
   const [currentPage, setCurrentPage] = useState(1)
+  const [showAll, setShowAll] = useState(initialShowAll)
   const [sortConfig, setSortConfig] = useState<{
     key: keyof Issue
     direction: 'asc' | 'desc'
   } | null>(null)
 
-  // フィルタリングロジック
+  // フィルタリングロジック（issueFiltersが渡された場合はそれを使用、そうでなければ内部フィルタを使用）
   const filteredIssues = useMemo(() => {
+    if (issueFilters) {
+      // 外部からフィルタリング済みのissuesが渡されている場合はそのまま使用
+      return issues
+    }
+    // 内部フィルタを使用（PBL-Viewerなど）
     return issues.filter(issue => {
       if (filters.search && 
           !issue.title.toLowerCase().includes(filters.search.toLowerCase())) {
@@ -57,7 +83,7 @@ export const IssueTable = ({
       }
       return true
     })
-  }, [issues, filters])
+  }, [issues, filters, issueFilters])
 
   // ソートロジック
   const sortedIssues = useMemo(() => {
@@ -82,9 +108,12 @@ export const IssueTable = ({
 
   // ページネーション
   const paginatedIssues = useMemo(() => {
+    if (showAll) {
+      return sortedIssues
+    }
     const startIndex = (currentPage - 1) * pageSize
     return sortedIssues.slice(startIndex, startIndex + pageSize)
-  }, [sortedIssues, currentPage, pageSize])
+  }, [sortedIssues, currentPage, pageSize, showAll])
 
   const handleSort = (key: keyof Issue) => {
     setSortConfig({
@@ -108,19 +137,55 @@ export const IssueTable = ({
       )}
       
       <div className="table-info">
-        <span>総数: {filteredIssues.length}件</span>
-        {filteredIssues.length !== issues.length && (
-          <span>(全{issues.length}件中)</span>
+        <div className="table-info-left">
+          <h3 className="issues-title">Issues</h3>
+          <span>総数: {filteredIssues.length}件</span>
+          {filteredIssues.length !== issues.length && (
+            <span>(全{issues.length}件中)</span>
+          )}
+          {showAll && (
+            <span className="show-all-indicator">
+              （全量表示中）
+              {filteredIssues.length > 1000 && (
+                <span className="performance-warning"> - 大量データ注意</span>
+              )}
+            </span>
+          )}
+        </div>
+        {allowShowAll && (
+          <div className="table-info-right">
+            <button
+              onClick={() => {
+                setShowAll(!showAll)
+                setCurrentPage(1) // Reset to first page when toggling
+              }}
+              className="show-all-toggle"
+            >
+              {showAll ? 'ページ表示' : '全量表示'}
+            </button>
+          </div>
         )}
       </div>
       
-      <div className="table-wrapper">
+      <div className={`table-wrapper ${showAll ? 'show-all' : ''}`}>
         <table className="issue-table">
           <thead>
             <tr>
+              <th onClick={() => handleSort('service')}>
+                Service
+                {sortConfig?.key === 'service' && (
+                  <span className={`sort-icon ${sortConfig.direction}`}>↕</span>
+                )}
+              </th>
               <th onClick={() => handleSort('milestone')}>
                 Milestone
                 {sortConfig?.key === 'milestone' && (
+                  <span className={`sort-icon ${sortConfig.direction}`}>↕</span>
+                )}
+              </th>
+              <th onClick={() => handleSort('is_epic')}>
+                Epic
+                {sortConfig?.key === 'is_epic' && (
                   <span className={`sort-icon ${sortConfig.direction}`}>↕</span>
                 )}
               </th>
@@ -182,7 +247,7 @@ export const IssueTable = ({
         </table>
       </div>
       
-      {sortedIssues.length > pageSize && (
+      {!showAll && sortedIssues.length > pageSize && (
         <TablePagination 
           currentPage={currentPage}
           totalItems={sortedIssues.length}

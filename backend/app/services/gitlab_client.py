@@ -10,15 +10,39 @@ class GitLabClient:
     def __init__(self):
         self.gl: Optional[gitlab.Gitlab] = None
         self.project = None
+        # 接続パラメータを保存
+        self.url: Optional[str] = None
+        self.token: Optional[str] = None
+        self.project_id: Optional[str] = None
+        self.api_version: str = "4"
+        self.http_proxy: Optional[str] = None
+        self.https_proxy: Optional[str] = None
+        self.no_proxy: Optional[str] = None
+        self.project_name: Optional[str] = None
+        self.project_namespace: Optional[str] = None
+    
+    @property
+    def is_connected(self) -> bool:
+        """GitLab接続状態を返す"""
+        return self.gl is not None and self.project is not None
         
     def connect(self, gitlab_url: str, gitlab_token: str, project_identifier: str, api_version: str = "4", 
                 http_proxy: str = "", https_proxy: str = "", no_proxy: str = "") -> bool:
         """GitLab接続（プロジェクトIDまたは名前で指定可能）"""
         try:
+            # 接続パラメータを保存
+            self.url = gitlab_url
+            self.token = gitlab_token
+            self.project_id = project_identifier
+            self.api_version = api_version
+            self.http_proxy = http_proxy or settings.http_proxy
+            self.https_proxy = https_proxy or settings.https_proxy
+            self.no_proxy = no_proxy or settings.no_proxy
+            
             # Proxy設定を環境変数に設定（パラメータ優先、次に設定ファイル）
-            proxy_http = http_proxy or settings.http_proxy
-            proxy_https = https_proxy or settings.https_proxy
-            proxy_no = no_proxy or settings.no_proxy
+            proxy_http = self.http_proxy
+            proxy_https = self.https_proxy
+            proxy_no = self.no_proxy
             
             if proxy_http:
                 os.environ['HTTP_PROXY'] = proxy_http
@@ -54,12 +78,16 @@ class GitLabClient:
             if project_identifier.isdigit():
                 # 数値の場合はIDとして扱う
                 self.project = self.gl.projects.get(int(project_identifier))
+                self.project_name = self.project.name
+                self.project_namespace = getattr(self.project, 'namespace', {}).get('name', '')
                 logger.info(f"GitLab接続成功: {gitlab_url}, project: {self.project.name} (id: {project_identifier})")
             else:
                 # 数値でない場合は名前として検索
                 project_info = self.get_project_by_name(gitlab_url, gitlab_token, project_identifier, api_version)
                 if project_info:
                     self.project = self.gl.projects.get(project_info['id'])
+                    self.project_name = self.project.name
+                    self.project_namespace = getattr(self.project, 'namespace', {}).get('name', '')
                     logger.info(f"GitLab接続成功: {gitlab_url}, project: {self.project.name} (name: {project_identifier}, id: {project_info['id']})")
                 else:
                     raise Exception(f"プロジェクトが見つかりません: {project_identifier}")
@@ -218,5 +246,6 @@ class GitLabClient:
             logger.error(f"プロジェクト名検索失敗: {e}")
             return None
 
-# グローバルインスタンス
+
+# GitLabクライアントのシングルトンインスタンス
 gitlab_client = GitLabClient()

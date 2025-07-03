@@ -1,103 +1,66 @@
-import { useCallback } from 'react'
+import React from 'react'
 import { useApp } from '../../contexts/AppContext'
 import { useIssues } from '../../hooks/useIssues'
+import { usePBLViewerIssues } from '../../hooks/usePBLViewerIssues'
 
-export const IssueFilters = () => {
+interface IssueFiltersProps {
+  useFetchAll?: boolean
+}
+
+export const IssueFilters: React.FC<IssueFiltersProps> = ({ useFetchAll = false }) => {
   const { state, dispatch } = useApp()
   const { fetchIssues } = useIssues()
-  const { filters } = state
+  const { fetchAllIssues } = usePBLViewerIssues()
+  const filters = useFetchAll ? state.pblViewerFilters : state.filters
 
-  const handleQuickFilter = useCallback((filterType: string) => {
-    let newFilters = { ...filters }
-    
-    switch (filterType) {
-      case 'my-issues':
-        newFilters.assignee = 'current_user'  // 実装時は実際のユーザー名に置き換え
-        break
-      case 'open-issues':
-        newFilters.state = 'opened'
-        break
-      case 'completed':
-        newFilters.kanban_status = '完了'
-        break
-      case 'high-priority':
-        newFilters.min_point = 5
-        break
-      case 'this-quarter':
-        const currentQuarter = getCurrentQuarter()
-        newFilters.quarter = currentQuarter
-        break
-      default:
-        break
-    }
-    
-    dispatch({ type: 'SET_FILTERS', payload: newFilters })
-    fetchIssues(newFilters)
-  }, [filters, dispatch, fetchIssues])
-
-  const getCurrentQuarter = () => {
-    const now = new Date()
-    const quarter = Math.floor(now.getMonth() / 3) + 1
-    const year = now.getFullYear()
-    return `FY${year}Q${quarter}`
-  }
 
   const handleRemoveFilter = (key: string) => {
     const newFilters = { ...filters, [key]: undefined }
-    dispatch({ type: 'SET_FILTERS', payload: newFilters })
-    fetchIssues(newFilters)
+    if (useFetchAll) {
+      dispatch({ type: 'SET_PBL_VIEWER_FILTERS', payload: newFilters })
+    } else {
+      dispatch({ type: 'SET_FILTERS', payload: newFilters })
+    }
+    
+    if (useFetchAll) {
+      // PBL Viewerでは期間フィルタを除外
+      const filtersWithoutPeriod = { ...newFilters }
+      delete filtersWithoutPeriod.created_after
+      delete filtersWithoutPeriod.created_before
+      delete filtersWithoutPeriod.completed_after
+      delete filtersWithoutPeriod.quarter
+      fetchAllIssues(filtersWithoutPeriod)
+    } else {
+      fetchIssues(newFilters)
+    }
   }
 
   const handleFilterChange = (key: string, value: string) => {
     const newFilters = {
-      ...state.filters,
+      ...filters,
       [key]: value === '' ? undefined : value
     }
-    dispatch({ type: 'SET_FILTERS', payload: newFilters })
-    fetchIssues(newFilters)
+    if (useFetchAll) {
+      dispatch({ type: 'SET_PBL_VIEWER_FILTERS', payload: newFilters })
+    } else {
+      dispatch({ type: 'SET_FILTERS', payload: newFilters })
+    }
+    
+    if (useFetchAll) {
+      // PBL Viewerでは期間フィルタを除外
+      const filtersWithoutPeriod = { ...newFilters }
+      delete filtersWithoutPeriod.created_after
+      delete filtersWithoutPeriod.created_before
+      delete filtersWithoutPeriod.completed_after
+      delete filtersWithoutPeriod.quarter
+      fetchAllIssues(filtersWithoutPeriod)
+    } else {
+      fetchIssues(newFilters)
+    }
   }
 
   return (
     <div className="issue-filters">
-      <h3>クイックフィルタ</h3>
-      
-      <div className="quick-filters">
-        <button 
-          className="quick-filter-btn"
-          onClick={() => handleQuickFilter('my-issues')}
-        >
-          自分のIssue
-        </button>
-        
-        <button 
-          className="quick-filter-btn"
-          onClick={() => handleQuickFilter('open-issues')}
-        >
-          Open Issues
-        </button>
-        
-        <button 
-          className="quick-filter-btn"
-          onClick={() => handleQuickFilter('completed')}
-        >
-          完了済み
-        </button>
-        
-        <button 
-          className="quick-filter-btn"
-          onClick={() => handleQuickFilter('high-priority')}
-        >
-          高ポイント (5+)
-        </button>
-        
-        <button 
-          className="quick-filter-btn"
-          onClick={() => handleQuickFilter('this-quarter')}
-        >
-          今四半期
-        </button>
-      </div>
-      
       <div className="active-filters">
         <h4>適用中のフィルタ</h4>
         {Object.entries(filters).map(([key, value]) => 
@@ -116,14 +79,14 @@ export const IssueFilters = () => {
       </div>
 
       <div className="detailed-filters">
-        <h4>詳細フィルタ</h4>
+        <h4>フィルタ</h4>
         
         <div className="filter-grid">
           <div className="filter-group">
             <label htmlFor="filter-milestone">マイルストーン</label>
             <select
               id="filter-milestone"
-              value={state.filters.milestone || ''}
+              value={filters.milestone || ''}
               onChange={(e) => handleFilterChange('milestone', e.target.value)}
             >
               <option value="">すべて</option>
@@ -137,7 +100,7 @@ export const IssueFilters = () => {
             <label htmlFor="filter-assignee">担当者</label>
             <select
               id="filter-assignee"
-              value={state.filters.assignee || ''}
+              value={filters.assignee || ''}
               onChange={(e) => handleFilterChange('assignee', e.target.value)}
             >
               <option value="">すべて</option>
@@ -151,7 +114,7 @@ export const IssueFilters = () => {
             <label htmlFor="filter-service">サービス</label>
             <select
               id="filter-service"
-              value={state.filters.service || ''}
+              value={filters.service || ''}
               onChange={(e) => handleFilterChange('service', e.target.value)}
             >
               <option value="">すべて</option>
@@ -165,7 +128,7 @@ export const IssueFilters = () => {
             <label htmlFor="filter-kanban-status">カンバンステータス</label>
             <select
               id="filter-kanban-status"
-              value={state.filters.kanban_status || ''}
+              value={filters.kanban_status || ''}
               onChange={(e) => handleFilterChange('kanban_status', e.target.value)}
             >
               <option value="">すべて</option>

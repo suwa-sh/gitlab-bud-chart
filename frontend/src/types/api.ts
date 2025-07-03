@@ -17,6 +17,7 @@ export interface Issue {
   service?: string
   quarter?: string
   completed_at?: string
+  is_epic?: boolean
 }
 
 export interface ChartData {

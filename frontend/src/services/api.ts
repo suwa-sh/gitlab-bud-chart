@@ -11,6 +11,47 @@ const api = axios.create({
   },
 })
 
+// セッションIDヘッダーを自動付与するインターセプター
+api.interceptors.request.use((config) => {
+  const sessionId = localStorage.getItem('gitlab-dashboard-session-id')
+  if (sessionId) {
+    config.headers['X-Session-Id'] = sessionId
+  }
+  return config
+})
+
+// セッション期限切れ通知用のイベント
+export const sessionExpiredEvent = new CustomEvent('session-expired')
+
+// セッションIDをレスポンスから保存・エラーハンドリングするインターセプター
+api.interceptors.response.use(
+  (response) => {
+    if (response.data?.session_id) {
+      localStorage.setItem('gitlab-dashboard-session-id', response.data.session_id)
+    }
+    return response
+  },
+  (error) => {
+    // セッション期限切れ・セッション無効の検出
+    if (error.response?.status === 401 || error.response?.status === 403) {
+      // セッションIDをクリア
+      localStorage.removeItem('gitlab-dashboard-session-id')
+      
+      // セッション期限切れイベントを発火
+      window.dispatchEvent(sessionExpiredEvent)
+    } else if (error.response?.status === 404 && 
+               error.response?.data?.detail?.includes('セッションが見つかりません')) {
+      // セッションが見つからない場合（Docker再起動後など）
+      console.warn('Session not found on backend, clearing local session')
+      localStorage.removeItem('gitlab-dashboard-session-id')
+      
+      // セッション期限切れイベントを発火
+      window.dispatchEvent(sessionExpiredEvent)
+    }
+    return Promise.reject(error)
+  }
+)
+
 export const issuesApi = {
   getIssues: async (params?: {
     milestone?: string
@@ -27,17 +68,18 @@ export const issuesApi = {
     created_after?: string
     created_before?: string
     completed_after?: string
+    is_epic?: string
     page?: number
     per_page?: number
     sort_by?: string
     sort_order?: string
   }): Promise<Issue[] | any> => {
-    const response = await api.get('/issues', { params })
+    const response = await api.get('/issues/', { params })
     return response.data
   },
   
   getIssue: async (id: number): Promise<Issue> => {
-    const response = await api.get(`/issues/${id}`)
+    const response = await api.get(`/issues/${id}/`)
     return response.data
   },
   
@@ -51,6 +93,7 @@ export const issuesApi = {
     min_point?: number
     max_point?: number
     quarter?: string
+    is_epic?: string
     page?: number
     per_page?: number
   }): Promise<Issue[] | any> => {
@@ -67,17 +110,17 @@ export const issuesApi = {
   },
   
   getAnalyzedIssues: async (params?: any): Promise<any> => {
-    const response = await api.get('/issues/analyzed', { params })
+    const response = await api.get('/issues/analyzed/', { params })
     return response.data
   },
   
   getIssueStatistics: async (params?: any): Promise<any> => {
-    const response = await api.get('/issues/statistics', { params })
+    const response = await api.get('/issues/statistics/', { params })
     return response.data
   },
   
   validateIssues: async (): Promise<any> => {
-    const response = await api.get('/issues/validation')
+    const response = await api.get('/issues/validation/')
     return response.data
   }
 }
@@ -132,12 +175,12 @@ export const gitlabApi = {
   },
   
   getStatus: async () => {
-    const response = await api.get('/gitlab/status')
+    const response = await api.get('/gitlab/status/')
     return response.data
   },
   
   getSampleIssues: async () => {
-    const response = await api.get('/gitlab/issues/sample')
+    const response = await api.get('/gitlab/issues/sample/')
     return response.data
   },
   
@@ -162,6 +205,34 @@ export const gitlabApi = {
     no_proxy?: string
   }) => {
     const response = await api.post('/gitlab/projects', config)
+    return response.data
+  },
+}
+
+export const sessionApi = {
+  validateSession: async (): Promise<{ valid: boolean; session_id?: string }> => {
+    try {
+      const response = await api.get('/gitlab/status/')
+      return { valid: true, session_id: response.data.session_id }
+    } catch (error: any) {
+      if (error.response?.status === 401 || error.response?.status === 404) {
+        return { valid: false }
+      }
+      throw error
+    }
+  },
+  
+  recreateSession: async (gitlabConfig: {
+    gitlab_url: string
+    gitlab_token: string
+    project_id: string
+    api_version?: string
+    http_proxy?: string
+    https_proxy?: string
+    no_proxy?: string
+  }): Promise<{ session_id: string }> => {
+    // GitLab接続を再実行してセッションを再作成
+    const response = await api.post('/gitlab/connect', gitlabConfig)
     return response.data
   },
 }

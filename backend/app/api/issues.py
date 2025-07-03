@@ -1,7 +1,6 @@
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Header
 from typing import List, Optional, Dict, Any
-from app.services.issue_service import issue_service
-from app.services.issue_analyzer import issue_analyzer
+from app.services.session_manager import session_manager
 from app.models.issue import (
     IssueResponse, 
     IssueListRequest, 
@@ -19,7 +18,8 @@ def _apply_advanced_filters(
     min_point: Optional[float], 
     max_point: Optional[float], 
     search: Optional[str],
-    kanban_status: Optional[str]
+    kanban_status: Optional[str],
+    is_epic: Optional[str]
 ) -> List[IssueModel]:
     """高度フィルタ適用"""
     filtered = issues
@@ -41,6 +41,16 @@ def _apply_advanced_filters(
     # Kanbanステータスフィルタ（追加）
     if kanban_status:
         filtered = [i for i in filtered if i.kanban_status == kanban_status]
+    
+    # Epicフィルタ
+    if is_epic:
+        original_count = len(filtered)
+        if is_epic == 'epic':
+            # is_epic が True の場合のみ
+            filtered = [i for i in filtered if i.is_epic is True]
+        elif is_epic == 'normal':
+            # is_epic が False または None の場合
+            filtered = [i for i in filtered if i.is_epic is not True]
     
     return filtered
 
@@ -96,11 +106,13 @@ def _issue_to_response(issue: IssueModel) -> IssueResponse:
         kanban_status=issue.kanban_status,
         service=issue.service,
         quarter=issue.quarter,
-        completed_at=issue.completed_at
+        completed_at=issue.completed_at,
+        is_epic=issue.is_epic
     )
 
 @router.get("/", response_model=Dict[str, Any])
 async def get_issues(
+    x_session_id: Optional[str] = Header(None),
     state: Optional[str] = Query('all'),
     milestone: Optional[str] = Query(None),
     assignee: Optional[str] = Query(None),
@@ -110,35 +122,62 @@ async def get_issues(
     min_point: Optional[float] = Query(None),
     max_point: Optional[float] = Query(None),
     search: Optional[str] = Query(None),
+    is_epic: Optional[str] = Query(None),
     sort_by: Optional[str] = Query('created_at'),
     sort_order: Optional[str] = Query('desc'),
     page: Optional[int] = Query(1),
     per_page: Optional[int] = Query(50)
 ):
     """高度なフィルタ・検索対応Issues一覧取得"""
+    if not x_session_id:
+        raise HTTPException(status_code=401, detail="セッションIDが必要です")
+    
+    gitlab_client = session_manager.get_gitlab_client(x_session_id)
+    if not gitlab_client:
+        raise HTTPException(status_code=404, detail="セッションが見つかりません")
+    
+    # issue_serviceとissue_analyzerをセッション用に作成
+    from app.services.issue_service import IssueService
+    from app.services.issue_analyzer import IssueAnalyzer
+    issue_service = IssueService()
+    issue_service.client = gitlab_client
+    issue_analyzer = IssueAnalyzer()
+    
     try:
+        # パラメータ正規化
+        normalized_state = state if state and state.strip() else 'all'
+        normalized_milestone = milestone if milestone and milestone.strip() else None
+        normalized_assignee = assignee if assignee and assignee.strip() else None
+        normalized_service = service if service and service.strip() else None
+        normalized_quarter = quarter if quarter and quarter.strip() else None
+        normalized_kanban_status = kanban_status if kanban_status and kanban_status.strip() else None
+        normalized_search = search if search and search.strip() else None
+        normalized_is_epic = is_epic if is_epic and is_epic.strip() else None
+        
         # フィルタ条件構築
         labels = []
-        if service:
-            labels.append(f"s:{service}")
-        if quarter:
-            labels.append(f"@{quarter}")
-        if kanban_status:
-            labels.append(f"#{kanban_status}")
+        if normalized_service:
+            labels.append(f"s:{normalized_service}")
+        if normalized_quarter:
+            labels.append(f"@{normalized_quarter}")
+        if normalized_kanban_status:
+            labels.append(f"#{normalized_kanban_status}")
         
         # Issue取得・分析
         issues, statistics = await issue_service.get_analyzed_issues(
-            state=state,
-            milestone=milestone,
-            assignee=assignee,
+            state=normalized_state,
+            milestone=normalized_milestone,
+            assignee=normalized_assignee,
             labels=labels if labels else None,
             analyze=True
         )
         
+        
         # 追加フィルタ適用
         filtered_issues = _apply_advanced_filters(
-            issues, min_point, max_point, search, kanban_status
+            issues, min_point, max_point, normalized_search, normalized_kanban_status, normalized_is_epic
         )
+        
         
         # ソート
         sorted_issues = _sort_issues(filtered_issues, sort_by, sort_order)
@@ -165,6 +204,7 @@ async def get_issues(
 
 @router.get("/analyzed", response_model=Dict[str, Any])
 async def get_analyzed_issues(
+    x_session_id: Optional[str] = Header(None),
     state: Optional[str] = Query('all'),
     milestone: Optional[str] = Query(None),
     assignee: Optional[str] = Query(None),
@@ -172,6 +212,18 @@ async def get_analyzed_issues(
     include_statistics: bool = Query(True, description="統計情報を含めるか")
 ):
     """分析済みissue一覧取得"""
+    if not x_session_id:
+        raise HTTPException(status_code=401, detail="セッションIDが必要です")
+    
+    gitlab_client = session_manager.get_gitlab_client(x_session_id)
+    if not gitlab_client:
+        raise HTTPException(status_code=404, detail="セッションが見つかりません")
+    
+    # issue_serviceをセッション用に作成
+    from app.services.issue_service import IssueService
+    issue_service = IssueService()
+    issue_service.client = gitlab_client
+    
     try:
         label_list = labels.split(',') if labels else None
         
@@ -203,7 +255,8 @@ async def get_analyzed_issues(
                 kanban_status=issue.kanban_status,
                 service=issue.service,
                 quarter=issue.quarter,
-                completed_at=issue.completed_at
+                completed_at=issue.completed_at,
+                is_epic=issue.is_epic
             )
             for issue in issues
         ]
@@ -223,8 +276,24 @@ async def get_analyzed_issues(
         raise HTTPException(status_code=500, detail=f"分析済みIssues取得に失敗しました: {str(e)}")
 
 @router.get("/validation", response_model=Dict[str, Any])
-async def validate_issues_data():
+async def validate_issues_data(
+    x_session_id: Optional[str] = Header(None)
+):
     """Issue分析データ検証"""
+    if not x_session_id:
+        raise HTTPException(status_code=401, detail="セッションIDが必要です")
+    
+    gitlab_client = session_manager.get_gitlab_client(x_session_id)
+    if not gitlab_client:
+        raise HTTPException(status_code=404, detail="セッションが見つかりません")
+    
+    # issue_serviceとissue_analyzerをセッション用に作成
+    from app.services.issue_service import IssueService
+    from app.services.issue_analyzer import IssueAnalyzer
+    issue_service = IssueService()
+    issue_service.client = gitlab_client
+    issue_analyzer = IssueAnalyzer()
+    
     try:
         # 全issue取得・分析
         issues = await issue_service.get_all_issues()
@@ -263,11 +332,24 @@ async def validate_issues_data():
 
 @router.get("/statistics", response_model=Dict[str, Any])
 async def get_issues_statistics(
+    x_session_id: Optional[str] = Header(None),
     milestone: Optional[str] = Query(None),
     quarter: Optional[str] = Query(None),
     service: Optional[str] = Query(None)
 ):
     """Issue統計情報取得"""
+    if not x_session_id:
+        raise HTTPException(status_code=401, detail="セッションIDが必要です")
+    
+    gitlab_client = session_manager.get_gitlab_client(x_session_id)
+    if not gitlab_client:
+        raise HTTPException(status_code=404, detail="セッションが見つかりません")
+    
+    # issue_serviceをセッション用に作成
+    from app.services.issue_service import IssueService
+    issue_service = IssueService()
+    issue_service.client = gitlab_client
+    
     try:
         # フィルタ条件構築
         labels = []
@@ -337,8 +419,23 @@ async def get_issues_statistics(
         raise HTTPException(status_code=500, detail=f"Issue統計取得に失敗しました: {str(e)}")
 
 @router.post("/search", response_model=Dict[str, Any])
-async def search_issues(search_request: IssueSearchRequest):
+async def search_issues(
+    search_request: IssueSearchRequest,
+    x_session_id: Optional[str] = Header(None)
+):
     """高度検索API"""
+    if not x_session_id:
+        raise HTTPException(status_code=401, detail="セッションIDが必要です")
+    
+    gitlab_client = session_manager.get_gitlab_client(x_session_id)
+    if not gitlab_client:
+        raise HTTPException(status_code=404, detail="セッションが見つかりません")
+    
+    # issue_serviceをセッション用に作成
+    from app.services.issue_service import IssueService
+    issue_service = IssueService()
+    issue_service.client = gitlab_client
+    
     try:
         # 検索条件をクエリパラメータ形式に変換
         labels = []
@@ -373,7 +470,7 @@ async def search_issues(search_request: IssueSearchRequest):
         # 追加フィルタ適用
         filtered_issues = _apply_advanced_filters(
             issues, search_request.min_point, search_request.max_point,
-            search_request.query, search_request.kanban_status
+            search_request.query, search_request.kanban_status, search_request.is_epic
         )
         
         # ソート
@@ -405,12 +502,25 @@ async def search_issues(search_request: IssueSearchRequest):
 
 @router.get("/export/csv")
 async def export_issues_csv(
+    x_session_id: Optional[str] = Header(None),
     state: Optional[str] = Query('all'),
     milestone: Optional[str] = Query(None),
     service: Optional[str] = Query(None),
     quarter: Optional[str] = Query(None)
 ):
     """Issues CSV エクスポート"""
+    if not x_session_id:
+        raise HTTPException(status_code=401, detail="セッションIDが必要です")
+    
+    gitlab_client = session_manager.get_gitlab_client(x_session_id)
+    if not gitlab_client:
+        raise HTTPException(status_code=404, detail="セッションが見つかりません")
+    
+    # issue_serviceをセッション用に作成
+    from app.services.issue_service import IssueService
+    issue_service = IssueService()
+    issue_service.client = gitlab_client
+    
     try:
         import csv
         import io
@@ -438,7 +548,7 @@ async def export_issues_csv(
         # ヘッダー
         writer.writerow([
             'ID', 'Title', 'State', 'Created At', 'Updated At', 'Due Date',
-            'Assignee', 'Milestone', 'Point', 'Kanban Status', 'Service',
+            'Assignee', 'Milestone', 'Epic', 'Point', 'Kanban Status', 'Service',
             'Quarter', 'Completed At', 'Web URL'
         ])
         
@@ -453,6 +563,7 @@ async def export_issues_csv(
                 issue.due_date.isoformat() if issue.due_date else '',
                 issue.assignee or '',
                 issue.milestone or '',
+                'Epic' if issue.is_epic else '',
                 issue.point or '',
                 issue.kanban_status or '',
                 issue.service or '',
@@ -474,8 +585,23 @@ async def export_issues_csv(
         raise HTTPException(status_code=500, detail=f"CSV エクスポートに失敗しました: {str(e)}")
 
 @router.get("/milestone/{milestone_name}", response_model=IssueListResponse)
-async def get_issues_by_milestone(milestone_name: str):
+async def get_issues_by_milestone(
+    milestone_name: str,
+    x_session_id: Optional[str] = Header(None)
+):
     """マイルストーン別issue取得"""
+    if not x_session_id:
+        raise HTTPException(status_code=401, detail="セッションIDが必要です")
+    
+    gitlab_client = session_manager.get_gitlab_client(x_session_id)
+    if not gitlab_client:
+        raise HTTPException(status_code=404, detail="セッションが見つかりません")
+    
+    # issue_serviceをセッション用に作成
+    from app.services.issue_service import IssueService
+    issue_service = IssueService()
+    issue_service.client = gitlab_client
+    
     try:
         issues = await issue_service.get_issues_by_milestone(milestone_name)
         
@@ -497,7 +623,8 @@ async def get_issues_by_milestone(milestone_name: str):
                 kanban_status=issue.kanban_status,
                 service=issue.service,
                 quarter=issue.quarter,
-                completed_at=issue.completed_at
+                completed_at=issue.completed_at,
+                is_epic=issue.is_epic
             )
             for issue in issues
         ]
@@ -517,8 +644,23 @@ async def get_issues_by_milestone(milestone_name: str):
         )
 
 @router.get("/{issue_id}", response_model=IssueResponse)
-async def get_issue(issue_id: int):
+async def get_issue(
+    issue_id: int,
+    x_session_id: Optional[str] = Header(None)
+):
     """特定issue詳細取得"""
+    if not x_session_id:
+        raise HTTPException(status_code=401, detail="セッションIDが必要です")
+    
+    gitlab_client = session_manager.get_gitlab_client(x_session_id)
+    if not gitlab_client:
+        raise HTTPException(status_code=404, detail="セッションが見つかりません")
+    
+    # issue_serviceをセッション用に作成
+    from app.services.issue_service import IssueService
+    issue_service = IssueService()
+    issue_service.client = gitlab_client
+    
     try:
         issue = await issue_service.get_issue_by_id(issue_id)
         
@@ -542,7 +684,8 @@ async def get_issue(issue_id: int):
             kanban_status=issue.kanban_status,
             service=issue.service,
             quarter=issue.quarter,
-            completed_at=issue.completed_at
+            completed_at=issue.completed_at,
+            is_epic=issue.is_epic
         )
         
     except HTTPException:
