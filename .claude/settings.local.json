@@ -1,0 +1,30 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(rg:*)",
+      "Bash(npm run build:*)",
+      "Bash(ls:*)",
+      "Bash(npm install)",
+      "Bash(npm run typecheck:*)",
+      "Bash(npm run lint)",
+      "Bash(npm run dev:*)",
+      "Bash(pkill:*)",
+      "Bash(python:*)",
+      "Bash(docker-compose:*)",
+      "Bash(docker logs:*)",
+      "Bash(npm install:*)",
+      "Bash(node:*)",
+      "Bash(npx playwright install:*)",
+      "Bash(chmod:*)",
+      "Bash(docker exec:*)",
+      "Bash(docker inspect:*)",
+      "Bash(docker restart:*)",
+      "Bash(rm:*)",
+      "Bash(curl:*)",
+      "Bash(npx playwright test:*)",
+      "Bash(grep:*)",
+      "Bash(mkdir:*)"
+    ],
+    "deny": []
+  }
+}

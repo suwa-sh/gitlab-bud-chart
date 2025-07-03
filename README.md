@@ -39,6 +39,13 @@ GitLab の issue を分析し、burn-up/burn-down チャート表示と product 
   # gitlab containerを利用する場合、事前に起動
   docker compose -f docker-compose.gitlab.yml up
 
+  # gitlab containerのPAT(Personal Access Token)生成し、docker/.envに書き込み
+  ../scripts/generate_gitlab_pat.sh
+  # サンプルissue登録
+  ../scripts/generate_gitlab_test_data.py
+
+  # ローカルソースをビルドして実行
+  docker compose -f docker-compose.local.yml build
   docker compose -f docker-compose.local.yml up
   ```
 
@@ -147,6 +154,10 @@ GitLab Bud Chart は以下のラベル規則に基づいて Issue を自動分�
 
 - `@FY25Q1` - 2025 年度第 1 四半期
 - `@FY25Q2` - 2025 年度第 2 四半期
+
+### エピック
+
+- `epic`
 
 ## 画面構成
 
