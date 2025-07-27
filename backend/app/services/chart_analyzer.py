@@ -4,11 +4,15 @@ from collections import defaultdict
 import logging
 from app.models.issue import IssueModel
 from app.models.chart import ChartDataModel, BurnChartRequest, BurnChartResponse
+from app.utils.business_days import BusinessDayCalculator
 
 logger = logging.getLogger(__name__)
 
 class ChartAnalyzer:
     """Burn-up/Burn-downチャート分析サービス"""
+    
+    def __init__(self):
+        self.business_day_calc = BusinessDayCalculator()
     
     def generate_burn_down_data(
         self,
@@ -25,8 +29,13 @@ class ChartAnalyzer:
             # 日付範囲生成
             date_range = self._generate_date_range(start_date, end_date)
             
-            # 開始時点の総ポイント計算
-            total_points = sum(issue.point for issue in filtered_issues if issue.point)
+            # 開始時点の総ポイント計算（期間外Openedや期間内完了のissueも含む）
+            total_points = sum(
+                issue.point for issue in filtered_issues 
+                if issue.point and self._is_issue_in_scope_by_date(
+                    issue, start_date, start_date, end_date
+                )
+            )
             
             chart_data = []
             for current_date in date_range:
@@ -53,6 +62,9 @@ class ChartAnalyzer:
                     ),
                     total_issues=len(filtered_issues)
                 ))
+            
+            # データ整合性チェック
+            self._validate_burn_down_data(chart_data, total_points)
             
             return chart_data
             
@@ -97,11 +109,16 @@ class ChartAnalyzer:
                     completed_points=completed_points,
                     remaining_points=total_points - completed_points,
                     total_issues=len([i for i in filtered_issues 
-                                    if self._is_issue_in_scope_by_date(i, current_date)]),
+                                    if self._is_issue_in_scope_by_date(
+                                        i, current_date, start_date, end_date
+                                    )]),
                     completed_issues=self._count_completed_issues_by_date(
                         filtered_issues, current_date
                     )
                 ))
+            
+            # データ整合性チェック
+            self._validate_burn_up_data(chart_data)
             
             return chart_data
             
@@ -162,18 +179,16 @@ class ChartAnalyzer:
         end_date: date, 
         current_date: date
     ) -> float:
-        """理想的な残りポイント計算（Burn-down用）"""
+        """理想的な残りポイント計算（Burn-down用）- 営業日ベース"""
         if current_date <= start_date:
             return total_points
         if current_date >= end_date:
             return 0.0
         
-        total_days = (end_date - start_date).days
-        if total_days == 0:
-            return 0.0
-        
-        elapsed_days = (current_date - start_date).days
-        progress_ratio = elapsed_days / total_days
+        # 営業日ベースで進捗率を計算
+        progress_ratio = self.business_day_calc.calculate_business_day_progress(
+            start_date, end_date, current_date
+        )
         
         return total_points * (1 - progress_ratio)
     
@@ -184,20 +199,65 @@ class ChartAnalyzer:
         end_date: date, 
         current_date: date
     ) -> float:
-        """理想的な完了ポイント計算（Burn-up用）"""
+        """理想的な完了ポイント計算（Burn-up用）- 営業日ベース"""
         if current_date <= start_date:
             return 0.0
         if current_date >= end_date:
             return total_points
         
-        total_days = (end_date - start_date).days
-        if total_days == 0:
-            return total_points
-        
-        elapsed_days = (current_date - start_date).days
-        progress_ratio = elapsed_days / total_days
+        # 営業日ベースで進捗率を計算
+        progress_ratio = self.business_day_calc.calculate_business_day_progress(
+            start_date, end_date, current_date
+        )
         
         return total_points * progress_ratio
+    
+    def _validate_burn_down_data(self, chart_data: List[ChartDataModel], total_points: float) -> None:
+        """バーンダウンチャートデータの整合性チェック"""
+        if not chart_data:
+            return
+        
+        # 最終日の理想線が0になっているか確認
+        final_planned = chart_data[-1].planned_points
+        if abs(final_planned) > 0.01:  # 浮動小数点の誤差を考慮
+            logger.warning(
+                f"バーンダウンチャートの最終日理想線が0ではありません: {final_planned}"
+            )
+        
+        # 各データポイントでの整合性チェック
+        for data in chart_data:
+            # 残りポイント = 総ポイント - 完了ポイント
+            expected_remaining = data.total_points - data.completed_points
+            if abs(data.remaining_points - expected_remaining) > 0.01:
+                logger.warning(
+                    f"データ整合性エラー ({data.date}): "
+                    f"残りポイント={data.remaining_points}, "
+                    f"期待値={expected_remaining}"
+                )
+    
+    def _validate_burn_up_data(self, chart_data: List[ChartDataModel]) -> None:
+        """バーンアップチャートデータの整合性チェック"""
+        if not chart_data:
+            return
+        
+        # 最終日の理想線が総ポイントに等しいか確認
+        final_data = chart_data[-1]
+        if abs(final_data.planned_points - final_data.total_points) > 0.01:
+            logger.warning(
+                f"バーンアップチャートの最終日理想線が総ポイントと一致しません: "
+                f"理想線={final_data.planned_points}, 総ポイント={final_data.total_points}"
+            )
+        
+        # 各データポイントでの整合性チェック
+        for data in chart_data:
+            # 残りポイント = 総ポイント - 完了ポイント
+            expected_remaining = data.total_points - data.completed_points
+            if abs(data.remaining_points - expected_remaining) > 0.01:
+                logger.warning(
+                    f"データ整合性エラー ({data.date}): "
+                    f"残りポイント={data.remaining_points}, "
+                    f"期待値={expected_remaining}"
+                )
     
     def _calculate_total_points_by_date(
         self, 
@@ -209,8 +269,9 @@ class ChartAnalyzer:
         for target_date in date_range:
             total_points = 0
             for issue in issues:
-                if (self._is_issue_in_scope_by_date(issue, target_date) and 
-                    issue.point):
+                if (self._is_issue_in_scope_by_date(
+                    issue, target_date, date_range[0], date_range[-1]
+                ) and issue.point):
                     total_points += issue.point
             total_by_date[target_date] = total_points
         return total_by_date
@@ -218,15 +279,29 @@ class ChartAnalyzer:
     def _is_issue_in_scope_by_date(
         self, 
         issue: IssueModel, 
-        target_date: date
+        target_date: date,
+        chart_start_date: date,
+        chart_end_date: date
     ) -> bool:
         """指定日時点でissueがスコープ内かどうか判定"""
-        # issueが作成済み
-        if issue.created_at.date() > target_date:
+        # created_atが表示期間終了日より未来の場合は除外
+        if issue.created_at.date() > chart_end_date:
             return False
         
-        # issueが削除されていない（基本的にはTrue）
-        return True
+        # Case 1: created_at <= target_date（従来の条件）
+        if issue.created_at.date() <= target_date:
+            return True
+        
+        # Case 2: created_atが範囲外でもOpenedなら対象（ただし期間内作成のみ）
+        if issue.state == 'opened':
+            return True
+        
+        # Case 3: completed_atが期間内なら対象（ただし期間内作成のみ）
+        if (issue.completed_at and 
+            chart_start_date <= issue.completed_at.date() <= chart_end_date):
+            return True
+        
+        return False
     
     def generate_velocity_data(
         self, 

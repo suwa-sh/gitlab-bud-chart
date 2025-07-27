@@ -13,6 +13,13 @@ async def get_burn_down_data(
     start_date: date = Query(...),
     end_date: date = Query(...),
     milestone: Optional[str] = Query(None),
+    service: Optional[str] = Query(None),
+    assignee: Optional[str] = Query(None),
+    kanban_status: Optional[str] = Query(None),
+    state: Optional[str] = Query(None),
+    is_epic: Optional[str] = Query(None),
+    point_min: Optional[float] = Query(None),
+    point_max: Optional[float] = Query(None),
     x_session_id: Optional[str] = Header(None)
 ):
     """Burn-downチャートデータ取得"""
@@ -37,11 +44,30 @@ async def get_burn_down_data(
     chart_analyzer = ChartAnalyzer()
     
     try:
-        # Issue取得・分析
+        # Issue取得・分析（チャートでは全状態を取得）
         issues, _ = await issue_service.get_analyzed_issues(
             milestone=milestone,
+            service=service,
+            assignee=assignee,
+            kanban_status=kanban_status,
+            state='all',  # チャートでは全状態のイシューを取得
             analyze=True
         )
+        
+        # 追加のフィルタリング
+        if is_epic is not None:
+            is_epic_bool = is_epic == 'epic'
+            issues = [i for i in issues if i.is_epic == is_epic_bool]
+        
+        if point_min is not None:
+            issues = [i for i in issues if i.point and i.point >= point_min]
+        
+        if point_max is not None:
+            issues = [i for i in issues if i.point and i.point <= point_max]
+        
+        # stateフィルタをチャート生成後に適用
+        if state and state != 'all':
+            issues = [i for i in issues if i.state == state]
         
         # チャートデータ生成
         chart_data = chart_analyzer.generate_burn_down_data(
@@ -76,6 +102,13 @@ async def get_burn_up_data(
     start_date: date = Query(...),
     end_date: date = Query(...),
     milestone: Optional[str] = Query(None),
+    service: Optional[str] = Query(None),
+    assignee: Optional[str] = Query(None),
+    kanban_status: Optional[str] = Query(None),
+    state: Optional[str] = Query(None),
+    is_epic: Optional[str] = Query(None),
+    point_min: Optional[float] = Query(None),
+    point_max: Optional[float] = Query(None),
     x_session_id: Optional[str] = Header(None)
 ):
     """Burn-upチャートデータ取得"""
@@ -102,8 +135,27 @@ async def get_burn_up_data(
     try:
         issues, _ = await issue_service.get_analyzed_issues(
             milestone=milestone,
+            service=service,
+            assignee=assignee,
+            kanban_status=kanban_status,
+            state='all',  # チャートでは全状態のイシューを取得
             analyze=True
         )
+        
+        # 追加のフィルタリング
+        if is_epic is not None:
+            is_epic_bool = is_epic == 'epic'
+            issues = [i for i in issues if i.is_epic == is_epic_bool]
+        
+        if point_min is not None:
+            issues = [i for i in issues if i.point and i.point >= point_min]
+        
+        if point_max is not None:
+            issues = [i for i in issues if i.point and i.point <= point_max]
+        
+        # stateフィルタをチャート生成後に適用
+        if state and state != 'all':
+            issues = [i for i in issues if i.state == state]
         
         chart_data = chart_analyzer.generate_burn_up_data(
             issues, start_date, end_date, milestone

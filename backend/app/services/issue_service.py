@@ -140,7 +140,9 @@ class IssueService:
         milestone: Optional[str] = None,
         assignee: Optional[str] = None,
         labels: Optional[List[str]] = None,
-        analyze: bool = True
+        analyze: bool = True,
+        service: Optional[str] = None,
+        kanban_status: Optional[str] = None
     ) -> Tuple[List[IssueModel], Dict[str, Any]]:
         """
         分析済みissue取得 + 統計情報
@@ -156,6 +158,16 @@ class IssueService:
         # 分析実行
         if analyze:
             issues = issue_analyzer.analyze_issues_batch(issues)
+        
+        # テンプレートissueを除外（統合ルールに従い）
+        issues = [i for i in issues if i.kanban_status != "--テンプレート"]
+        
+        # 追加のフィルタリング
+        if service:
+            issues = [i for i in issues if i.service == service]
+        
+        if kanban_status:
+            issues = [i for i in issues if i.kanban_status == kanban_status]
         
         # 統計情報生成
         statistics = self._generate_statistics(issues)

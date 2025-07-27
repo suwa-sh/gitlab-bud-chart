@@ -49,6 +49,154 @@ GitLab の issue を分析し、burn-up/burn-down チャート表示と product 
   docker compose -f docker-compose.local.yml up
   ```
 
+## 画面構成
+
+### Dashboard
+
+- プロジェクト全体の進捗状況
+- Burn-up/Burn-down チャート
+- 期間選択・フィルタリング
+- 統計情報表示
+
+### PBL Viewer
+
+- Product Backlog 一覧
+- 詳細フィルタ・検索
+- Issue 詳細表示
+- CSV エクスポート
+
+## 表示条件・フィルタリング
+
+### Dashboard 表示条件
+
+#### データ取得方法
+
+- **API**: `/api/issues/` エンドポイントを使用
+- **期間フィルタ**: `chart_start_date`, `chart_end_date` パラメータで期間指定
+- **リアルタイム更新**: 設定変更時に常に API 再呼び出し
+- **テンプレート除外**: `kanban_status === "--テンプレート"` を自動除外
+
+#### チャート生成条件
+
+- **対象データ**: 期間内のスコープフィルタ適用済み Issue
+- **営業日計算**: 日本の祝日を考慮した営業日ベースの理想線
+- **スコープルール**:
+  1. `created_at` が期間内の Issue
+  2. `created_at` が期間外でも `state=opened` の Issue
+  3. `completed_at` が期間内の Issue
+  4. `created_at` が期間終了日より未来の Issue は除外
+
+#### フィルタ項目（13 種類）
+
+1. **期間**: chart_start_date / chart_end_date
+2. **Service**: サービス名での絞り込み
+3. **Milestone**: マイルストーンでの絞り込み
+4. **Epic**: Epic/通常 Issue での絞り込み
+5. **Title**: タイトル部分一致検索
+6. **Point**: 最小値・最大値での範囲指定
+7. **Kanban Status**: かんばんステータスでの絞り込み
+8. **Assignee**: アサイニーでの絞り込み
+9. **Created At**: 作成日の期間指定
+10. **Completed At**: 完了日の期間指定
+11. **State**: opened/closed での状態絞り込み
+12. **Chart View**: Both/Burn Down/Burn Up 表示切り替え
+13. **Template Exclusion**: `--テンプレート` の自動除外
+
+### PBL Viewer 表示条件
+
+#### データ取得方法
+
+- **API**: `/api/issues/` エンドポイントを使用
+- **全量取得**: `per_page=10000` で大量データを一括取得
+- **キャッシュ優先**: 初回ロード時はキャッシュデータを優先利用
+- **期間フィルタ除外**: API 呼び出し時に期間関連フィルタを削除
+- **テンプレート除外**: `kanban_status === "--テンプレート"` を自動除外
+
+#### キャッシュ管理
+
+- **初回ロード**: キャッシュデータがある場合は API 呼び出しをスキップ
+- **設定変更時**: 常に API 再呼び出しでデータ更新
+- **タイムスタンプ表示**: 最終更新時刻をヘッダーに表示
+
+#### 期間フィルタの特別処理
+
+```javascript
+// PBL Viewer では以下のフィルタを API 呼び出し時に除外
+delete filtersWithoutPeriod.created_after;
+delete filtersWithoutPeriod.created_before;
+delete filtersWithoutPeriod.completed_after;
+delete filtersWithoutPeriod.quarter;
+```
+
+#### フィルタ項目（11 種類）
+
+1. **Service**: サービス名での絞り込み
+2. **Milestone**: マイルストーンでの絞り込み
+3. **Epic**: Epic/通常 Issue での絞り込み
+4. **Title**: タイトル部分一致検索
+5. **Point**: 最小値・最大値での範囲指定
+6. **Kanban Status**: かんばんステータスでの絞り込み
+7. **Assignee**: アサイニーでの絞り込み
+8. **Quarter**: 四半期での絞り込み（表示のみ、API には送信されない）
+9. **Created At**: 作成日の期間指定（フロントエンド表示のみ）
+10. **Completed At**: 完了日の期間指定（フロントエンド表示のみ）
+11. **State**: opened/closed での状態絞り込み
+
+#### 表示設定
+
+- **ページサイズ**: デフォルト 50 件
+- **全件表示**: `allowShowAll={true}` で有効
+- **初期状態**: `initialShowAll={true}` で全件表示開始
+
+### 共通仕様
+
+#### テンプレート除外
+
+- **バックエンド**: `IssueService.get_analyzed_issues()` で自動除外
+- **対象**: `kanban_status === "--テンプレート"` の Issue
+- **適用範囲**: チャート生成、Issue リスト、検索結果すべて
+
+#### フィルタリセット
+
+- **Dashboard**: 詳細フィルタエリアで個別リセット
+- **PBL Viewer**: 全フィルタ一括リセット + API 再呼び出し
+
+#### エラーハンドリング
+
+- **セッション期限切れ**: 401/403 エラー時に GitLab 設定画面表示
+- **接続エラー**: エラーメッセージ表示 + 再試行ボタン
+
+## Issue ラベル規則
+
+GitLab Bud Chart は以下のラベル規則に基づいて Issue を自動分析します：
+
+### ポイント設定
+
+- `p:1.0`, `p:2.5`, `p:5.0` - ストーリーポイント
+- 例: `p:3.0` = 3.0 ポイント
+
+### Kanban ステータス
+
+- `#作業中` - 進行中のタスク
+- `#完了` - 完了したタスク
+- `#レビュー中` - レビュー待ち
+- `#--テンプレート` - テンプレート
+
+### サービス分類
+
+- `s:backend` - バックエンド関連
+- `s:frontend` - フロントエンド関連
+- `s:infrastructure` - インフラ関連
+
+### 四半期分類
+
+- `@FY25Q1` - 2025 年度第 1 四半期
+- `@FY25Q2` - 2025 年度第 2 四半期
+
+### エピック
+
+- `epic`
+
 ## 設計
 
 - [プロンプト](/docs/develop/prompt.md)
@@ -128,52 +276,6 @@ npm run dev
    - Project ID: 対象プロジェクトの ID
 
 3. Issue 分析用ラベル設定（詳細は `docs/develop/specs/issue_rules.md` 参照）
-
-## Issue ラベル規則
-
-GitLab Bud Chart は以下のラベル規則に基づいて Issue を自動分析します：
-
-### ポイント設定
-
-- `p:1.0`, `p:2.5`, `p:5.0` - ストーリーポイント
-- 例: `p:3.0` = 3.0 ポイント
-
-### Kanban ステータス
-
-- `#作業中` - 進行中のタスク
-- `#完了` - 完了したタスク
-- `#レビュー中` - レビュー待ち
-
-### サービス分類
-
-- `s:backend` - バックエンド関連
-- `s:frontend` - フロントエンド関連
-- `s:infrastructure` - インフラ関連
-
-### 四半期分類
-
-- `@FY25Q1` - 2025 年度第 1 四半期
-- `@FY25Q2` - 2025 年度第 2 四半期
-
-### エピック
-
-- `epic`
-
-## 画面構成
-
-### Dashboard
-
-- プロジェクト全体の進捗状況
-- Burn-up/Burn-down チャート
-- 期間選択・フィルタリング
-- 統計情報表示
-
-### PBL Viewer
-
-- Product Backlog 一覧
-- 詳細フィルタ・検索
-- Issue 詳細表示
-- CSV エクスポート
 
 ## 開発
 
@@ -328,10 +430,6 @@ tail -f backend/logs/app.log
 - テストカバレッジ 80%以上
 - ESLint/Prettier 設定に従う
 - セキュリティ要件の遵守
-
-## 設計
-
-![](/docs/develop/specs/rough_design.excalidraw.png)
 
 ## ライセンス
 

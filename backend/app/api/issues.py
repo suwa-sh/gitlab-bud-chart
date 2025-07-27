@@ -1,5 +1,6 @@
 from fastapi import APIRouter, HTTPException, Query, Header
 from typing import List, Optional, Dict, Any
+from datetime import date
 from app.services.session_manager import session_manager
 from app.models.issue import (
     IssueResponse, 
@@ -13,6 +14,39 @@ import logging
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
+def _apply_scope_filter(
+    issues: List[IssueModel],
+    chart_start_date: Optional[date],
+    chart_end_date: Optional[date]
+) -> List[IssueModel]:
+    """チャートと同様のスコープフィルタを適用"""
+    if not chart_start_date or not chart_end_date:
+        return issues
+    
+    filtered = []
+    for issue in issues:
+        # created_atが表示期間終了日より未来の場合は除外
+        if issue.created_at.date() > chart_end_date:
+            continue
+        
+        # Case 1: created_atが期間内
+        if chart_start_date <= issue.created_at.date() <= chart_end_date:
+            filtered.append(issue)
+            continue
+        
+        # Case 2: created_atが範囲外でもOpenedなら対象（ただし期間内作成のみ）
+        if issue.state == 'opened':
+            filtered.append(issue)
+            continue
+        
+        # Case 3: completed_atが期間内なら対象（ただし期間内作成のみ）
+        if (issue.completed_at and 
+            chart_start_date <= issue.completed_at.date() <= chart_end_date):
+            filtered.append(issue)
+            continue
+    
+    return filtered
+
 def _apply_advanced_filters(
     issues: List[IssueModel], 
     min_point: Optional[float], 
@@ -22,7 +56,8 @@ def _apply_advanced_filters(
     is_epic: Optional[str]
 ) -> List[IssueModel]:
     """高度フィルタ適用"""
-    filtered = issues
+    # テンプレートissueを除外（PBL Viewer統合ルール 3.3.1に従い）
+    filtered = [i for i in issues if i.kanban_status != "--テンプレート"]
     
     # Point範囲フィルタ
     if min_point is not None:
@@ -123,6 +158,8 @@ async def get_issues(
     max_point: Optional[float] = Query(None),
     search: Optional[str] = Query(None),
     is_epic: Optional[str] = Query(None),
+    chart_start_date: Optional[date] = Query(None),
+    chart_end_date: Optional[date] = Query(None),
     sort_by: Optional[str] = Query('created_at'),
     sort_order: Optional[str] = Query('desc'),
     page: Optional[int] = Query(1),
@@ -163,15 +200,22 @@ async def get_issues(
         if normalized_kanban_status:
             labels.append(f"#{normalized_kanban_status}")
         
-        # Issue取得・分析
+        # Issue取得・分析（全状態で取得）
         issues, statistics = await issue_service.get_analyzed_issues(
-            state=normalized_state,
+            state='all',  # チャートと同様に全状態で取得
             milestone=normalized_milestone,
             assignee=normalized_assignee,
             labels=labels if labels else None,
             analyze=True
         )
         
+        # スコープフィルタ適用（チャートと同条件）
+        if chart_start_date and chart_end_date:
+            issues = _apply_scope_filter(issues, chart_start_date, chart_end_date)
+        
+        # stateフィルタを後から適用
+        if normalized_state and normalized_state != 'all':
+            issues = [i for i in issues if i.state == normalized_state]
         
         # 追加フィルタ適用
         filtered_issues = _apply_advanced_filters(
@@ -421,7 +465,9 @@ async def get_issues_statistics(
 @router.post("/search", response_model=Dict[str, Any])
 async def search_issues(
     search_request: IssueSearchRequest,
-    x_session_id: Optional[str] = Header(None)
+    x_session_id: Optional[str] = Header(None),
+    chart_start_date: Optional[date] = Query(None),
+    chart_end_date: Optional[date] = Query(None)
 ):
     """高度検索API"""
     if not x_session_id:
@@ -446,14 +492,22 @@ async def search_issues(
         if search_request.kanban_status:
             labels.append(f"#{search_request.kanban_status}")
         
-        # Issue取得・分析
+        # Issue取得・分析（全状態で取得）
         issues, statistics = await issue_service.get_analyzed_issues(
-            state=search_request.state,
+            state='all',  # チャートと同様に全状態で取得
             milestone=search_request.milestone,
             assignee=search_request.assignee,
             labels=labels if labels else None,
             analyze=True
         )
+        
+        # スコープフィルタ適用（チャートと同条件）
+        if chart_start_date and chart_end_date:
+            issues = _apply_scope_filter(issues, chart_start_date, chart_end_date)
+        
+        # stateフィルタを後から適用
+        if search_request.state and search_request.state != 'all':
+            issues = [i for i in issues if i.state == search_request.state]
         
         # 日付範囲フィルタ
         if search_request.date_from or search_request.date_to:
