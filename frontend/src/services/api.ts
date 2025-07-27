@@ -69,6 +69,8 @@ export const issuesApi = {
     created_before?: string
     completed_after?: string
     is_epic?: string
+    chart_start_date?: string
+    chart_end_date?: string
     page?: number
     per_page?: number
     sort_by?: string
@@ -94,6 +96,8 @@ export const issuesApi = {
     max_point?: number
     quarter?: string
     is_epic?: string
+    chart_start_date?: string
+    chart_end_date?: string
     page?: number
     per_page?: number
   }): Promise<Issue[] | any> => {
@@ -129,11 +133,23 @@ export const chartsApi = {
   getBurnDownData: async (
     milestone: string | undefined,
     startDate: string,
-    endDate: string
+    endDate: string,
+    filters?: {
+      service?: string
+      assignee?: string
+      kanban_status?: string
+      state?: string
+      is_epic?: string
+      point_min?: number
+      point_max?: number
+    }
   ): Promise<BurnChartResponse> => {
     const params: any = { start_date: startDate, end_date: endDate }
     if (milestone) {
       params.milestone = milestone
+    }
+    if (filters) {
+      Object.assign(params, filters)
     }
     const response = await api.get('/charts/burn-down', { params })
     return response.data
@@ -142,11 +158,23 @@ export const chartsApi = {
   getBurnUpData: async (
     milestone: string | undefined,
     startDate: string,
-    endDate: string
+    endDate: string,
+    filters?: {
+      service?: string
+      assignee?: string
+      kanban_status?: string
+      state?: string
+      is_epic?: string
+      point_min?: number
+      point_max?: number
+    }
   ): Promise<BurnChartResponse> => {
     const params: any = { start_date: startDate, end_date: endDate }
     if (milestone) {
       params.milestone = milestone
+    }
+    if (filters) {
+      Object.assign(params, filters)
     }
     const response = await api.get('/charts/burn-up', { params })
     return response.data

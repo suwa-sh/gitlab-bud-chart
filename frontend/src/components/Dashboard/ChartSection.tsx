@@ -92,16 +92,29 @@ export const ChartSection = ({ period, issues, loading, onPeriodChange, issueFil
     setError('')
     
     try {
+      // フィルタパラメータを準備
+      const chartFilters = issueFilters ? {
+        service: issueFilters.service || undefined,
+        assignee: issueFilters.assignee || undefined,
+        kanban_status: issueFilters.kanban_status || undefined,
+        state: issueFilters.state || undefined,
+        is_epic: issueFilters.is_epic || undefined,
+        point_min: issueFilters.point_min,
+        point_max: issueFilters.point_max
+      } : undefined
+      
       const [burnDown, burnUp] = await Promise.all([
         chartsApi.getBurnDownData(
           issueFilters?.milestone || undefined,
           period.start,
-          period.end
+          period.end,
+          chartFilters
         ),
         chartsApi.getBurnUpData(
           issueFilters?.milestone || undefined,
           period.start,
-          period.end
+          period.end,
+          chartFilters
         )
       ])
       
