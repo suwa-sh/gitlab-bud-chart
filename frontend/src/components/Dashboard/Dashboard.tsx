@@ -179,6 +179,8 @@ export const Dashboard = () => {
             issues={filteredIssues}
             loading={loading}
             showFilters={false}
+            allowShowAll={true}
+            initialShowAll={true}
           />
         </div>
       </div>

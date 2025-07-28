@@ -5,6 +5,7 @@ from app.services.gitlab_client import GitLabClient
 from app.models.issue import IssueModel, IssueResponse
 from app.utils.retry import async_retry
 from app.services.issue_analyzer import issue_analyzer
+from app.utils.issue_filters import apply_exclusion_filter
 
 logger = logging.getLogger(__name__)
 
@@ -159,8 +160,8 @@ class IssueService:
         if analyze:
             issues = issue_analyzer.analyze_issues_batch(issues)
         
-        # テンプレートissueを除外（統合ルールに従い）
-        issues = [i for i in issues if i.kanban_status != "--テンプレート"]
+        # 統一除外ルールを適用
+        issues = apply_exclusion_filter(issues)
         
         # 追加のフィルタリング
         if service:

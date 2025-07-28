@@ -23,7 +23,13 @@
       "Bash(curl:*)",
       "Bash(npx playwright test:*)",
       "Bash(grep:*)",
-      "Bash(mkdir:*)"
+      "Bash(mkdir:*)",
+      "Bash(docker compose:*)",
+      "Bash(find:*)",
+      "Bash(sed:*)",
+      "WebFetch(domain:reactjs.org)",
+      "WebFetch(domain:legacy.reactjs.org)",
+      "WebFetch(domain:react.dev)"
     ],
     "deny": []
   }

@@ -35,8 +35,7 @@
 
 /* Main content container */
 .dashboard, .pbl-viewer {
-  max-width: 1200px;
-  margin: 0 auto;
+  width: 100%;
   padding: 30px 20px;
   min-height: calc(100vh - 70px);
 }
@@ -68,6 +67,9 @@
   grid-template-columns: 1fr 1fr;
   gap: 25px;
   margin-bottom: 40px;
+  width: 90%;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .chart-container {
@@ -100,6 +102,9 @@
 
 .issues-section {
   margin-top: 40px;
+  width: 100%;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .issues-section h2 {

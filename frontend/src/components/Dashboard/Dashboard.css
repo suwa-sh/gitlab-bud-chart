@@ -1,7 +1,8 @@
 .dashboard {
   padding: 20px;
-  max-width: 1200px;
-  margin: 0 auto;
+  width: 100% !important;
+  max-width: none !important;
+  margin: 0 !important;
 }
 
 .dashboard-header {
@@ -151,12 +152,16 @@
   display: flex;
   flex-direction: column;
   gap: 30px;
+  width: 100%;
+  align-items: center;
 }
 
 .charts-section {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 20px;
+  width: 90%;
+  max-width: none;
 }
 
 .chart-container {
@@ -254,6 +259,58 @@
   background: #6c757d;
   cursor: not-allowed;
   opacity: 0.6;
+}
+
+.issues-section {
+  width: 100%;
+  max-width: none;
+}
+
+/* Large screens - maximize space utilization */
+@media (min-width: 1200px) {
+  .dashboard {
+    padding: 25px 40px;
+    max-width: none;
+  }
+  
+  .charts-section {
+    gap: 30px;
+  }
+  
+  .chart-container {
+    padding: 25px;
+  }
+}
+
+@media (min-width: 1600px) {
+  .dashboard {
+    padding: 30px 60px;
+  }
+  
+  .charts-section {
+    gap: 40px;
+  }
+  
+  .dashboard-content {
+    gap: 40px;
+  }
+}
+
+@media (min-width: 2000px) {
+  .dashboard {
+    padding: 40px 80px;
+  }
+  
+  .charts-section {
+    gap: 50px;
+  }
+}
+
+/* Tablet and mobile responsive design */
+@media (max-width: 1024px) {
+  .charts-section {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 768px) {

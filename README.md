@@ -54,39 +54,61 @@ GitLab の issue を分析し、burn-up/burn-down チャート表示と product 
 ### Dashboard
 
 - プロジェクト全体の進捗状況
-- Burn-up/Burn-down チャート
+- Burn-up/Burn-down チャート（レスポンシブ対応、ウィンドウ幅100%）
+- 統一された統計情報表示（総ポイント、完了ポイント、完了率、残ポイント、残日数）
 - 期間選択・フィルタリング
-- 統計情報表示
+- Issues 一覧（デフォルトでページング無効、ウィンドウ幅100%）
 
 ### PBL Viewer
 
-- Product Backlog 一覧
+- Product Backlog 一覧（ウィンドウ幅100%、レスポンシブ対応）
+- 統計情報表示（issue件数、総ポイント数、完了ポイント、完了率）
 - 詳細フィルタ・検索
 - Issue 詳細表示
 - CSV エクスポート
+- デフォルトでページング無効
 
 ## 表示条件・フィルタリング
+
+### 統一されたフィルタリングシステム
+
+#### 統一フィルタルール
+
+Dashboard と PBL Viewer で共通のフィルタリング機能を適用：
+
+1. **除外ルール**: 以下の kanban_status を自動除外
+   - `テンプレート` (GitLab ラベル: `#テンプレート`)
+   - `ゴール/アナウンス` (GitLab ラベル: `#ゴール/アナウンス`)
+   - `不要` (GitLab ラベル: `#不要`)
+
+2. **日付補正**: `created_at > completed_at` の場合、`created_at = completed_at` に自動補正
+
+3. **完了基準統一**: `completed_at` の存在により完了判定（従来の `state` ベースから変更）
 
 ### Dashboard 表示条件
 
 #### データ取得方法
 
 - **API**: `/api/issues/` エンドポイントを使用
-- **期間フィルタ**: `chart_start_date`, `chart_end_date` パラメータで期間指定
+- **期間フィルタ**: `chart_start_date`, `chart_end_date` パラメータで期間指定  
+- **フィルタ順序**: 統一フィルタ適用 → スコープフィルタ適用
 - **リアルタイム更新**: 設定変更時に常に API 再呼び出し
-- **テンプレート除外**: `kanban_status === "--テンプレート"` を自動除外
 
 #### チャート生成条件
 
-- **対象データ**: 期間内のスコープフィルタ適用済み Issue
+- **対象データ**: 統一フィルタ + スコープフィルタ適用済み Issue
 - **営業日計算**: 日本の祝日を考慮した営業日ベースの理想線
-- **スコープルール**:
+- **ベロシティ計算**: 廃止（統計表示から削除）
+- **統計表示**: 総ポイント、完了ポイント、完了率、残ポイント、残日数（営業日）
+
+#### スコープルール
+
   1. `created_at` が期間内の Issue
-  2. `created_at` が期間外でも `state=opened` の Issue
+  2. `created_at` が期間外でも `state=opened` の Issue  
   3. `completed_at` が期間内の Issue
   4. `created_at` が期間終了日より未来の Issue は除外
 
-#### フィルタ項目（13 種類）
+#### フィルタ項目（12 種類）
 
 1. **期間**: chart_start_date / chart_end_date
 2. **Service**: サービス名での絞り込み
@@ -100,17 +122,25 @@ GitLab の issue を分析し、burn-up/burn-down チャート表示と product 
 10. **Completed At**: 完了日の期間指定
 11. **State**: opened/closed での状態絞り込み
 12. **Chart View**: Both/Burn Down/Burn Up 表示切り替え
-13. **Template Exclusion**: `--テンプレート` の自動除外
 
 ### PBL Viewer 表示条件
 
 #### データ取得方法
 
 - **API**: `/api/issues/` エンドポイントを使用
+- **統一フィルタ**: Dashboard と同じ除外ルール・日付補正を適用
+- **完了基準**: Dashboard と統一（`completed_at` ベース）
 - **全量取得**: `per_page=10000` で大量データを一括取得
 - **キャッシュ優先**: 初回ロード時はキャッシュデータを優先利用
 - **期間フィルタ除外**: API 呼び出し時に期間関連フィルタを削除
-- **テンプレート除外**: `kanban_status === "--テンプレート"` を自動除外
+
+#### 統計表示形式
+
+Dashboard に合わせた統一フォーマット：
+- **issue件数**: 総Issue数
+- **総ポイント数**: 全Issue のポイント合計
+- **完了ポイント**: 完了Issue のポイント合計  
+- **完了率**: ポイントベースの完了率（完了ポイント/総ポイント数）
 
 #### キャッシュ管理
 
@@ -144,17 +174,18 @@ delete filtersWithoutPeriod.quarter;
 
 #### 表示設定
 
-- **ページサイズ**: デフォルト 50 件
+- **ページング**: デフォルトで無効（Dashboard と統一）
 - **全件表示**: `allowShowAll={true}` で有効
 - **初期状態**: `initialShowAll={true}` で全件表示開始
 
 ### 共通仕様
 
-#### テンプレート除外
+#### 統一フィルタ機能
 
-- **バックエンド**: `IssueService.get_analyzed_issues()` で自動除外
-- **対象**: `kanban_status === "--テンプレート"` の Issue
-- **適用範囲**: チャート生成、Issue リスト、検索結果すべて
+- **実装場所**: `/utils/issueFilters.ts` (フロントエンド)
+- **除外対象**: `テンプレート`、`ゴール/アナウンス`、`不要` の kanban_status
+- **日付補正**: created_at > completed_at の場合の自動補正
+- **適用範囲**: Dashboard チャート生成、Issues一覧、PBL Viewer すべて
 
 #### フィルタリセット
 
@@ -177,10 +208,12 @@ GitLab Bud Chart は以下のラベル規則に基づいて Issue を自動分�
 
 ### Kanban ステータス
 
-- `#作業中` - 進行中のタスク
+- `#作業中` - 進行中のタスク  
 - `#完了` - 完了したタスク
 - `#レビュー中` - レビュー待ち
-- `#--テンプレート` - テンプレート
+- `#テンプレート` - テンプレート（自動除外対象）
+- `#ゴール/アナウンス` - ゴール/アナウンス（自動除外対象）
+- `#不要` - 不要なIssue（自動除外対象）
 
 ### サービス分類
 

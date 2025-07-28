@@ -5,6 +5,7 @@ import logging
 from app.models.issue import IssueModel
 from app.models.chart import ChartDataModel, BurnChartRequest, BurnChartResponse
 from app.utils.business_days import BusinessDayCalculator
+from app.utils.issue_filters import apply_unified_filters
 
 logger = logging.getLogger(__name__)
 
@@ -23,8 +24,11 @@ class ChartAnalyzer:
     ) -> List[ChartDataModel]:
         """Burn-downチャートデータ生成"""
         try:
+            # 統一フィルタを適用（除外ルールと日付補正）
+            filtered_issues = apply_unified_filters(issues)
+            
             # マイルストーンフィルタ
-            filtered_issues = self._filter_by_milestone(issues, milestone)
+            filtered_issues = self._filter_by_milestone(filtered_issues, milestone)
             
             # 日付範囲生成
             date_range = self._generate_date_range(start_date, end_date)
@@ -81,7 +85,12 @@ class ChartAnalyzer:
     ) -> List[ChartDataModel]:
         """Burn-upチャートデータ生成"""
         try:
-            filtered_issues = self._filter_by_milestone(issues, milestone)
+            # 統一フィルタを適用（除外ルールと日付補正）
+            filtered_issues = apply_unified_filters(issues)
+            
+            # マイルストーンフィルタ
+            filtered_issues = self._filter_by_milestone(filtered_issues, milestone)
+            
             date_range = self._generate_date_range(start_date, end_date)
             
             # 総ポイント（動的に変化する可能性あり）
@@ -302,59 +311,6 @@ class ChartAnalyzer:
             return True
         
         return False
-    
-    def generate_velocity_data(
-        self, 
-        issues: List[IssueModel], 
-        weeks: int = 12
-    ) -> List[Dict[str, Any]]:
-        """ベロシティデータ生成"""
-        try:
-            # 週別完了ポイント集計
-            weekly_data = defaultdict(float)
-            
-            for issue in issues:
-                if issue.completed_at and issue.point:
-                    # 週の開始日計算（月曜日基準）
-                    week_start = issue.completed_at.date() - timedelta(
-                        days=issue.completed_at.weekday()
-                    )
-                    weekly_data[week_start] += issue.point
-            
-            # 最新週から指定週数分取得
-            sorted_weeks = sorted(weekly_data.keys(), reverse=True)[:weeks]
-            
-            velocity_data = []
-            for week_start in reversed(sorted_weeks):
-                week_end = week_start + timedelta(days=6)
-                velocity_data.append({
-                    'week_start': week_start.isoformat(),
-                    'week_end': week_end.isoformat(),
-                    'completed_points': weekly_data[week_start],
-                    'completed_issues': self._count_issues_in_week(
-                        issues, week_start, week_end
-                    )
-                })
-            
-            return velocity_data
-            
-        except Exception as e:
-            logger.error(f"ベロシティデータ生成失敗: {e}")
-            raise
-    
-    def _count_issues_in_week(
-        self, 
-        issues: List[IssueModel], 
-        week_start: date, 
-        week_end: date
-    ) -> int:
-        """週内完了issue数計算"""
-        count = 0
-        for issue in issues:
-            if (issue.completed_at and 
-                week_start <= issue.completed_at.date() <= week_end):
-                count += 1
-        return count
 
 # グローバルインスタンス
 chart_analyzer = ChartAnalyzer()

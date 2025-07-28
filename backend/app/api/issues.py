@@ -9,6 +9,7 @@ from app.models.issue import (
     IssueSearchRequest,
     IssueModel
 )
+from app.utils.issue_filters import apply_unified_filters
 import logging
 
 logger = logging.getLogger(__name__)
@@ -55,9 +56,8 @@ def _apply_advanced_filters(
     kanban_status: Optional[str],
     is_epic: Optional[str]
 ) -> List[IssueModel]:
-    """高度フィルタ適用"""
-    # テンプレートissueを除外（PBL Viewer統合ルール 3.3.1に従い）
-    filtered = [i for i in issues if i.kanban_status != "--テンプレート"]
+    """高度フィルタ適用（統一フィルタは事前適用済み）"""
+    filtered = issues
     
     # Point範囲フィルタ
     if min_point is not None:
@@ -208,6 +208,9 @@ async def get_issues(
             labels=labels if labels else None,
             analyze=True
         )
+        
+        # まず統一フィルタを適用（除外ルールと日付補正）
+        issues = apply_unified_filters(issues)
         
         # スコープフィルタ適用（チャートと同条件）
         if chart_start_date and chart_end_date:
@@ -500,6 +503,9 @@ async def search_issues(
             labels=labels if labels else None,
             analyze=True
         )
+        
+        # まず統一フィルタを適用（除外ルールと日付補正）
+        issues = apply_unified_filters(issues)
         
         # スコープフィルタ適用（チャートと同条件）
         if chart_start_date and chart_end_date:

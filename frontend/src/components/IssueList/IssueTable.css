@@ -221,6 +221,7 @@
   max-height: 600px;
   overflow-y: auto;
   position: relative;
+  min-width: 0;
 }
 
 .table-wrapper.show-all {
@@ -229,6 +230,7 @@
 
 .issue-table {
   width: 100%;
+  min-width: 1200px;
   border-collapse: collapse;
   font-size: 14px;
 }
@@ -388,7 +390,57 @@
   border-color: #0066cc;
 }
 
+/* Enhanced responsive design for wider screens */
+@media (min-width: 1200px) {
+  .issue-table-container {
+    padding: 25px;
+  }
+  
+  .issue-table {
+    min-width: 1400px;
+  }
+  
+  .issue-table th,
+  .issue-table td {
+    padding: 14px 10px;
+  }
+}
+
+@media (min-width: 1600px) {
+  .issue-table-container {
+    padding: 30px;
+  }
+  
+  .issue-table {
+    min-width: 1600px;
+  }
+  
+  .issue-table th,
+  .issue-table td {
+    padding: 16px 12px;
+  }
+}
+
+@media (min-width: 2000px) {
+  .issue-table-container {
+    padding: 35px;
+  }
+  
+  .issue-table {
+    min-width: 1800px;
+  }
+  
+  .issue-table th,
+  .issue-table td {
+    padding: 18px 14px;
+  }
+}
+
 @media (max-width: 768px) {
+  .table-wrapper {
+    -webkit-overflow-scrolling: touch;
+  }
+  
   .issue-table {
     font-size: 12px;
   }
