@@ -2,11 +2,11 @@ from typing import List
 from datetime import timezone
 from app.models.issue import IssueModel
 
-# Unified exclusion rules for issues
+# Unified exclusion rules for issues (without # prefix as they are converted during kanban_status processing)
 EXCLUDED_KANBAN_STATUSES = [
-    "#テンプレート",
-    "#ゴール/アナウンス",
-    "#不要"
+    "テンプレート",
+    "ゴール/アナウンス", 
+    "不要"
 ]
 
 def apply_exclusion_filter(issues: List[IssueModel]) -> List[IssueModel]:
