@@ -57,6 +57,19 @@ export const ChartSection = ({ period, issues, loading, onPeriodChange, issueFil
     }
   }, [issues])
 
+  // 残日数計算 - 条件的レンダリングの外に移動してフック順序を一定に保つ
+  const remainingBusinessDays = useMemo(() => {
+    if (!period.end) return 0;
+    const today = new Date();
+    const end = new Date(period.end);
+    if (today >= end) return 0;
+    
+    // 簡易計算（実際の営業日計算は別途必要）
+    const diffTime = Math.abs(end.getTime() - today.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return Math.max(0, Math.floor(diffDays * 5 / 7)); // 概算の営業日
+  }, [period.end])
+
   const handleIssueFilterChange = (key: string, value: string | number | undefined) => {
     if (onIssueFiltersChange && issueFilters) {
       onIssueFiltersChange({
@@ -73,19 +86,6 @@ export const ChartSection = ({ period, issues, loading, onPeriodChange, issueFil
 
   const hasActiveSearch = issueFilters?.search && issueFilters.search !== ''
 
-  useEffect(() => {
-    if (!loading && period.start && period.end) {
-      // フィルタリング後のissue数が0の場合、チャートデータをクリア
-      if (issues.length === 0) {
-        setBurnDownData([])
-        setBurnUpData([])
-        setChartLoading(false)
-        setError('')
-      } else {
-        fetchChartData()
-      }
-    }
-  }, [period, issueFilters, loading, issues.length])
 
   const fetchChartData = async () => {
     setChartLoading(true)
@@ -128,6 +128,20 @@ export const ChartSection = ({ period, issues, loading, onPeriodChange, issueFil
     }
   }
 
+  useEffect(() => {
+    if (!loading && period.start && period.end) {
+      // フィルタリング後のissue数が0の場合、チャートデータをクリア
+      if (issues.length === 0) {
+        setBurnDownData([])
+        setBurnUpData([])
+        setChartLoading(false)
+        setError('')
+      } else {
+        fetchChartData()
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [period, issueFilters?.milestone, loading, issues.length])
 
   if (loading) {
     return (
@@ -437,13 +451,58 @@ export const ChartSection = ({ period, issues, loading, onPeriodChange, issueFil
               data={burnUpData}
               loading={chartLoading}
               height={chartView === 'both' ? 350 : 450}
-              showVelocity={true}
               startDate={period.start}
               endDate={period.end}
             />
           </div>
         )}
       </div>
+      
+      {/* 統合された統計セクション */}
+      {(burnUpData.length > 0 || burnDownData.length > 0) && (
+        <div className="unified-chart-summary">
+          <h3>プロジェクト統計</h3>
+          <div className="summary-grid">
+            {(() => {
+              // BurnUpとBurnDownのどちらかのデータを使用して統計を計算
+              const data = burnUpData.length > 0 ? burnUpData : burnDownData;
+              const totalPoints = data[data.length - 1]?.total_points || 0;
+              const completedPoints = burnUpData.length > 0 
+                ? data[data.length - 1]?.completed_points || 0
+                : totalPoints - (data[data.length - 1]?.remaining_points || 0);
+              const remainingPoints = totalPoints - completedPoints;
+              const completionRate = totalPoints > 0 ? (completedPoints / totalPoints * 100) : 0;
+              
+              return (
+                <>
+                  <div className="summary-item">
+                    <span className="summary-label">総ポイント:</span>
+                    <span className="summary-value">{totalPoints.toFixed(1)}</span>
+                  </div>
+                  <div className="summary-item">
+                    <span className="summary-label">完了ポイント:</span>
+                    <span className="summary-value">{completedPoints.toFixed(1)}</span>
+                  </div>
+                  <div className="summary-item">
+                    <span className="summary-label">完了率:</span>
+                    <span className="summary-value progress">
+                      {completionRate.toFixed(1)}%
+                    </span>
+                  </div>
+                  <div className="summary-item">
+                    <span className="summary-label">残ポイント:</span>
+                    <span className="summary-value">{remainingPoints.toFixed(1)}</span>
+                  </div>
+                  <div className="summary-item">
+                    <span className="summary-label">残日数（営業日）:</span>
+                    <span className="summary-value">{remainingBusinessDays}日</span>
+                  </div>
+                </>
+              );
+            })()}
+          </div>
+        </div>
+      )}
       
     </div>
   )

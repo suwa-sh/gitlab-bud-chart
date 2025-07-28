@@ -13,7 +13,6 @@ interface BurnUpChartProps {
   data: ChartData[]
   loading?: boolean
   height?: number
-  showVelocity?: boolean
   startDate?: string
   endDate?: string
 }
@@ -22,17 +21,24 @@ export const BurnUpChart = ({
   data, 
   loading = false, 
   height = 400,
-  showVelocity = false,
   startDate,
   endDate
 }: BurnUpChartProps) => {
-  
-  const { chartData, averageVelocity } = useMemo(() => {
-    let formatted
-    
+  // Calculate dynamic height based on screen size
+  const dynamicHeight = useMemo(() => {
+    if (typeof window !== 'undefined') {
+      const screenWidth = window.innerWidth;
+      if (screenWidth >= 2000) return Math.max(height, 500);
+      if (screenWidth >= 1600) return Math.max(height, 450);
+      if (screenWidth >= 1200) return Math.max(height, 420);
+    }
+    return height;
+  }, [height]);
+  // ALL HOOKS MUST BE CALLED FIRST - BEFORE ANY EARLY RETURNS
+  const chartData = useMemo(() => {
     if (!data.length || !startDate || !endDate) {
       // Fallback to original calculation if dates not available
-      formatted = data.map(item => ({
+      return data.map(item => ({
         date: format(new Date(item.date), 'MM/dd', { locale: ja }),
         理想: Math.round(item.planned_points * 10) / 10,
         完了: Math.round(item.completed_points * 10) / 10,
@@ -49,41 +55,21 @@ export const BurnUpChart = ({
         chartDates
       )
 
-      formatted = data.map((item, index) => ({
+      return data.map((item, index) => ({
         date: format(new Date(item.date), 'MM/dd', { locale: ja }),
         理想: Math.round(businessDayIdealLine[index] * 10) / 10,
         完了: Math.round(item.completed_points * 10) / 10,
         総量: Math.round(item.total_points * 10) / 10
       }))
     }
-
-    // ベロシティ計算
-    let velocity = 0
-    if (data.length > 1) {
-      const completedPoints = data[data.length - 1].completed_points
-      const days = data.length
-      velocity = completedPoints / days
-    }
-
-    return { chartData: formatted, averageVelocity: velocity }
   }, [data, startDate, endDate])
 
-  const customTooltip = ({ active, payload, label }: any) => {
-    if (active && payload && payload.length) {
-      return (
-        <div className="custom-tooltip">
-          <p className="tooltip-label">{label}</p>
-          {payload.map((entry: any, index: number) => (
-            <p key={index} style={{ color: entry.color }}>
-              {entry.name}: {entry.value} ポイント
-            </p>
-          ))}
-        </div>
-      )
-    }
-    return null
-  }
+  // Reference line data - calculate using useMemo to ensure consistent hook order
+  const totalPoints = useMemo(() => {
+    return data[data.length - 1]?.total_points || 0
+  }, [data])
 
+  // EARLY RETURNS AFTER ALL HOOKS
   if (loading) {
     return (
       <div className="chart-loading">
@@ -101,14 +87,27 @@ export const BurnUpChart = ({
     )
   }
 
-  const totalPoints = data[data.length - 1]?.total_points || 0
-  const completedPoints = data[data.length - 1]?.completed_points || 0
-  const completionRate = totalPoints > 0 ? (completedPoints / totalPoints * 100) : 0
+  // Tooltip function must be defined after early returns but before JSX
+  const customTooltip = ({ active, payload, label }: any) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="custom-tooltip">
+          <p className="tooltip-label">{label}</p>
+          {payload.map((entry: any, index: number) => (
+            <p key={index} style={{ color: entry.color }}>
+              {entry.name}: {entry.value} ポイント
+            </p>
+          ))}
+        </div>
+      )
+    }
+    return null
+  }
 
   return (
     <div className="burn-up-chart">
       <h3>Burn Up Chart</h3>
-      <ResponsiveContainer width="100%" height={height}>
+      <ResponsiveContainer width="100%" height={dynamicHeight}>
         <LineChart
           data={chartData}
           margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
@@ -175,30 +174,6 @@ export const BurnUpChart = ({
         </LineChart>
       </ResponsiveContainer>
       
-      <div className="chart-summary">
-        <div className="summary-item">
-          <span className="summary-label">総ポイント:</span>
-          <span className="summary-value">{totalPoints.toFixed(1)}</span>
-        </div>
-        <div className="summary-item">
-          <span className="summary-label">完了ポイント:</span>
-          <span className="summary-value">{completedPoints.toFixed(1)}</span>
-        </div>
-        <div className="summary-item">
-          <span className="summary-label">完了率:</span>
-          <span className="summary-value progress">
-            {completionRate.toFixed(1)}%
-          </span>
-        </div>
-        {showVelocity && (
-          <div className="summary-item">
-            <span className="summary-label">平均ベロシティ:</span>
-            <span className="summary-value">
-              {averageVelocity.toFixed(2)} ポイント/日
-            </span>
-          </div>
-        )}
-      </div>
     </div>
   )
 }

@@ -103,6 +103,7 @@
 /* チャートセクション統合スタイル - Issue一覧と統一 */
 .chart-section {
   margin-bottom: 0px;
+  width: 100%;
 }
 
 /* ヘッダー部分（タイトル・期間・エクスポート） */
@@ -245,6 +246,8 @@
   background: #f8f9fa;
   border-radius: 8px;
   flex-wrap: wrap;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .chart-filters .filter-input {
@@ -457,6 +460,7 @@
 .charts-container {
   display: grid;
   gap: 20px;
+  width: 100%;
 }
 
 .charts-container.both {
@@ -480,7 +484,51 @@
   text-align: center;
 }
 
-/* レスポンシブ対応 */
+/* Enhanced responsive design for better width utilization */
+@media (min-width: 1200px) {
+  .burn-down-chart,
+  .burn-up-chart {
+    padding: 25px;
+  }
+  
+  .chart-summary {
+    justify-content: space-between;
+    gap: 20px;
+  }
+  
+  .charts-container {
+    gap: 30px;
+  }
+}
+
+@media (min-width: 1600px) {
+  .burn-down-chart,
+  .burn-up-chart {
+    padding: 30px;
+  }
+  
+  .chart-summary {
+    gap: 30px;
+    margin-top: 25px;
+    padding-top: 25px;
+  }
+  
+  .charts-container {
+    gap: 40px;
+  }
+}
+
+@media (min-width: 2000px) {
+  .burn-down-chart,
+  .burn-up-chart {
+    padding: 35px;
+  }
+  
+  .charts-container {
+    gap: 50px;
+  }
+}
+
 @media (max-width: 1024px) {
   .charts-container.both {
     grid-template-columns: 1fr;
@@ -498,6 +546,15 @@
     gap: 15px;
   }
   
+  .chart-summary {
+    flex-direction: column;
+    gap: 15px;
+  }
+  
+  .burn-down-chart,
+  .burn-up-chart {
+    padding: 15px;
+  }
   
   .filter-group {
     flex-direction: column;
@@ -571,4 +628,65 @@
 
 .filter-reset-btn .reset-icon {
   font-size: 14px;
+}
+
+/* 統合された統計セクション */
+.unified-chart-summary {
+  margin-top: 30px;
+  padding: 20px;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  border-left: 4px solid #007bff;
+}
+
+.unified-chart-summary h3 {
+  margin: 0 0 15px 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #333;
+  text-align: center;
+}
+
+.summary-grid {
+  display: flex;
+  justify-content: space-around;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.summary-grid .summary-item {
+  text-align: center;
+  flex: 1;
+  min-width: 120px;
+}
+
+.summary-grid .summary-label {
+  display: block;
+  font-size: 12px;
+  color: #666;
+  margin-bottom: 5px;
+  font-weight: 500;
+}
+
+.summary-grid .summary-value {
+  display: block;
+  font-size: 24px;
+  font-weight: 600;
+  color: #333;
+}
+
+.summary-grid .summary-value.progress {
+  color: #28a745;
+}
+
+@media (max-width: 768px) {
+  .summary-grid {
+    flex-direction: column;
+    gap: 15px;
+  }
+  
+  .unified-chart-summary {
+    padding: 15px;
+  }
 }

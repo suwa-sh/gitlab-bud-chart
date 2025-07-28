@@ -24,15 +24,27 @@ export const BurnDownChart = ({
   startDate,
   endDate
 }: BurnDownChartProps) => {
+  // Calculate dynamic height based on screen size
+  const dynamicHeight = useMemo(() => {
+    if (typeof window !== 'undefined') {
+      const screenWidth = window.innerWidth;
+      if (screenWidth >= 2000) return Math.max(height, 500);
+      if (screenWidth >= 1600) return Math.max(height, 450);
+      if (screenWidth >= 1200) return Math.max(height, 420);
+    }
+    return height;
+  }, [height]);
   
+  // ALL HOOKS MUST BE CALLED FIRST - BEFORE ANY EARLY RETURNS
   const chartData = useMemo(() => {
     if (!data.length || !startDate || !endDate) {
-      return data.map(item => ({
+      const mapped = data.map(item => ({
         date: format(new Date(item.date), 'MM/dd', { locale: ja }),
         理想: Math.round(item.planned_points * 10) / 10,
         実績: Math.round(item.actual_points * 10) / 10,
         残り: Math.round(item.remaining_points * 10) / 10
       }))
+      return mapped
     }
 
     // Calculate business day aware ideal line
@@ -45,30 +57,17 @@ export const BurnDownChart = ({
       chartDates
     )
 
-    return data.map((item, index) => ({
+    const mapped = data.map((item, index) => ({
       date: format(new Date(item.date), 'MM/dd', { locale: ja }),
       理想: Math.round(businessDayIdealLine[index] * 10) / 10,
       実績: Math.round(item.actual_points * 10) / 10,
       残り: Math.round(item.remaining_points * 10) / 10
     }))
+    
+    return mapped
   }, [data, startDate, endDate])
 
-  const customTooltip = ({ active, payload, label }: any) => {
-    if (active && payload && payload.length) {
-      return (
-        <div className="custom-tooltip">
-          <p className="tooltip-label">{label}</p>
-          {payload.map((entry: any, index: number) => (
-            <p key={index} style={{ color: entry.color }}>
-              {entry.name}: {entry.value} ポイント
-            </p>
-          ))}
-        </div>
-      )
-    }
-    return null
-  }
-
+  // EARLY RETURNS AFTER ALL HOOKS
   if (loading) {
     return (
       <div className="chart-loading">
@@ -86,10 +85,27 @@ export const BurnDownChart = ({
     )
   }
 
+  // Tooltip function must be defined after early returns but before JSX
+  const customTooltip = ({ active, payload, label }: any) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="custom-tooltip">
+          <p className="tooltip-label">{label}</p>
+          {payload.map((entry: any, index: number) => (
+            <p key={index} style={{ color: entry.color }}>
+              {entry.name}: {entry.value} ポイント
+            </p>
+          ))}
+        </div>
+      )
+    }
+    return null
+  }
+
   return (
     <div className="burn-down-chart">
       <h3>Burn Down Chart</h3>
-      <ResponsiveContainer width="100%" height={height}>
+      <ResponsiveContainer width="100%" height={dynamicHeight}>
         <LineChart
           data={chartData}
           margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
@@ -137,29 +153,6 @@ export const BurnDownChart = ({
         </LineChart>
       </ResponsiveContainer>
       
-      <div className="chart-summary">
-        <div className="summary-item">
-          <span className="summary-label">開始時点:</span>
-          <span className="summary-value">
-            {data[0]?.remaining_points.toFixed(1)} ポイント
-          </span>
-        </div>
-        <div className="summary-item">
-          <span className="summary-label">現在:</span>
-          <span className="summary-value">
-            {data[data.length - 1]?.remaining_points.toFixed(1)} ポイント
-          </span>
-        </div>
-        <div className="summary-item">
-          <span className="summary-label">進捗率:</span>
-          <span className="summary-value">
-            {data[0]?.remaining_points > 0 
-              ? ((1 - data[data.length - 1]?.remaining_points / data[0]?.remaining_points) * 100).toFixed(1)
-              : '0.0'
-            }%
-          </span>
-        </div>
-      </div>
     </div>
   )
 }
