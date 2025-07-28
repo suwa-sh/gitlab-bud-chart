@@ -11,11 +11,11 @@ export const PBLStatistics = ({ issues }: PBLStatisticsProps) => {
 
   const statistics = useMemo(() => {
     const total = issues.length
-    const closed = issues.filter(i => i.state === 'closed').length
+    const closed = issues.filter(i => i.completed_at).length
     
     const totalPoints = issues.reduce((sum, issue) => sum + (issue.point || 0), 0)
     const completedPoints = issues
-      .filter(i => i.state === 'closed')
+      .filter(i => i.completed_at)
       .reduce((sum, issue) => sum + (issue.point || 0), 0)
     
     // 詳細統計の計算
@@ -114,26 +114,27 @@ export const PBLStatistics = ({ issues }: PBLStatisticsProps) => {
           {/* メイン統計カード */}
           <div className="main-stats">
             <div className="stat-card">
-              <h4>総数</h4>
+              <h4>issue件数</h4>
               <div className="stat-value">{statistics.total}</div>
             </div>
             
             <div className="stat-card">
-              <h4>ポイント</h4>
+              <h4>総ポイント数</h4>
               <div className="stat-value">{statistics.totalPoints}</div>
-              <div className="stat-breakdown">
-                <span className="stat-item">完了: {statistics.completedPoints}</span>
-                <span className="stat-item">進捗: {statistics.pointCompletionRate}%</span>
-              </div>
+            </div>
+            
+            <div className="stat-card">
+              <h4>完了ポイント</h4>
+              <div className="stat-value">{statistics.completedPoints}</div>
             </div>
             
             <div className="stat-card">
               <h4>完了率</h4>
-              <div className="stat-value">{statistics.completionRate}%</div>
+              <div className="stat-value">{statistics.pointCompletionRate}%</div>
               <div className="stat-progress">
                 <div 
                   className="stat-progress-bar" 
-                  style={{ width: `${statistics.completionRate}%` }}
+                  style={{ width: `${statistics.pointCompletionRate}%` }}
                 />
               </div>
             </div>
