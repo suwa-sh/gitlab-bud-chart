@@ -1,5 +1,5 @@
 from typing import List, Optional, Dict, Any
-from datetime import datetime, date
+from datetime import datetime, date, timezone
 import re
 from app.models.issue import IssueModel
 import logging
@@ -81,18 +81,24 @@ class SearchService:
         # 日付範囲フィルタ
         if filters.get('created_after'):
             created_after = self._parse_date(filters['created_after'])
-            issues = [i for i in issues if i.created_at.date() >= created_after]
+            issues = [
+                i for i in issues 
+                if (i.created_at.astimezone(timezone.utc).date() if i.created_at.tzinfo else i.created_at.date()) >= created_after
+            ]
         
         if filters.get('created_before'):
             created_before = self._parse_date(filters['created_before'])
-            issues = [i for i in issues if i.created_at.date() <= created_before]
+            issues = [
+                i for i in issues 
+                if (i.created_at.astimezone(timezone.utc).date() if i.created_at.tzinfo else i.created_at.date()) <= created_before
+            ]
         
         # 完了日フィルタ
         if filters.get('completed_after'):
             completed_after = self._parse_date(filters['completed_after'])
             issues = [
                 i for i in issues 
-                if i.completed_at and i.completed_at.date() >= completed_after
+                if i.completed_at and (i.completed_at.astimezone(timezone.utc).date() if i.completed_at.tzinfo else i.completed_at.date()) >= completed_after
             ]
         
         return issues

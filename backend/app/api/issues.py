@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, Query, Header
 from typing import List, Optional, Dict, Any
-from datetime import date
+from datetime import date, timezone
 from app.services.session_manager import session_manager
 from app.models.issue import (
     IssueResponse, 
@@ -26,12 +26,15 @@ def _apply_scope_filter(
     
     filtered = []
     for issue in issues:
+        # timezone-awareなdatetimeから、UTCのdateを取得
+        created_date = issue.created_at.astimezone(timezone.utc).date() if issue.created_at.tzinfo else issue.created_at.date()
+        
         # created_atが表示期間終了日より未来の場合は除外
-        if issue.created_at.date() > chart_end_date:
+        if created_date > chart_end_date:
             continue
         
         # Case 1: created_atが期間内
-        if chart_start_date <= issue.created_at.date() <= chart_end_date:
+        if chart_start_date <= created_date <= chart_end_date:
             filtered.append(issue)
             continue
         
@@ -41,10 +44,11 @@ def _apply_scope_filter(
             continue
         
         # Case 3: completed_atが期間内なら対象（ただし期間内作成のみ）
-        if (issue.completed_at and 
-            chart_start_date <= issue.completed_at.date() <= chart_end_date):
-            filtered.append(issue)
-            continue
+        if issue.completed_at:
+            completed_date = issue.completed_at.astimezone(timezone.utc).date() if issue.completed_at.tzinfo else issue.completed_at.date()
+            if chart_start_date <= completed_date <= chart_end_date:
+                filtered.append(issue)
+                continue
     
     return filtered
 
@@ -520,10 +524,24 @@ async def search_issues(
             filtered_issues = []
             for issue in issues:
                 issue_date = issue.created_at
-                if search_request.date_from and issue_date < search_request.date_from:
-                    continue
-                if search_request.date_to and issue_date > search_request.date_to:
-                    continue
+                # Ensure timezone consistency for comparison
+                if issue_date.tzinfo is None:
+                    issue_date = issue_date.replace(tzinfo=timezone.utc)
+                
+                if search_request.date_from:
+                    from_date = search_request.date_from
+                    if from_date.tzinfo is None:
+                        from_date = from_date.replace(tzinfo=timezone.utc)
+                    if issue_date < from_date:
+                        continue
+                
+                if search_request.date_to:
+                    to_date = search_request.date_to
+                    if to_date.tzinfo is None:
+                        to_date = to_date.replace(tzinfo=timezone.utc)
+                    if issue_date > to_date:
+                        continue
+                
                 filtered_issues.append(issue)
             issues = filtered_issues
         
