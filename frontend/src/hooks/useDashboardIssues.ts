@@ -26,7 +26,7 @@ export const useDashboardIssues = () => {
         ...params,
         ...state.dashboardFilters,
         page: params.page || 1,
-        per_page: params.per_page || 50
+        per_page: params.per_page || 10000
       }
       
       // 期間フィルタを追加

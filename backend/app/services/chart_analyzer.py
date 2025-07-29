@@ -301,6 +301,12 @@ class ChartAnalyzer:
         if created_date > chart_end_date:
             return False
         
+        # completed_atが表示期間終了日より未来の場合は除外
+        if issue.completed_at:
+            completed_date = issue.completed_at.astimezone(timezone.utc).date() if issue.completed_at.tzinfo else issue.completed_at.date()
+            if completed_date > chart_end_date:
+                return False
+        
         # Case 1: created_at <= target_date（従来の条件）
         if created_date <= target_date:
             return True
