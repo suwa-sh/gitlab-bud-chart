@@ -29,21 +29,29 @@ def _apply_scope_filter(
         # timezone-awareなdatetimeから、UTCのdateを取得
         created_date = issue.created_at.astimezone(timezone.utc).date() if issue.created_at.tzinfo else issue.created_at.date()
         
-        # created_atが表示期間終了日より未来の場合は除外
+        # 除外条件を最優先でチェック
+        # スコープルール4: created_atが表示期間終了日より未来の場合は除外
         if created_date > chart_end_date:
             continue
         
+        # スコープルール5: completed_atが表示期間終了日より未来の場合は除外
+        if issue.completed_at:
+            completed_date = issue.completed_at.astimezone(timezone.utc).date() if issue.completed_at.tzinfo else issue.completed_at.date()
+            if completed_date > chart_end_date:
+                continue
+        
+        # 含む条件をチェック
         # Case 1: created_atが期間内
         if chart_start_date <= created_date <= chart_end_date:
             filtered.append(issue)
             continue
         
-        # Case 2: created_atが範囲外でもOpenedなら対象（ただし期間内作成のみ）
+        # Case 2: created_atが範囲外でもOpenedなら対象
         if issue.state == 'opened':
             filtered.append(issue)
             continue
         
-        # Case 3: completed_atが期間内なら対象（ただし期間内作成のみ）
+        # Case 3: completed_atが期間内なら対象
         if issue.completed_at:
             completed_date = issue.completed_at.astimezone(timezone.utc).date() if issue.completed_at.tzinfo else issue.completed_at.date()
             if chart_start_date <= completed_date <= chart_end_date:
