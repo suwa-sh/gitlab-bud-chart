@@ -1,0 +1,27 @@
+services:
+  # Self-hosting GitLab CEをE2Eテスト用に追加
+  gitlab15:
+    image: gitlab/gitlab-ce:15.11.11-ce.0
+    container_name: gitlab15
+    ports:
+      - "8082:80"
+    volumes:
+      - gitlab15_e2e_config:/etc/gitlab
+      - gitlab15_e2e_logs:/var/log/gitlab
+      - gitlab15_e2e_data:/var/opt/gitlab
+    environment:
+      GITLAB_OMNIBUS_CONFIG: |
+        external_url 'http://localhost:8082'
+        # 初期セットアップの簡略化 - 一般的な文字の組み合わせだとエラーになる...
+        gitlab_rails['initial_root_password'] = 'GLbudChart'
+        # 起動時間短縮のための設定
+        gitlab_rails['env'] = {'GITLAB_DISABLE_JEMALLOC' => 'true'}
+        puma['worker_processes'] = 1
+        sidekiq['max_concurrency'] = 10
+        prometheus_monitoring['enable'] = false
+        nginx['listen_port'] = 80
+
+volumes:
+  gitlab15_e2e_config:
+  gitlab15_e2e_logs:
+  gitlab15_e2e_data:

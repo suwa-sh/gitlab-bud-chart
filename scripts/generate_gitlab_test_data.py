@@ -2,33 +2,61 @@
 """
 GitLab テストデータ作成スクリプト
 E2Eテスト用のプロジェクト、イシュー、ラベル等を作成
+
+使用方法:
+  python generate_gitlab_test_data.py                           # デフォルト名で作成
+  python generate_gitlab_test_data.py "my-project"              # カスタムプロジェクト名で作成
+  python generate_gitlab_test_data.py "my-project" "説明文"      # プロジェクト名と説明文を指定
+
+デフォルト設定:
+  プロジェクト名: test-project
+  説明文: E2E テスト用プロジェクト
 """
 import urllib.request
 import urllib.error
 import json
 import os
 import re
+from datetime import datetime, timedelta
 
-# GitLab 設定
-PROJECT_NAME = "test-project"
-PROJECT_DESCRIPTION = "E2E テスト用プロジェクト"
+# GitLab 設定（デフォルト値）
+DEFAULT_PROJECT_NAME = "test-project"
+DEFAULT_PROJECT_DESCRIPTION = "E2E テスト用プロジェクト"
+
+# テスト期間設定（境界テスト用）
+TEST_PERIOD_START = "2024-01-01"
+TEST_PERIOD_END = "2024-03-31"
+
+def format_iso8601_datetime(date_str, time_str="12:00:00"):
+    """日付文字列をISO 8601フォーマット（UTC）に変換"""
+    return f"{date_str}T{time_str}Z"
+
+def get_test_datetime(date_str, time_str="12:00:00"):
+    """テスト用の日付文字列をISO 8601フォーマットで返す"""
+    return format_iso8601_datetime(date_str, time_str)
 
 
-def create_project_and_issues(token, gitlab_url):
+def create_project_and_issues(token, gitlab_url, project_name=None, project_description=None):
     """プロジェクト作成とテストイシューを作成"""
     if not token:
         raise Exception("有効なトークンが提供されていません")
     if not gitlab_url:
         raise Exception("有効なGitLab URLが提供されていません")
     
+    # プロジェクト名とdescriptionのデフォルト値設定
+    if project_name is None:
+        project_name = DEFAULT_PROJECT_NAME
+    if project_description is None:
+        project_description = DEFAULT_PROJECT_DESCRIPTION
+    
     headers = {'Private-Token': token}
     print(f"APIトークンでプロジェクト作成を開始: {token[:8]}...")
     
     # プロジェクト作成
-    print(f"プロジェクト '{PROJECT_NAME}' を作成中...")
+    print(f"プロジェクト '{project_name}' を作成中...")
     project_data = {
-        'name': PROJECT_NAME,
-        'description': PROJECT_DESCRIPTION,
+        'name': project_name,
+        'description': project_description,
         'visibility': 'private',
         'initialize_with_readme': True
     }
@@ -70,7 +98,7 @@ def create_project_and_issues(token, gitlab_url):
         
         if projects_status_code == 200:
             projects = json.loads(projects_content)
-            existing_project = next((p for p in projects if p['name'] == PROJECT_NAME), None)
+            existing_project = next((p for p in projects if p['name'] == project_name), None)
             if existing_project:
                 project_id = existing_project['id']
                 print(f"既存プロジェクトを使用: ID {project_id}")
@@ -84,14 +112,30 @@ def create_project_and_issues(token, gitlab_url):
     # ラベル作成
     print("ラベルを作成中...")
     labels = [
+        # ポイントラベル
+        {'name': 'p:0.5', 'color': '#2ca02c', 'description': 'ポイント0.5'},
         {'name': 'p:1.0', 'color': '#1f77b4', 'description': 'ポイント1.0'},
         {'name': 'p:2.0', 'color': '#ff7f0e', 'description': 'ポイント2.0'},
-        {'name': 'p:0.5', 'color': '#2ca02c', 'description': 'ポイント0.5'},
+        {'name': 'p:3.0', 'color': '#1abc9c', 'description': 'ポイント3.0'},
+        {'name': 'p:5.0', 'color': '#e74c3c', 'description': 'ポイント5.0'},
+        {'name': 'p:8.0', 'color': '#3498db', 'description': 'ポイント8.0'},
+        {'name': 'p:13.0', 'color': '#9b59b6', 'description': 'ポイント13.0'},
+        {'name': 'p:21.0', 'color': '#f39c12', 'description': 'ポイント21.0'},
+        # カンバンステータス
         {'name': '#作業中', 'color': '#d62728', 'description': 'カンバン: 作業中'},
         {'name': '#完了', 'color': '#9467bd', 'description': 'カンバン: 完了'},
         {'name': '#未着手', 'color': '#8c564b', 'description': 'カンバン: 未着手'},
+        {'name': '#ToDo', 'color': '#e67e22', 'description': 'カンバン: ToDo'},
+        # 統一フィルタ除外対象
+        {'name': '#テンプレート', 'color': '#95a5a6', 'description': 'カンバン: テンプレート（除外対象）'},
+        {'name': '#ゴール/アナウンス', 'color': '#34495e', 'description': 'カンバン: ゴール/アナウンス（除外対象）'},
+        {'name': '#不要', 'color': '#7f8c8d', 'description': 'カンバン: 不要（除外対象）'},
+        # サービス分類
         {'name': 's:backend', 'color': '#e377c2', 'description': 'サービス: backend'},
         {'name': 's:frontend', 'color': '#7f7f7f', 'description': 'サービス: frontend'},
+        {'name': 's:infrastructure', 'color': '#27ae60', 'description': 'サービス: infrastructure'},
+        {'name': 's:API', 'color': '#3498db', 'description': 'サービス: API'},
+        # 四半期分類
         {'name': '@FY25Q1', 'color': '#bcbd22', 'description': 'Quarter: FY25Q1'},
         {'name': '@FY25Q2', 'color': '#17becf', 'description': 'Quarter: FY25Q2'},
         {'name': '@FY25Q3', 'color': '#ab1222', 'description': 'Quarter: FY25Q3'}
@@ -122,7 +166,8 @@ def create_project_and_issues(token, gitlab_url):
     print("マイルストーンを作成中...")
     milestones = [
         {'title': 'v1.0', 'description': 'バージョン1.0リリース'},
-        {'title': 'v2.0', 'description': 'バージョン2.0リリース'}
+        {'title': 'v2.0', 'description': 'バージョン2.0リリース'},
+        {'title': '2024Q1', 'description': '2024年第1四半期マイルストーン'}
     ]
     
     for milestone in milestones:
@@ -150,142 +195,201 @@ def create_project_and_issues(token, gitlab_url):
     print("テストイシューを作成中...")
     
     test_issues = [
-        # Phase 1: 初期開発 (Issues 1-5)
+        # Phase 1: 基本動作確認用Issue（5個）
         {
-            "title": "Issue 1: プロジェクトセットアップ",
-            "description": "開発環境の構築とプロジェクト初期設定",
-            "labels": ["p:3.0", "#完了", "s:infrastructure", "@FY25Q1"],
-            "closed": True,
-            "closed_days_ago": 15
-        },
-        {
-            "title": "Issue 2: データベース設計",
-            "description": "PostgreSQLデータベーススキーマの設計と実装",
+            "title": "Issue 1: 基本機能実装",
+            "description": "基本的なバックエンド機能の実装",
             "labels": ["p:5.0", "#完了", "s:backend", "@FY25Q1"],
-            "closed": True,
-            "closed_days_ago": 12
-        },
-        {
-            "title": "Issue 3: 認証システム実装",
-            "description": "JWT認証システムの実装",
-            "labels": ["p:8.0", "#完了", "s:backend", "@FY25Q1"],
+            "custom_created_at": get_test_datetime("2024-02-01", "10:00:00"),
             "closed": True,
             "closed_days_ago": 10
         },
         {
-            "title": "Issue 4: フロントエンド基本設計",
-            "description": "React + TypeScriptの基本設計",
-            "labels": ["p:5.0", "#完了", "s:frontend", "@FY25Q1"],
-            "closed": True,
-            "closed_days_ago": 8
+            "title": "Issue 2: フロントエンド開発",
+            "description": "UI/UXの実装とテスト",
+            "labels": ["p:8.0", "#作業中", "s:frontend", "@FY25Q1"],
+            "custom_created_at": get_test_datetime("2024-02-05", "10:00:00"),
+            "assignee": 1,
+            "closed": False
         },
         {
-            "title": "Issue 5: CI/CDパイプライン構築",
-            "description": "GitHub ActionsによるCI/CD環境構築",
+            "title": "Issue 3: インフラ構築",
+            "description": "インフラストラクチャーの構築",
             "labels": ["p:3.0", "#完了", "s:infrastructure", "@FY25Q1"],
+            "custom_created_at": get_test_datetime("2024-01-20", "10:00:00"),
             "closed": True,
-            "closed_days_ago": 7
+            "closed_days_ago": 20
+        },
+        {
+            "title": "Issue 4: 設計タスク",
+            "description": "システム設計とアーキテクチャ",
+            "labels": ["p:13.0", "#ToDo", "s:backend", "@FY25Q2"],
+            "custom_created_at": get_test_datetime("2024-02-10", "10:00:00"),
+            "closed": False
+        },
+        {
+            "title": "Issue 5: 未着手タスク",
+            "description": "まだ開始していないタスク",
+            "labels": ["p:5.0", "#未着手", "s:frontend", "@FY25Q2"],
+            "custom_created_at": get_test_datetime("2024-02-15", "10:00:00"),
+            "closed": False
         },
         
-        # Phase 2: 機能開発 (Issues 6-10)
+        # Phase 2: 統一フィルタルール境界テスト（3個）- 除外対象
         {
-            "title": "Issue 6: ユーザー管理API",
-            "description": "ユーザーCRUD APIの実装",
-            "labels": ["p:5.0", "#完了", "s:backend", "@FY25Q1"],
+            "title": "Issue 10: [除外テスト] テンプレート",
+            "description": "統一フィルタ除外テスト: kanban_status=テンプレート（自動除外されるべき）",
+            "labels": ["p:1.0", "#テンプレート", "s:backend", "@FY25Q1"],
+            "custom_created_at": get_test_datetime("2024-02-01", "10:00:00"),
+            "closed": False
+        },
+        {
+            "title": "Issue 11: [除外テスト] ゴール/アナウンス",
+            "description": "統一フィルタ除外テスト: kanban_status=ゴール/アナウンス（自動除外されるべき）",
+            "labels": ["p:2.0", "#ゴール/アナウンス", "s:frontend", "@FY25Q1"],
+            "custom_created_at": get_test_datetime("2024-02-15", "14:00:00"),
+            "closed": False
+        },
+        {
+            "title": "Issue 12: [除外テスト] 不要",
+            "description": "統一フィルタ除外テスト: kanban_status=不要（自動除外されるべき）",
+            "labels": ["p:3.0", "#不要", "s:infrastructure", "@FY25Q1"],
+            "custom_created_at": get_test_datetime("2024-03-01", "16:00:00"),
             "closed": True,
             "closed_days_ago": 5
         },
+        
+        # Phase 3: completed_at決定ロジック境界テスト（3個）
         {
-            "title": "Issue 7: ダッシュボード画面",
-            "description": "メインダッシュボード画面の実装",
-            "labels": ["p:8.0", "#完了", "s:frontend", "@FY25Q1"],
+            "title": "Issue 15: [completed_at] closed+due_date",
+            "description": "completed_at決定テスト: state=closed + due_date → due_dateがcompleted_atになる",
+            "labels": ["p:5.0", "#完了", "s:backend", "@FY25Q1"],
+            "custom_created_at": get_test_datetime("2024-01-15", "09:00:00"),
+            "due_date": get_test_datetime("2024-02-01", "17:00:00"),
             "closed": True,
-            "closed_days_ago": 3
+            "closed_days_ago": 30
         },
         {
-            "title": "Issue 8: チャート機能実装",
-            "description": "Rechartsを使用したチャート表示機能",
-            "labels": ["p:5.0", "#作業中", "s:frontend", "@FY25Q1"],
-            "assignee": 1,  # root user
+            "title": "Issue 16: [completed_at] opened+due_date",
+            "description": "completed_at決定テスト: state=opened + due_date → completed_at=None",
+            "labels": ["p:3.0", "#作業中", "s:frontend", "@FY25Q1"],
+            "custom_created_at": get_test_datetime("2024-02-01", "10:00:00"),
+            "due_date": get_test_datetime("2024-03-01", "17:00:00"),
             "closed": False
         },
         {
-            "title": "Issue 9: 検索機能実装",
-            "description": "全文検索機能の実装",
-            "labels": ["p:8.0", "#作業中", "s:backend", "@FY25Q1"],
-            "assignee": 1,
-            "closed": False
-        },
-        {
-            "title": "Issue 10: 通知システム",
-            "description": "リアルタイム通知システムの実装",
-            "labels": ["p:13.0", "#作業中", "s:backend", "@FY25Q1"],
-            "assignee": 1,
+            "title": "Issue 17: [completed_at] 完了ラベル+opened",
+            "description": "completed_at決定テスト: kanban_status=完了 + state=opened → updated_atがcompleted_at",
+            "labels": ["p:8.0", "#完了", "s:infrastructure", "@FY25Q1"],
+            "custom_created_at": get_test_datetime("2024-02-15", "11:00:00"),
             "closed": False
         },
         
-        # Phase 3: 品質向上 (Issues 11-15)
+        # Phase 4: スコープルール境界テスト（5個）
         {
-            "title": "Issue 11: 単体テスト追加",
-            "description": "バックエンドの単体テストカバレッジ向上",
-            "labels": ["p:5.0", "#ToDo", "s:backend", "@FY25Q1"],
+            "title": "Issue 20: [スコープ] 期間開始日",
+            "description": "スコープテスト: created_at=2024-01-01（期間開始日、含まれるべき）",
+            "labels": ["p:5.0", "#作業中", "s:backend", "@FY25Q1"],
+            "custom_created_at": get_test_datetime("2024-01-01", "09:00:00"),
             "closed": False
         },
         {
-            "title": "Issue 12: E2Eテスト実装",
-            "description": "Playwrightによる E2Eテスト実装",
-            "labels": ["p:8.0", "#ToDo", "s:frontend", "@FY25Q1"],
+            "title": "Issue 21: [スコープ] 期間終了日",
+            "description": "スコープテスト: created_at=2024-03-31（期間終了日、含まれるべき）",
+            "labels": ["p:3.0", "#作業中", "s:frontend", "@FY25Q1"],
+            "custom_created_at": get_test_datetime("2024-03-31", "15:00:00"),
             "closed": False
         },
         {
-            "title": "Issue 13: パフォーマンス最適化",
-            "description": "レスポンスタイム改善とキャッシュ実装",
-            "labels": ["p:5.0", "#ToDo", "s:backend", "@FY25Q1"],
+            "title": "Issue 22: [スコープ] 期間外+opened",
+            "description": "スコープテスト: created_at=2023-12-31 + opened（期間外だがopenedなら含まれる）",
+            "labels": ["p:8.0", "#作業中", "s:infrastructure", "@FY25Q1"],
+            "custom_created_at": get_test_datetime("2023-12-31", "20:00:00"),
             "closed": False
         },
         {
-            "title": "Issue 14: セキュリティ監査",
-            "description": "セキュリティ脆弱性の調査と対策",
-            "labels": ["p:3.0", "#ToDo", "s:infrastructure", "@FY25Q1"],
-            "closed": False
+            "title": "Issue 23: [スコープ] 期間外+完了",
+            "description": "スコープテスト: created_at=2023-12-15, completed_at=2024-02-15（期間外created+期間内completed、含まれる）",
+            "labels": ["p:13.0", "#完了", "s:backend", "@FY25Q1"],
+            "custom_created_at": get_test_datetime("2023-12-15", "14:00:00"),
+            "closed": True,
+            "closed_days_ago": 15
         },
         {
-            "title": "Issue 15: アクセシビリティ改善",
-            "description": "WCAG 2.1準拠のためのUI改善",
-            "labels": ["p:5.0", "#ToDo", "s:frontend", "@FY25Q2"],
+            "title": "Issue 24: [スコープ] 期間終了日+1",
+            "description": "スコープテスト: created_at=2024-04-01（期間終了日+1日、除外されるべき）",
+            "labels": ["p:5.0", "#ToDo", "s:backend", "@FY25Q2"],
+            "custom_created_at": get_test_datetime("2024-04-01", "10:00:00"),
             "closed": False
         },
         
-        # Phase 4: 新機能 (Issues 16-20)
+        # Phase 5: フィルタ項目境界テスト（9個）
         {
-            "title": "Issue 16: モバイルアプリ開発",
-            "description": "React Nativeによるモバイルアプリ開発",
-            "labels": ["p:21.0", "s:frontend", "@FY25Q2"],
+            "title": "Issue 30: [フィルタ] service=API",
+            "description": "フィルタテスト: service=API での絞り込み確認用",
+            "labels": ["p:5.0", "#作業中", "s:API", "@FY25Q1"],
+            "custom_created_at": get_test_datetime("2024-02-01", "10:00:00"),
             "closed": False
         },
         {
-            "title": "Issue 17: API v2設計",
-            "description": "GraphQL APIの設計と実装",
-            "labels": ["p:13.0", "s:backend", "@FY25Q2"],
+            "title": "Issue 31: [フィルタ] milestone",
+            "description": "フィルタテスト: milestone=2024Q1 での絞り込み確認用",
+            "labels": ["p:8.0", "#完了", "s:backend", "@FY25Q1"],
+            "custom_created_at": get_test_datetime("2024-01-15", "10:00:00"),
+            "milestone_title": "2024Q1",
+            "closed": True,
+            "closed_days_ago": 20
+        },
+        {
+            "title": "Issue 32: [フィルタ] epic",
+            "description": "フィルタテスト: is_epic=true での絞り込み確認用",
+            "labels": ["p:21.0", "epic", "#作業中", "s:frontend", "@FY25Q2"],
+            "custom_created_at": get_test_datetime("2024-02-01", "10:00:00"),
             "closed": False
         },
         {
-            "title": "Issue 18: 多言語対応",
-            "description": "i18n実装による多言語サポート",
-            "labels": ["p:8.0", "s:frontend", "@FY25Q2"],
+            "title": "Issue 33: [フィルタ] point最小",
+            "description": "フィルタテスト: point=1.0（min_point境界）",
+            "labels": ["p:1.0", "#作業中", "s:backend", "@FY25Q1"],
+            "custom_created_at": get_test_datetime("2024-02-01", "10:00:00"),
             "closed": False
         },
         {
-            "title": "Issue 19: AI機能統合",
-            "description": "機械学習モデルの統合",
-            "labels": ["p:13.0", "s:backend", "@FY25Q2"],
+            "title": "Issue 34: [フィルタ] point最大",
+            "description": "フィルタテスト: point=21.0（max_point境界）",
+            "labels": ["p:21.0", "#作業中", "s:frontend", "@FY25Q1"],
+            "custom_created_at": get_test_datetime("2024-02-15", "10:00:00"),
             "closed": False
         },
         {
-            "title": "Issue 20: エンタープライズ機能",
-            "description": "SSO、監査ログ等のエンタープライズ機能",
-            "labels": ["p:21.0", "s:infrastructure", "@FY25Q2"],
+            "title": "Issue 35: [フィルタ] 日付補正",
+            "description": "日付補正テスト: created_at > completed_at（補正されるべき）",
+            "labels": ["p:5.0", "#完了", "s:backend", "@FY25Q1"],
+            "custom_created_at": get_test_datetime("2024-02-20", "10:00:00"),
+            "closed": True,
+            "closed_days_ago": 25  # 約2024-02-10にクローズ（created_atより前）
+        },
+        {
+            "title": "Issue 36: API実装タスク",
+            "description": "タイトル検索テスト: 「API」での検索確認用",
+            "labels": ["p:5.0", "#作業中", "s:backend", "@FY25Q1"],
+            "custom_created_at": get_test_datetime("2024-02-01", "10:00:00"),
             "closed": False
+        },
+        {
+            "title": "Issue 37: [フィルタ] created_after境界",
+            "description": "期間フィルタテスト: created_at=2024-01-15（created_after境界）",
+            "labels": ["p:3.0", "#作業中", "s:frontend", "@FY25Q1"],
+            "custom_created_at": get_test_datetime("2024-01-15", "10:00:00"),
+            "closed": False
+        },
+        {
+            "title": "Issue 38: [フィルタ] completed_before境界",
+            "description": "期間フィルタテスト: completed_at=2024-03-15（completed_before境界）",
+            "labels": ["p:13.0", "#完了", "s:backend", "@FY25Q1"],
+            "custom_created_at": get_test_datetime("2024-02-01", "10:00:00"),
+            "closed": True,
+            "closed_days_ago": 7
         }
     ]
     
@@ -306,13 +410,38 @@ def create_project_and_issues(token, gitlab_url):
     if milestones_status_code == 200:
         milestones_data = json.loads(milestones_content)
         v1_milestone = next((m for m in milestones_data if m['title'] == 'v1.0'), None)
+        q1_milestone = next((m for m in milestones_data if m['title'] == '2024Q1'), None)
+        
         if v1_milestone:
             test_issues[0]['milestone_id'] = v1_milestone['id']
             test_issues[1]['milestone_id'] = v1_milestone['id']
             test_issues[2]['milestone_id'] = v1_milestone['id']
+        
+        # milestone_titleが指定されているIssueのID設定
+        for issue in test_issues:
+            if 'milestone_title' in issue:
+                if issue['milestone_title'] == '2024Q1' and q1_milestone:
+                    issue['milestone_id'] = q1_milestone['id']
+                issue.pop('milestone_title')  # APIに送らないよう削除
     
     for issue in test_issues:
-        issue_json_data = json.dumps(issue).encode('utf-8')
+        # created_atパラメータをサポート（管理者権限が必要）
+        issue_data = issue.copy()
+        
+        # created_days_agoからcreated_atを計算
+        if 'created_days_ago' in issue_data:
+            days_ago = issue_data.pop('created_days_ago')
+            created_date = datetime.now() - timedelta(days=days_ago)
+            issue_data['created_at'] = created_date.strftime('%Y-%m-%dT%H:%M:%SZ')
+        
+        # custom_created_atが指定されている場合はそれを使用
+        if 'custom_created_at' in issue_data:
+            issue_data['created_at'] = issue_data.pop('custom_created_at')
+        
+        # due_dateが指定されている場合はそのまま設定（GitLabのAPIフィールド）
+        # due_dateはcompleted_at決定に影響する重要なフィールド
+        
+        issue_json_data = json.dumps(issue_data).encode('utf-8')
         issue_request = urllib.request.Request(
             f"{gitlab_url}/api/v4/projects/{project_id}/issues",
             data=issue_json_data,
@@ -332,7 +461,7 @@ def create_project_and_issues(token, gitlab_url):
             print(f"イシュー作成成功: {issue['title']} (ID: {created_issue['id']})")
             
             # 完了状態のイシューをクローズ
-            if issue.get('state') == 'closed':
+            if issue.get('closed') == True:
                 close_data = json.dumps({'state_event': 'close'}).encode('utf-8')
                 close_request = urllib.request.Request(
                     f"{gitlab_url}/api/v4/projects/{project_id}/issues/{created_issue['iid']}",
@@ -382,11 +511,29 @@ def get_config_from_env():
     return None, None
 
 def main():
+    import sys
+    
+    # コマンドライン引数の処理
+    project_name = None
+    project_description = None
+    
+    if len(sys.argv) >= 2:
+        project_name = sys.argv[1]
+    if len(sys.argv) >= 3:
+        project_description = sys.argv[2]
+    
+    # デフォルト値の設定
+    if project_name is None:
+        project_name = DEFAULT_PROJECT_NAME
+    if project_description is None:
+        project_description = DEFAULT_PROJECT_DESCRIPTION
+    
     try:
         print("=" * 60)
         print("GitLab テストデータ作成スクリプト")
         print("=" * 60)
-        print(f"対象プロジェクト: {PROJECT_NAME}")
+        print(f"対象プロジェクト: {project_name}")
+        print(f"プロジェクト説明: {project_description}")
         print()
         
         # 環境変数から設定を取得
@@ -410,12 +557,13 @@ def main():
         print()
         print("ステップ2: プロジェクトとイシューの作成...")
         # プロジェクトとイシュー作成
-        project_id, access_token = create_project_and_issues(token, gitlab_url)
+        project_id, access_token = create_project_and_issues(token, gitlab_url, project_name, project_description)
         
         print()
         print("=" * 60)
         print("✅ テストデータ作成完了!")
         print("=" * 60)
+        print(f"プロジェクト名: {project_name}")
         print(f"プロジェクトID: {project_id}")
         print(f"アクセストークン: {access_token[:8]}...{access_token[-4:]}")
         print(f"GitLab URL: {gitlab_url}")
