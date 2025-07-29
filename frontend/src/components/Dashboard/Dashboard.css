@@ -148,6 +148,44 @@
   font-weight: 500;
 }
 
+.share-btn {
+  padding: 8px 16px;
+  background: white;
+  color: #333;
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s;
+}
+
+.share-btn:hover {
+  background: #f8f9fa;
+  border-color: #adb5bd;
+}
+
+.share-btn:active {
+  background: #e9ecef;
+}
+
+.copied-message {
+  color: #28a745;
+  font-size: 14px;
+  font-weight: 500;
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .dashboard-content {
   display: flex;
   flex-direction: column;
