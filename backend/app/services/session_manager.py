@@ -4,7 +4,7 @@ import threading
 import json
 import os
 from typing import Dict, Optional
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from .gitlab_client import GitLabClient
 import logging
 
@@ -23,8 +23,8 @@ class SessionManager:
         session_id = str(uuid.uuid4())
         self.sessions[session_id] = {
             'gitlab_client': GitLabClient(),
-            'created_at': datetime.now(),
-            'last_accessed': datetime.now()
+            'created_at': datetime.now(timezone.utc),
+            'last_accessed': datetime.now(timezone.utc)
         }
         self._save_sessions()
         return session_id
@@ -34,7 +34,7 @@ class SessionManager:
             return None
         
         session = self.sessions[session_id]
-        session['last_accessed'] = datetime.now()
+        session['last_accessed'] = datetime.now(timezone.utc)
         self._save_sessions()
         return session['gitlab_client']
     
@@ -46,7 +46,7 @@ class SessionManager:
         return False
     
     def cleanup_expired_sessions(self):
-        current_time = datetime.now()
+        current_time = datetime.now(timezone.utc)
         timeout_delta = timedelta(days=self.timeout_days)
         
         expired_sessions = []

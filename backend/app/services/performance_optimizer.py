@@ -2,7 +2,7 @@ import asyncio
 from typing import List, Dict, Any, Optional
 from functools import lru_cache
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from app.models.issue import IssueModel
 
 logger = logging.getLogger(__name__)
@@ -19,7 +19,7 @@ class PerformanceOptimizer:
         """分析結果キャッシュ"""
         if cache_key in self._cache:
             cached_data, timestamp = self._cache[cache_key]
-            if datetime.now() - timestamp < self._cache_timeout:
+            if datetime.now(timezone.utc) - timestamp < self._cache_timeout:
                 logger.info(f"Cache hit for key: {cache_key}")
                 return cached_data
             else:
@@ -29,7 +29,7 @@ class PerformanceOptimizer:
     
     def set_cache(self, cache_key: str, data: Dict[str, Any]) -> None:
         """キャッシュ設定"""
-        self._cache[cache_key] = (data, datetime.now())
+        self._cache[cache_key] = (data, datetime.now(timezone.utc))
         logger.info(f"Cache set for key: {cache_key}")
     
     async def optimize_issue_loading(self, issues: List[IssueModel]) -> List[IssueModel]:
@@ -154,7 +154,7 @@ class PerformanceOptimizer:
         return {
             'total_points': total_points,
             'points_by_date': points_by_date,
-            'calculation_time': datetime.now().isoformat()
+            'calculation_time': datetime.now(timezone.utc).isoformat()
         }
     
     def _calculate_burnup_optimized(self, issues: List[IssueModel]) -> Dict[str, Any]:
@@ -180,7 +180,7 @@ class PerformanceOptimizer:
             'total_points': total_points,
             'completed_points': completed_points,
             'completion_by_date': completion_by_date,
-            'calculation_time': datetime.now().isoformat()
+            'calculation_time': datetime.now(timezone.utc).isoformat()
         }
     
     def _calculate_velocity_optimized(self, issues: List[IssueModel]) -> Dict[str, Any]:
@@ -213,7 +213,7 @@ class PerformanceOptimizer:
             'velocity_by_week': velocity_by_week,
             'average_velocity': average_velocity,
             'total_weeks': total_weeks,
-            'calculation_time': datetime.now().isoformat()
+            'calculation_time': datetime.now(timezone.utc).isoformat()
         }
     
     def clear_cache(self) -> None:
