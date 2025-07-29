@@ -28,6 +28,11 @@ interface IssueTableProps {
     completed_at_to: string
     is_epic: string
   }
+  sortConfig?: {
+    key: string
+    direction: 'asc' | 'desc'
+  } | null
+  onSortChange?: (key: string, direction: 'asc' | 'desc') => void
 }
 
 export const IssueTable = ({ 
@@ -37,7 +42,9 @@ export const IssueTable = ({
   pageSize = 20,
   allowShowAll = false,
   initialShowAll = false,
-  issueFilters
+  issueFilters,
+  sortConfig: externalSortConfig,
+  onSortChange
 }: IssueTableProps) => {
   const [filters, setFilters] = useState({
     search: '',
@@ -49,10 +56,13 @@ export const IssueTable = ({
   })
   const [currentPage, setCurrentPage] = useState(1)
   const [showAll, setShowAll] = useState(initialShowAll)
-  const [sortConfig, setSortConfig] = useState<{
+  const [internalSortConfig, setInternalSortConfig] = useState<{
     key: keyof Issue
     direction: 'asc' | 'desc'
   } | null>(null)
+  
+  // Use external sort config if provided, otherwise use internal
+  const sortConfig = externalSortConfig || internalSortConfig
 
   // フィルタリングロジック（issueFiltersが渡された場合はそれを使用、そうでなければ内部フィルタを使用）
   const filteredIssues = useMemo(() => {
@@ -90,8 +100,8 @@ export const IssueTable = ({
     if (!sortConfig) return filteredIssues
     
     return [...filteredIssues].sort((a, b) => {
-      const aValue = a[sortConfig.key]
-      const bValue = b[sortConfig.key]
+      const aValue = a[sortConfig.key as keyof Issue]
+      const bValue = b[sortConfig.key as keyof Issue]
       
       if (aValue === null || aValue === undefined) return 1
       if (bValue === null || bValue === undefined) return -1
@@ -116,10 +126,18 @@ export const IssueTable = ({
   }, [sortedIssues, currentPage, pageSize, showAll])
 
   const handleSort = (key: keyof Issue) => {
-    setSortConfig({
-      key,
-      direction: sortConfig?.key === key && sortConfig.direction === 'asc' ? 'desc' : 'asc'
-    })
+    const newDirection = sortConfig?.key === key && sortConfig.direction === 'asc' ? 'desc' : 'asc'
+    
+    if (onSortChange) {
+      // If external handler provided, use it
+      onSortChange(key, newDirection)
+    } else {
+      // Otherwise use internal state
+      setInternalSortConfig({
+        key,
+        direction: newDirection
+      })
+    }
   }
 
   if (loading) {

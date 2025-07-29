@@ -1,7 +1,9 @@
 import { useState, useMemo } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useApp } from '../../contexts/AppContext'
 import { usePBLViewerIssues } from '../../hooks/usePBLViewerIssues'
 import { Issue } from '../../types/api'
+import { generateShareURL } from '../../utils/urlUtils'
 
 interface PBLFiltersProps {
   issues: Issue[]
@@ -11,6 +13,7 @@ export const PBLFilters = ({ issues }: PBLFiltersProps) => {
   const { state, dispatch } = useApp()
   const { fetchAllIssues } = usePBLViewerIssues()
   const [showFilters, setShowFilters] = useState(false)
+  const navigate = useNavigate()
   
   const filters = state.pblViewerFilters
 
@@ -39,6 +42,10 @@ export const PBLFilters = ({ issues }: PBLFiltersProps) => {
     }
     
     dispatch({ type: 'SET_PBL_VIEWER_FILTERS', payload: newFilters })
+    
+    // URLを更新
+    const shareUrl = generateShareURL(newFilters, '/pbl-viewer')
+    navigate(shareUrl.replace(window.location.origin, ''))
     
     // PBL Viewerでは期間フィルタを除外して全issueを取得
     const filtersWithoutPeriod = { ...newFilters }
@@ -275,6 +282,9 @@ export const PBLFilters = ({ issues }: PBLFiltersProps) => {
                 
                 // 状態をリセット
                 dispatch({ type: 'SET_PBL_VIEWER_FILTERS', payload: resetFilters })
+                
+                // URLをクリア
+                navigate('/pbl-viewer')
                 
                 // リセット後のフィルタで明示的にAPIを呼び出し（全てのフィルタをクリア）
                 try {

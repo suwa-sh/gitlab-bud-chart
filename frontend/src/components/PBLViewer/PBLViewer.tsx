@@ -1,18 +1,40 @@
 import { useState, useEffect } from 'react'
+import { useSearchParams, useNavigate } from 'react-router-dom'
 import { IssueTable } from '../IssueList/IssueTable'
 import { PBLStatistics } from './PBLStatistics'
 import { GitLabConfig } from '../GitLabConfig/GitLabConfig'
 import { PBLFilters } from './PBLFilters'
 import { usePBLViewerIssues } from '../../hooks/usePBLViewerIssues'
 import { useApp } from '../../contexts/AppContext'
+import { parseURLParams, generateShareURL, copyToClipboard } from '../../utils/urlUtils'
 import './PBLViewer.css'
 
 export const PBLViewer = () => {
-  const { state } = useApp()
+  const { state, dispatch } = useApp()
   const { issues, loading, fetchAllIssues, exportIssues, hasCachedData } = usePBLViewerIssues()
   const [isInitialLoad, setIsInitialLoad] = useState(true)
   const [showEditConfig, setShowEditConfig] = useState(false)
+  const [showCopiedMessage, setShowCopiedMessage] = useState(false)
+  const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>(null)
+  const [searchParams] = useSearchParams()
+  const navigate = useNavigate()
 
+
+  // URLパラメータから初期値を読み込み
+  useEffect(() => {
+    const urlFilters = parseURLParams(searchParams)
+    
+    // URLからフィルタを復元
+    if (Object.keys(urlFilters).length > 0) {
+      const { sortKey, sortDirection, ...filters } = urlFilters
+      dispatch({ type: 'SET_PBL_VIEWER_FILTERS', payload: filters })
+      
+      // ソート設定を復元
+      if (sortKey && sortDirection) {
+        setSortConfig({ key: sortKey, direction: sortDirection })
+      }
+    }
+  }, [])
 
   useEffect(() => {
     if (state.gitlabConfig.isConnected) {
@@ -130,6 +152,30 @@ export const PBLViewer = () => {
           >
             CSV エクスポート
           </button>
+          <button
+            onClick={async () => {
+              const shareFilters = {
+                ...state.pblViewerFilters,
+                ...(sortConfig && {
+                  sortKey: sortConfig.key,
+                  sortDirection: sortConfig.direction
+                })
+              }
+              const shareUrl = generateShareURL(shareFilters, '/pbl-viewer')
+              const success = await copyToClipboard(shareUrl)
+              if (success) {
+                setShowCopiedMessage(true)
+                setTimeout(() => setShowCopiedMessage(false), 3000)
+              }
+            }}
+            className="share-btn"
+            title="現在のフィルタ条件を含むURLをコピー"
+          >
+            🔗 URLを共有
+          </button>
+          {showCopiedMessage && (
+            <span className="copied-message">URLをコピーしました！</span>
+          )}
         </div>
       </header>
 
@@ -155,6 +201,18 @@ export const PBLViewer = () => {
             pageSize={50}
             allowShowAll={true}
             initialShowAll={true}
+            sortConfig={sortConfig}
+            onSortChange={(key, direction) => {
+              setSortConfig({ key, direction })
+              // URLを更新
+              const newFilters = {
+                ...state.pblViewerFilters,
+                sortKey: key,
+                sortDirection: direction
+              }
+              const shareUrl = generateShareURL(newFilters, '/pbl-viewer')
+              navigate(shareUrl.replace(window.location.origin, ''))
+            }}
           />
         </div>
       </div>
