@@ -124,13 +124,33 @@ class IssueService:
             raise
     
     def _parse_datetime(self, date_str: Optional[str]) -> Optional[datetime]:
-        """日時文字列解析"""
+        """日時文字列解析（GitLabバージョン間の差異に対応）"""
         if not date_str:
             return None
         
         try:
-            # GitLabの日時形式: "2024-01-01T00:00:00.000Z"
-            return datetime.fromisoformat(date_str.replace('Z', '+00:00'))
+            # GitLab 15.11系と17.9系での日時形式の差異に対応
+            # パターン1: "2024-01-01T00:00:00.000Z" (timezone-aware)
+            # パターン2: "2024-01-01T00:00:00.000" (timezone-naive)
+            # パターン3: "2024-01-01T00:00:00Z" (マイクロ秒なし)
+            
+            if date_str.endswith('Z'):
+                # UTC timezone指定の場合
+                parsed_dt = datetime.fromisoformat(date_str.replace('Z', '+00:00'))
+            elif '+' in date_str or date_str.endswith('+00:00'):
+                # 明示的なtimezone指定がある場合
+                parsed_dt = datetime.fromisoformat(date_str)
+            else:
+                # timezone情報がない場合（GitLab 15.11系）
+                parsed_dt = datetime.fromisoformat(date_str)
+                # timezone-naiveな場合はUTCとして扱う
+                if parsed_dt.tzinfo is None:
+                    from datetime import timezone
+                    parsed_dt = parsed_dt.replace(tzinfo=timezone.utc)
+            
+            logger.debug(f"日時解析成功: {date_str} -> {parsed_dt} (tzinfo: {parsed_dt.tzinfo})")
+            return parsed_dt
+            
         except Exception as e:
             logger.warning(f"日時解析失敗: {date_str}, error: {e}")
             return None

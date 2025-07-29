@@ -29,7 +29,8 @@
       "Bash(sed:*)",
       "WebFetch(domain:reactjs.org)",
       "WebFetch(domain:legacy.reactjs.org)",
-      "WebFetch(domain:react.dev)"
+      "WebFetch(domain:react.dev)",
+      "WebFetch(domain:gitlab.com)"
     ],
     "deny": []
   }

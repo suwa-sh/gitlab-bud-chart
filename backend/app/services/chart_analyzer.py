@@ -1,5 +1,5 @@
 from typing import List, Dict, Any, Optional, Tuple
-from datetime import datetime, date, timedelta
+from datetime import datetime, date, timedelta, timezone
 from collections import defaultdict
 import logging
 from app.models.issue import IssueModel
@@ -162,10 +162,10 @@ class ChartAnalyzer:
         """指定日時点での完了ポイント計算"""
         completed_points = 0
         for issue in issues:
-            if (issue.completed_at and 
-                issue.completed_at.date() <= target_date and 
-                issue.point):
-                completed_points += issue.point
+            if issue.completed_at and issue.point:
+                completed_date = issue.completed_at.astimezone(timezone.utc).date() if issue.completed_at.tzinfo else issue.completed_at.date()
+                if completed_date <= target_date:
+                    completed_points += issue.point
         return completed_points
     
     def _count_completed_issues_by_date(
@@ -176,9 +176,10 @@ class ChartAnalyzer:
         """指定日時点での完了issue数計算"""
         count = 0
         for issue in issues:
-            if (issue.completed_at and 
-                issue.completed_at.date() <= target_date):
-                count += 1
+            if issue.completed_at:
+                completed_date = issue.completed_at.astimezone(timezone.utc).date() if issue.completed_at.tzinfo else issue.completed_at.date()
+                if completed_date <= target_date:
+                    count += 1
         return count
     
     def _calculate_ideal_remaining(
@@ -293,12 +294,15 @@ class ChartAnalyzer:
         chart_end_date: date
     ) -> bool:
         """指定日時点でissueがスコープ内かどうか判定"""
+        # timezone-awareなdatetimeから、UTCのdateを取得
+        created_date = issue.created_at.astimezone(timezone.utc).date() if issue.created_at.tzinfo else issue.created_at.date()
+        
         # created_atが表示期間終了日より未来の場合は除外
-        if issue.created_at.date() > chart_end_date:
+        if created_date > chart_end_date:
             return False
         
         # Case 1: created_at <= target_date（従来の条件）
-        if issue.created_at.date() <= target_date:
+        if created_date <= target_date:
             return True
         
         # Case 2: created_atが範囲外でもOpenedなら対象（ただし期間内作成のみ）
@@ -306,9 +310,10 @@ class ChartAnalyzer:
             return True
         
         # Case 3: completed_atが期間内なら対象（ただし期間内作成のみ）
-        if (issue.completed_at and 
-            chart_start_date <= issue.completed_at.date() <= chart_end_date):
-            return True
+        if issue.completed_at:
+            completed_date = issue.completed_at.astimezone(timezone.utc).date() if issue.completed_at.tzinfo else issue.completed_at.date()
+            if chart_start_date <= completed_date <= chart_end_date:
+                return True
         
         return False
 
