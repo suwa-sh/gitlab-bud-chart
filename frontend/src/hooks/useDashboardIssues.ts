@@ -29,33 +29,12 @@ export const useDashboardIssues = () => {
         per_page: params.per_page || 10000
       }
       
-      // 期間フィルタを追加
+      // 期間フィルタを追加（チャート期間があれば常に適用）
       if (params.period) {
         apiParams.chart_start_date = params.period.start
         apiParams.chart_end_date = params.period.end
       }
       
-      // 期間フィルタがある場合は直接getIssues APIを使用（Quarterラベルフィルタは使用しない）
-      if (params.period) {
-        const response = await issuesApi.getIssues(apiParams)
-        
-        // レスポンスが配列の場合とオブジェクトの場合を処理
-        if (Array.isArray(response)) {
-          dispatch({ type: 'SET_DASHBOARD_ISSUES', payload: response })
-        } else {
-          dispatch({ type: 'SET_DASHBOARD_ISSUES', payload: response.issues || response })
-          if (response.metadata) {
-            dispatch({ type: 'SET_METADATA', payload: response.metadata })
-          }
-        }
-        
-        // キャッシュタイムスタンプを更新
-        dispatch({ type: 'SET_DASHBOARD_CACHE_TIMESTAMP', payload: new Date() })
-        
-        return response
-      }
-      
-      // Default behavior for non-period filtering  
       const response = await issuesApi.getIssues(apiParams)
       
       // レスポンスが配列の場合とオブジェクトの場合を処理
