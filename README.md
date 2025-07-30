@@ -171,24 +171,27 @@ gantt
     dateFormat YYYY-MM-DD
     axisFormat %m/%d
 
-    section 含まれるIssue
-    期間内完了Issue      :done, in_period, 2024-01-15, 2024-02-15
-    期間内完了Issue2     :done, in_period2, 2024-02-01, 2024-03-15
-    未完了Issue          :active, not_completed, 2023-11-15, 2024-06-01
-    未完了Issue2         :active, not_completed2, 2024-02-01, 2024-04-30
+    section ✅ 含まれるIssue
+    Issue A (期間内完了)      :done, issue_a, 2024-01-15, 2024-02-15
+    Issue B (未完了)          :active, issue_b, 2024-02-01, 2024-06-01
+    Issue C (期間外→期間内完了) :done, issue_c, 2023-12-01, 2024-02-01
+    Issue D (期間外→未完了)    :active, issue_d, 2023-11-01, 2024-06-01
+    Issue G (期間後→未完了)    :active, issue_g, 2024-04-15, 2024-06-01
 
-    section 除外されるIssue
-    期間前完了Issue      :crit, before_period, 2023-11-01, 2023-12-15
-    期間後完了Issue      :crit, after_period, 2024-02-01, 2024-04-15
-    テンプレート         :crit, filter_template, 2024-02-01, 2024-02-15
-    不要Issue           :crit, filter_unnecessary, 2024-01-10, 2024-01-20
+    section ❌ 除外されるIssue
+    Issue E (期間内→期間後完了) :crit, issue_e, 2024-02-15, 2024-04-15
+    Issue F (期間前完了)       :crit, issue_f, 2023-11-01, 2023-12-15
+    Issue H (テンプレート)     :crit, issue_h, 2024-02-01, 2024-02-15
+    Issue I (不要)            :crit, issue_i, 2024-01-10, 2024-01-20
 
     section 重要な境界
-    期間開始            :milestone, period_start, 2024-01-01, 0d
-    期間終了            :milestone, period_end, 2024-03-31, 0d
+    期間開始                  :milestone, period_start, 2024-01-01, 0d
+    期間終了                  :milestone, period_end, 2024-03-31, 0d
 ```
 
 **スコープ判定の具体例:**
+
+**テスト期間: 2024-01-01 ～ 2024-03-31**
 
 | Issue | 処理段階         | kanban_status | created_at | completed_at | state  | 最終判定 | 適用ルール                       |
 | ----- | ---------------- | ------------- | ---------- | ------------ | ------ | -------- | -------------------------------- |

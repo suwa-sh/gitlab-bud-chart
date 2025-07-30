@@ -323,6 +323,76 @@ def create_project_and_issues(token, gitlab_url, project_name=None, project_desc
             "closed": False
         },
         
+        # Phase 0: スコープ判定具体例テスト（9個）- README.mdの表と完全一致
+        {
+            "title": "Issue A: [スコープ具体例] 期間内完了",
+            "description": "スコープ判定具体例: created_at=2024-01-15, completed_at=2024-02-15（期間内完了、含まれる）",
+            "labels": ["p:5.0", "#完了", "s:backend", "@FY25Q1"],
+            "custom_created_at": get_test_datetime("2024-01-15", "10:00:00"),
+            "closed": True,
+            "closed_days_ago": 45  # 約2024-02-15
+        },
+        {
+            "title": "Issue B: [スコープ具体例] 未完了",
+            "description": "スコープ判定具体例: created_at=2024-02-01, completed_at=null（未完了、含まれる）",
+            "labels": ["p:8.0", "#作業中", "s:frontend", "@FY25Q1"],
+            "custom_created_at": get_test_datetime("2024-02-01", "10:00:00"),
+            "closed": False
+        },
+        {
+            "title": "Issue C: [スコープ具体例] 期間外→期間内完了",
+            "description": "スコープ判定具体例: created_at=2023-12-01, completed_at=2024-02-01（期間外created+期間内completed、含まれる）",
+            "labels": ["p:3.0", "#完了", "s:infrastructure", "@FY25Q1"],
+            "custom_created_at": get_test_datetime("2023-12-01", "10:00:00"),
+            "closed": True,
+            "closed_days_ago": 60  # 約2024-02-01
+        },
+        {
+            "title": "Issue D: [スコープ具体例] 期間外→未完了",
+            "description": "スコープ判定具体例: created_at=2023-11-01, completed_at=null（期間外created+未完了、含まれる）",
+            "labels": ["p:13.0", "#作業中", "s:backend", "@FY25Q1"],
+            "custom_created_at": get_test_datetime("2023-11-01", "10:00:00"),
+            "closed": False
+        },
+        {
+            "title": "Issue E: [スコープ具体例] 期間内→期間後完了",
+            "description": "スコープ判定具体例: created_at=2024-02-15, completed_at=2024-04-15（期間内created+期間後completed、除外）",
+            "labels": ["p:5.0", "#完了", "s:backend", "@FY25Q2"],
+            "custom_created_at": get_test_datetime("2024-02-15", "10:00:00"),
+            "closed": True,
+            "closed_days_ago": -15  # 約2024-04-15（未来日）
+        },
+        {
+            "title": "Issue F: [スコープ具体例] 期間前完了",
+            "description": "スコープ判定具体例: created_at=2023-11-01, completed_at=2023-12-15（期間前完了、除外）",
+            "labels": ["p:8.0", "#完了", "s:frontend", "@FY25Q1"],
+            "custom_created_at": get_test_datetime("2023-11-01", "10:00:00"),
+            "closed": True,
+            "closed_days_ago": 107  # 約2023-12-15
+        },
+        {
+            "title": "Issue G: [スコープ具体例] 期間後→未完了",
+            "description": "スコープ判定具体例: created_at=2024-04-15, completed_at=null（期間後created+未完了、含まれる）",
+            "labels": ["p:21.0", "#作業中", "s:infrastructure", "@FY25Q2"],
+            "custom_created_at": get_test_datetime("2024-04-15", "10:00:00"),
+            "closed": False
+        },
+        {
+            "title": "Issue H: [スコープ具体例] テンプレート除外",
+            "description": "スコープ判定具体例: kanban_status=テンプレート（統一フィルタで除外）",
+            "labels": ["p:1.0", "#テンプレート", "s:backend", "@FY25Q1"],
+            "custom_created_at": get_test_datetime("2024-02-01", "10:00:00"),
+            "closed": False
+        },
+        {
+            "title": "Issue I: [スコープ具体例] 不要除外",
+            "description": "スコープ判定具体例: kanban_status=不要（統一フィルタで除外）",
+            "labels": ["p:2.0", "#不要", "s:frontend", "@FY25Q1"],
+            "custom_created_at": get_test_datetime("2024-01-10", "10:00:00"),
+            "closed": True,
+            "closed_days_ago": 70  # 約2024-01-20
+        },
+        
         # Phase 5: フィルタ項目境界テスト（9個）
         {
             "title": "Issue 30: [フィルタ] service=API",
