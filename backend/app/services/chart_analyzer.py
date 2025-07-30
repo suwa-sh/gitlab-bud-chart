@@ -25,7 +25,8 @@ class ChartAnalyzer:
         """Burn-downチャートデータ生成"""
         try:
             # 統一フィルタを適用（除外ルールと日付補正）
-            filtered_issues = apply_unified_filters(issues)
+            # 期間開始日を渡して日付補正を適用
+            filtered_issues = apply_unified_filters(issues, start_date)
             
             # マイルストーンフィルタ
             filtered_issues = self._filter_by_milestone(filtered_issues, milestone)
@@ -86,7 +87,8 @@ class ChartAnalyzer:
         """Burn-upチャートデータ生成"""
         try:
             # 統一フィルタを適用（除外ルールと日付補正）
-            filtered_issues = apply_unified_filters(issues)
+            # 期間開始日を渡して日付補正を適用
+            filtered_issues = apply_unified_filters(issues, start_date)
             
             # マイルストーンフィルタ
             filtered_issues = self._filter_by_milestone(filtered_issues, milestone)
@@ -293,37 +295,22 @@ class ChartAnalyzer:
         chart_start_date: date,
         chart_end_date: date
     ) -> bool:
-        """指定日時点でissueがスコープ内かどうか判定"""
-        # timezone-awareなdatetimeから、UTCのdateを取得
-        created_date = issue.created_at.astimezone(timezone.utc).date() if issue.created_at.tzinfo else issue.created_at.date()
-        
-        # 除外条件を最優先でチェック
-        # スコープルール4: created_atが表示期間終了日より未来の場合は除外
-        if created_date > chart_end_date:
-            return False
-        
-        # スコープルール5: completed_atが表示期間終了日より未来の場合は除外
+        """指定日時点でissueがスコープ内かどうか判定（シンプルな除外ルール）"""
+        # completed_atがある場合のみチェック
         if issue.completed_at:
+            # timezone-awareなdatetimeから、UTCのdateを取得
             completed_date = issue.completed_at.astimezone(timezone.utc).date() if issue.completed_at.tzinfo else issue.completed_at.date()
+            
+            # 除外ルール1: completed_atが期間終了日より未来
             if completed_date > chart_end_date:
                 return False
+            
+            # 除外ルール2: completed_atが期間開始日より過去
+            if completed_date < chart_start_date:
+                return False
         
-        # 含む条件をチェック
-        # Case 1: created_at <= target_date（従来の条件）
-        if created_date <= target_date:
-            return True
-        
-        # Case 2: created_atが範囲外でもOpenedなら対象
-        if issue.state == 'opened':
-            return True
-        
-        # Case 3: completed_atが期間内なら対象
-        if issue.completed_at:
-            completed_date = issue.completed_at.astimezone(timezone.utc).date() if issue.completed_at.tzinfo else issue.completed_at.date()
-            if chart_start_date <= completed_date <= chart_end_date:
-                return True
-        
-        return False
+        # 除外ルールに該当しなければスコープ内（未完了または期間内完了）
+        return True
 
 # グローバルインスタンス
 chart_analyzer = ChartAnalyzer()

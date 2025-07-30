@@ -20,43 +20,27 @@ def _apply_scope_filter(
     chart_start_date: Optional[date],
     chart_end_date: Optional[date]
 ) -> List[IssueModel]:
-    """チャートと同様のスコープフィルタを適用"""
+    """シンプルなスコープフィルタを適用"""
     if not chart_start_date or not chart_end_date:
         return issues
     
     filtered = []
     for issue in issues:
-        # timezone-awareなdatetimeから、UTCのdateを取得
-        created_date = issue.created_at.astimezone(timezone.utc).date() if issue.created_at.tzinfo else issue.created_at.date()
-        
-        # 除外条件を最優先でチェック
-        # スコープルール4: created_atが表示期間終了日より未来の場合は除外
-        if created_date > chart_end_date:
-            continue
-        
-        # スコープルール5: completed_atが表示期間終了日より未来の場合は除外
+        # completed_atがある場合のみチェック
         if issue.completed_at:
+            # timezone-awareなdatetimeから、UTCのdateを取得
             completed_date = issue.completed_at.astimezone(timezone.utc).date() if issue.completed_at.tzinfo else issue.completed_at.date()
+            
+            # 除外ルール1: completed_atが期間終了日より未来
             if completed_date > chart_end_date:
                 continue
-        
-        # 含む条件をチェック
-        # Case 1: created_atが期間内
-        if chart_start_date <= created_date <= chart_end_date:
-            filtered.append(issue)
-            continue
-        
-        # Case 2: created_atが範囲外でもOpenedなら対象
-        if issue.state == 'opened':
-            filtered.append(issue)
-            continue
-        
-        # Case 3: completed_atが期間内なら対象
-        if issue.completed_at:
-            completed_date = issue.completed_at.astimezone(timezone.utc).date() if issue.completed_at.tzinfo else issue.completed_at.date()
-            if chart_start_date <= completed_date <= chart_end_date:
-                filtered.append(issue)
+            
+            # 除外ルール2: completed_atが期間開始日より過去
+            if completed_date < chart_start_date:
                 continue
+        
+        # 除外ルールに該当しなければ含める（未完了または期間内完了）
+        filtered.append(issue)
     
     return filtered
 
@@ -222,7 +206,8 @@ async def get_issues(
         )
         
         # まず統一フィルタを適用（除外ルールと日付補正）
-        issues = apply_unified_filters(issues)
+        # 期間開始日を渡して日付補正を適用
+        issues = apply_unified_filters(issues, chart_start_date)
         
         # スコープフィルタ適用（チャートと同条件）
         if chart_start_date and chart_end_date:
@@ -517,7 +502,8 @@ async def search_issues(
         )
         
         # まず統一フィルタを適用（除外ルールと日付補正）
-        issues = apply_unified_filters(issues)
+        # 期間開始日を渡して日付補正を適用
+        issues = apply_unified_filters(issues, chart_start_date)
         
         # スコープフィルタ適用（チャートと同条件）
         if chart_start_date and chart_end_date:
