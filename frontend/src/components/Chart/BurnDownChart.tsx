@@ -1,32 +1,38 @@
-import { useMemo } from 'react'
+import { useMemo } from "react";
 import {
-  LineChart, Line, XAxis, YAxis, CartesianGrid, 
-  Tooltip, Legend, ResponsiveContainer
-} from 'recharts'
-import { ChartData } from '../../types/api'
-import { format } from 'date-fns'
-import { ja } from 'date-fns/locale'
-import { calculateBusinessDayIdealLine } from '../../utils/businessDays'
-import './Chart.css'
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+} from "recharts";
+import { ChartData } from "../../types/api";
+import { format } from "date-fns";
+import { ja } from "date-fns/locale";
+import { calculateBusinessDayIdealLine } from "../../utils/businessDays";
+import "./Chart.css";
 
 interface BurnDownChartProps {
-  data: ChartData[]
-  loading?: boolean
-  height?: number
-  startDate?: string
-  endDate?: string
+  data: ChartData[];
+  loading?: boolean;
+  height?: number;
+  startDate?: string;
+  endDate?: string;
 }
 
-export const BurnDownChart = ({ 
-  data, 
-  loading = false, 
+export const BurnDownChart = ({
+  data,
+  loading = false,
   height = 400,
   startDate,
-  endDate
+  endDate,
 }: BurnDownChartProps) => {
   // Calculate dynamic height based on screen size
   const dynamicHeight = useMemo(() => {
-    if (typeof window !== 'undefined') {
+    if (typeof window !== "undefined") {
       const screenWidth = window.innerWidth;
       if (screenWidth >= 2000) return Math.max(height, 500);
       if (screenWidth >= 1600) return Math.max(height, 450);
@@ -34,38 +40,38 @@ export const BurnDownChart = ({
     }
     return height;
   }, [height]);
-  
+
   // ALL HOOKS MUST BE CALLED FIRST - BEFORE ANY EARLY RETURNS
   const chartData = useMemo(() => {
     if (!data.length || !startDate || !endDate) {
-      const mapped = data.map(item => ({
-        date: format(new Date(item.date), 'MM/dd', { locale: ja }),
+      const mapped = data.map((item) => ({
+        date: format(new Date(item.date), "MM/dd", { locale: ja }),
         理想: Math.round(item.planned_points * 10) / 10,
-        実績: Math.round(item.actual_points * 10) / 10,
-        残り: Math.round(item.remaining_points * 10) / 10
-      }))
-      return mapped
+        残ポイント: Math.round(item.actual_points * 10) / 10,
+        残り: Math.round(item.remaining_points * 10) / 10,
+      }));
+      return mapped;
     }
 
     // Calculate business day aware ideal line
-    const totalPoints = data[0]?.total_points || 0
-    const chartDates = data.map(item => item.date)
+    const totalPoints = data[0]?.total_points || 0;
+    const chartDates = data.map((item) => item.date);
     const businessDayIdealLine = calculateBusinessDayIdealLine(
       totalPoints,
       startDate,
       endDate,
       chartDates
-    )
+    );
 
     const mapped = data.map((item, index) => ({
-      date: format(new Date(item.date), 'MM/dd', { locale: ja }),
+      date: format(new Date(item.date), "MM/dd", { locale: ja }),
       理想: Math.round(businessDayIdealLine[index] * 10) / 10,
-      実績: Math.round(item.actual_points * 10) / 10,
-      残り: Math.round(item.remaining_points * 10) / 10
-    }))
-    
-    return mapped
-  }, [data, startDate, endDate])
+      残ポイント: Math.round(item.actual_points * 10) / 10,
+      残り: Math.round(item.remaining_points * 10) / 10,
+    }));
+
+    return mapped;
+  }, [data, startDate, endDate]);
 
   // EARLY RETURNS AFTER ALL HOOKS
   if (loading) {
@@ -74,7 +80,7 @@ export const BurnDownChart = ({
         <div className="loading-spinner" />
         <p>チャートを読み込み中...</p>
       </div>
-    )
+    );
   }
 
   if (!data.length) {
@@ -82,7 +88,7 @@ export const BurnDownChart = ({
       <div className="chart-empty">
         <p>データがありません</p>
       </div>
-    )
+    );
   }
 
   // Tooltip function must be defined after early returns but before JSX
@@ -97,10 +103,10 @@ export const BurnDownChart = ({
             </p>
           ))}
         </div>
-      )
+      );
     }
-    return null
-  }
+    return null;
+  };
 
   return (
     <div className="burn-down-chart">
@@ -111,26 +117,23 @@ export const BurnDownChart = ({
           margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
         >
           <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-          <XAxis 
-            dataKey="date" 
+          <XAxis
+            dataKey="date"
             tick={{ fontSize: 12 }}
             interval="preserveStartEnd"
           />
-          <YAxis 
+          <YAxis
             tick={{ fontSize: 12 }}
-            label={{ 
-              value: 'ポイント', 
-              angle: -90, 
-              position: 'insideLeft',
-              style: { fontSize: 14 }
+            label={{
+              value: "ポイント",
+              angle: -90,
+              position: "insideLeft",
+              style: { fontSize: 14 },
             }}
           />
           <Tooltip content={customTooltip} />
-          <Legend 
-            wrapperStyle={{ fontSize: 14 }}
-            iconType="line"
-          />
-          
+          <Legend wrapperStyle={{ fontSize: 14 }} iconType="line" />
+
           {/* 理想線 */}
           <Line
             type="monotone"
@@ -140,11 +143,11 @@ export const BurnDownChart = ({
             strokeDasharray="5 5"
             dot={false}
           />
-          
-          {/* 実績線 */}
+
+          {/* 残ポイント線 */}
           <Line
             type="monotone"
-            dataKey="実績"
+            dataKey="残ポイント"
             stroke="#82ca9d"
             strokeWidth={3}
             dot={{ r: 4 }}
@@ -152,7 +155,6 @@ export const BurnDownChart = ({
           />
         </LineChart>
       </ResponsiveContainer>
-      
     </div>
-  )
-}
+  );
+};

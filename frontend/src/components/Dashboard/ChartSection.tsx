@@ -173,17 +173,14 @@ export const ChartSection = ({ period, issues, loading, onPeriodChange, issueFil
 
   return (
     <div className="chart-section">
+      {/* 期間選択 - 独立したグループ */}
+      <PeriodSelector 
+        value={period}
+        onChange={onPeriodChange}
+      />
 
       {/* フィルタ・表示条件 */}
       <div className="chart-filters">
-        {/* 期間フィルタ */}
-        <div className="filter-group">
-          <PeriodSelector 
-            value={period}
-            onChange={onPeriodChange}
-          />
-        </div>
-        
         {/* 表示タイプフィルタ */}
         <div className="filter-group">
           <div className="view-toggle">

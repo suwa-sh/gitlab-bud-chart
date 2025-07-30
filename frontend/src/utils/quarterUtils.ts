@@ -135,6 +135,110 @@ export const fiscalQuarterToDateRange = (
 };
 
 /**
+ * Generate quarter options for selector (past 2 years ~ future 6 months)
+ *
+ * @returns Array of quarter options with value and label
+ */
+export const generateQuarterOptions = (): Array<{ value: string; label: string }> => {
+  const options: Array<{ value: string; label: string }> = [];
+  const today = new Date();
+  const currentYear = today.getFullYear();
+  const currentMonth = today.getMonth() + 1; // 1-12
+  
+  // Determine current fiscal quarter
+  const currentFiscalYear = currentMonth >= 4 ? currentYear : currentYear - 1;
+  const currentQuarter = currentMonth >= 4 
+    ? Math.floor((currentMonth - 4) / 3) + 1 
+    : 4;
+  
+  // Generate quarters from 2 years ago to 6 months in the future
+  for (let year = currentYear - 2; year <= currentYear + 1; year++) {
+    for (let q = 1; q <= 4; q++) {
+      const fiscalYear = year;
+      const quarterLabel = `@FY${fiscalYear.toString().slice(-2)}Q${q}`;
+      
+      // Get month range for display
+      let monthRange: string;
+      switch (q) {
+        case 1: monthRange = '4-6月'; break;
+        case 2: monthRange = '7-9月'; break;
+        case 3: monthRange = '10-12月'; break;
+        case 4: monthRange = '1-3月'; break;
+        default: monthRange = '';
+      }
+      
+      const displayYear = q === 4 ? year + 1 : year;
+      const label = `FY${fiscalYear.toString().slice(-2)}Q${q} (${displayYear}年${monthRange})`;
+      
+      // Only include quarters within the allowed range
+      if (year < currentFiscalYear - 2) continue;
+      if (year > currentFiscalYear || (year === currentFiscalYear && q > currentQuarter + 2)) continue;
+      
+      options.push({
+        value: quarterLabel,
+        label: label
+      });
+    }
+  }
+  
+  return options.sort((a, b) => a.value.localeCompare(b.value));
+};
+
+/**
+ * Generate preset period options
+ *
+ * @returns Array of preset options with value, label, and date range
+ */
+export const generatePresetOptions = (): Array<{
+  value: string;
+  label: string;
+  start: string;
+  end: string;
+}> => {
+  const today = new Date();
+  const currentYear = today.getFullYear();
+  const currentMonth = today.getMonth(); // 0-11
+  
+  // Current quarter
+  const quarterMonth = Math.floor(currentMonth / 3) * 3;
+  const thisQuarterStart = new Date(currentYear, quarterMonth, 1);
+  const thisQuarterEnd = new Date(currentYear, quarterMonth + 3, 0);
+  
+  // Previous quarter
+  const prevQuarterStart = new Date(currentYear, quarterMonth - 3, 1);
+  const prevQuarterEnd = new Date(currentYear, quarterMonth, 0);
+  
+  // Current year
+  const thisYearStart = new Date(currentYear, 0, 1);
+  const thisYearEnd = new Date(currentYear, 11, 31);
+  
+  const formatDate = (date: Date): string => {
+    return date.toISOString().split('T')[0];
+  };
+  
+  return [
+    {
+      value: 'this-quarter',
+      label: '今四半期',
+      start: formatDate(thisQuarterStart),
+      end: formatDate(thisQuarterEnd)
+    },
+    {
+      value: 'last-quarter', 
+      label: '前四半期',
+      start: formatDate(prevQuarterStart),
+      end: formatDate(prevQuarterEnd)
+    },
+    {
+      value: 'this-year',
+      label: '今年',
+      start: formatDate(thisYearStart),
+      end: formatDate(thisYearEnd)
+    }
+  ];
+};
+
+/**
  * Example usage and test function
  */
 export const testQuarterConversion = () => {

@@ -1,105 +1,190 @@
+/* 期間選択エリア - 詳細フィルタと完全統一 */
 .period-selector {
-  padding: 15px;
-  background: #f8f9fa;
+  padding: 20px;
+  background: white;
   border-radius: 8px;
-  margin-bottom: 20px;
-}
-
-.period-presets {
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
+  border: 1px solid #dee2e6;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   margin-bottom: 15px;
 }
 
-.period-presets button {
-  padding: 8px 16px;
-  border: 1px solid #ddd;
-  background: white;
+/* 詳細フィルタのスタイルを継承 */
+.period-selector .detail-filters-row {
+  display: flex;
+  gap: 20px;
+  margin-bottom: 15px;
+  flex-wrap: wrap;
+}
+
+.period-selector .detail-filters-row:last-child {
+  margin-bottom: 0;
+}
+
+.period-selector .filter-group {
+  display: flex;
+  flex-direction: column;
+  min-width: 200px;
+  flex: 1;
+}
+
+.period-selector .filter-group label {
+  margin-bottom: 6px;
+  font-weight: 500;
+  color: #495057;
+  font-size: 13px;
+}
+
+.period-selector .filter-input {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #ced4da;
   border-radius: 4px;
-  cursor: pointer;
-  transition: all 0.2s;
   font-size: 14px;
+  transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
 }
 
-.period-presets button:hover {
-  background: #e9ecef;
-  border-color: #adb5bd;
+.period-selector .filter-input:focus {
+  outline: none;
+  border-color: #80bdff;
+  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
 }
 
-.period-presets button.active {
-  background: #007bff;
-  color: white;
-  border-color: #007bff;
+.period-selector .filter-select {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  background-color: #fff;
+  font-size: 14px;
+  transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
 }
 
-.custom-period {
+.period-selector .filter-select:focus {
+  outline: none;
+  border-color: #80bdff;
+  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+/* 各セクションの特別なスタイル */
+.quarter-selection {
+  width: 100%;
+}
+
+.period-dates .date-range-inputs {
   display: flex;
   align-items: center;
-  gap: 15px;
-  margin-bottom: 15px;
-  padding: 10px;
-  background: white;
-  border-radius: 4px;
-  border: 1px solid #ddd;
+  gap: 8px;
 }
 
-.date-input {
-  padding: 6px 12px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-size: 14px;
+.period-dates .date-input {
+  width: 150px !important;
+  flex: none;
 }
 
-.period-display-button {
-  min-width: 200px;
-  padding: 8px 16px;
-  border: 2px solid #007bff;
-  background: white;
+.period-display-section {
+  width: 100%;
+}
+
+.period-display-section .period-display {
+  width: 100%;
+  padding: 8px 12px;
+  background: #f8f9fa;
+  border: 1px solid #e9ecef;
   border-radius: 4px;
-  cursor: pointer;
-  transition: all 0.2s;
   font-size: 14px;
+  color: #495057;
   font-weight: 500;
-  color: #007bff;
   text-align: center;
 }
 
-.period-display-button:hover {
-  background: #e7f3ff;
-  border-color: #0056b3;
+/* 変更がある場合の強調表示 */
+.period-selector.has-changes {
+  border-color: #ffc107;
+  box-shadow: 0 2px 4px rgba(255, 193, 7, 0.2);
 }
 
-.period-display-button.active {
+/* 適用ボタン */
+.apply-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 20px;
   background: #007bff;
   color: white;
-  border-color: #007bff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.apply-btn:hover:not(:disabled) {
+  background: #0056b3;
+  transform: translateY(-1px);
+}
+
+.apply-btn:disabled {
+  background: #6c757d;
+  cursor: not-allowed;
+  opacity: 0.6;
+  transform: none;
+}
+
+.apply-btn.highlighted {
+  background: #28a745;
+  box-shadow: 0 0 0 0.2rem rgba(40, 167, 69, 0.25);
+  animation: pulse 2s infinite;
+}
+
+.apply-btn.highlighted:hover:not(:disabled) {
+  background: #218838;
+}
+
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(40, 167, 69, 0.4);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(40, 167, 69, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(40, 167, 69, 0);
+  }
+}
+
+/* 区切り文字 */
+.range-separator {
+  font-weight: bold;
+  color: #666;
+  min-width: 20px;
+  text-align: center;
+  flex: none;
 }
 
 /* レスポンシブ対応 */
 @media (max-width: 768px) {
-  .period-presets {
-    flex-direction: column;
+  .period-selector {
+    padding: 15px;
   }
   
-  .period-presets button {
+  .apply-btn,
+  .filter-reset-btn {
     width: 100%;
-    text-align: center;
+    justify-content: center;
   }
   
-  .period-display-button {
-    min-width: auto;
-    width: 100%;
-    font-size: 12px;
-    padding: 10px 16px;
-  }
-  
-  .custom-period {
+  .period-dates .date-range-inputs {
     flex-direction: column;
     gap: 10px;
   }
   
-  .date-input {
-    width: 100%;
+  .period-dates .date-input {
+    width: 100% !important;
+  }
+  
+  .period-display {
+    font-size: 13px;
+    text-align: center;
   }
 }
