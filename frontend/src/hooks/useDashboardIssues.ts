@@ -42,6 +42,10 @@ export const useDashboardIssues = () => {
         dispatch({ type: 'SET_DASHBOARD_ISSUES', payload: response })
       } else {
         dispatch({ type: 'SET_DASHBOARD_ISSUES', payload: response.issues || response })
+        // 警告情報を設定
+        if (response.warnings) {
+          dispatch({ type: 'SET_DASHBOARD_WARNINGS', payload: response.warnings })
+        }
         if (response.metadata) {
           dispatch({ type: 'SET_METADATA', payload: response.metadata })
         }

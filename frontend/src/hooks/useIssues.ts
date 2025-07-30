@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react'
 import { useApp } from '../contexts/AppContext'
 import { issuesApi } from '../services/api'
-import { getOverlappingQuarters } from '../utils/quarterUtils'
+import { getOverlappingQuarters, normalizeQuarterLabel } from '../utils/quarterUtils'
 
 export const useIssues = () => {
   const { state, dispatch } = useApp()
@@ -58,7 +58,7 @@ export const useIssues = () => {
           // Filter results by quarters on the client side as a fallback
           if (response.issues) {
             const filteredIssues = response.issues.filter((issue: any) => 
-              overlappingQuarters.some(quarter => issue.quarter === quarter)
+              overlappingQuarters.some(quarter => normalizeQuarterLabel(quarter) === normalizeQuarterLabel(issue.quarter || ''))
             )
             
             // Update the response with filtered issues
@@ -68,7 +68,7 @@ export const useIssues = () => {
           // レスポンスが配列の場合とオブジェクトの場合を処理
           if (Array.isArray(response)) {
             const filteredResponse = response.filter((issue: any) => 
-              overlappingQuarters.some(quarter => issue.quarter === quarter)
+              overlappingQuarters.some(quarter => normalizeQuarterLabel(quarter) === normalizeQuarterLabel(issue.quarter || ''))
             )
             dispatch({ type: 'SET_ISSUES', payload: filteredResponse })
           } else {
@@ -145,14 +145,14 @@ export const useIssues = () => {
           
           if (response.issues) {
             const filteredIssues = response.issues.filter((issue: any) => 
-              overlappingQuarters.some(quarter => issue.quarter === quarter)
+              overlappingQuarters.some(quarter => normalizeQuarterLabel(quarter) === normalizeQuarterLabel(issue.quarter || ''))
             )
             response.issues = filteredIssues
           }
           
           if (Array.isArray(response)) {
             const filteredResponse = response.filter((issue: any) => 
-              overlappingQuarters.some(quarter => issue.quarter === quarter)
+              overlappingQuarters.some(quarter => normalizeQuarterLabel(quarter) === normalizeQuarterLabel(issue.quarter || ''))
             )
             dispatch({ type: 'SET_ISSUES', payload: filteredResponse })
           } else {

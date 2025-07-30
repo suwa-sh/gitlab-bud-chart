@@ -50,8 +50,13 @@ export const IssueTableRow = ({ issue }: IssueTableRowProps) => {
     return `#/issue/${issueIid}`
   }
 
+  // 完了判定
+  const isCompleted = issue.state === 'closed' || 
+    issue.kanban_status === 'completed' || 
+    issue.kanban_status === '完了'
+
   return (
-    <tr>
+    <tr className={isCompleted ? 'completed-row' : ''}>
       <td>{issue.service || '-'}</td>
       <td>{issue.milestone || '-'}</td>
       <td>

@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import Optional, List
+from typing import Optional, List, Dict, Any
 from datetime import datetime
 
 class IssueModel(BaseModel):
@@ -80,3 +80,18 @@ class IssueSearchRequest(BaseModel):
     sort_order: Optional[str] = 'desc'
     page: Optional[int] = 1
     per_page: Optional[int] = 50
+
+
+class ExcludedIssue(BaseModel):
+    """除外されたIssue情報"""
+    issue: IssueResponse
+    reason: str  # 'quarter', 'pre-period', 'post-period', 'template', 'unnecessary', 'goal', 'no-due-date'
+
+
+class IssueListWithWarningsResponse(BaseModel):
+    """警告情報を含むIssue一覧レスポンス"""
+    issues: List[IssueResponse]
+    warnings: List[ExcludedIssue]
+    total_count: int
+    filtered_count: int
+    warning_count: int

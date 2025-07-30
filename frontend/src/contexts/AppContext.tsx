@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useReducer, ReactNode, useEffect } from 'react'
-import { format, addMonths, endOfMonth } from 'date-fns'
+import { format } from 'date-fns'
 import { Issue } from '../types/api'
+import { getCurrentFiscalQuarter, fiscalQuarterToDateRange } from '../utils/quarterUtils'
 
 interface IssueFilters {
   milestone?: string
@@ -26,6 +27,7 @@ interface AppState {
   dashboardError: string | null
   dashboardFilters: IssueFilters
   dashboardCacheTimestamp: Date | null
+  dashboardWarnings: any[] | null
   
   // PBL-Viewer用の状態
   pblViewerIssues: Issue[]
@@ -67,6 +69,7 @@ type AppAction =
   | { type: 'SET_DASHBOARD_ERROR'; payload: string | null }
   | { type: 'SET_DASHBOARD_FILTERS'; payload: Partial<IssueFilters> }
   | { type: 'SET_DASHBOARD_CACHE_TIMESTAMP'; payload: Date | null }
+  | { type: 'SET_DASHBOARD_WARNINGS'; payload: any[] | null }
   
   // PBL-Viewer用のアクション
   | { type: 'SET_PBL_VIEWER_ISSUES'; payload: Issue[] }
@@ -89,16 +92,14 @@ type AppAction =
   | { type: 'SET_ERROR'; payload: string | null }
   | { type: 'SET_FILTERS'; payload: Partial<IssueFilters> }
 
-// 現在の四半期の開始日と終了日を計算する関数
-const getCurrentQuarterPeriod = (): { start: string; end: string } => {
-  const today = new Date()
-  const quarterMonth = Math.floor(today.getMonth() / 3) * 3
-  const start = new Date(today.getFullYear(), quarterMonth, 1)
-  const end = endOfMonth(addMonths(start, 2))
+// デフォルトの期間を現在の四半期から算出
+const getDefaultPeriod = (): { start: string; end: string } => {
+  const currentQuarter = getCurrentFiscalQuarter() // 例: @FY25Q2
+  const dateRange = fiscalQuarterToDateRange(currentQuarter) // { start: Date, end: Date }
   
   return {
-    start: format(start, 'yyyy-MM-dd'),
-    end: format(end, 'yyyy-MM-dd')
+    start: format(dateRange.start, 'yyyy-MM-dd'),
+    end: format(dateRange.end, 'yyyy-MM-dd')
   }
 }
 
@@ -473,6 +474,16 @@ const createInitialState = (): AppState => {
   // 古いキャッシュから新しいフォーマットへのマイグレーション
   migrateOldCacheToNewFormat(sessionId)
   
+  // URLパラメータから期間を取得
+  const urlParams = new URLSearchParams(window.location.search)
+  const periodStart = urlParams.get('period_start')
+  const periodEnd = urlParams.get('period_end')
+  
+  // 優先順位: URLパラメータ > デフォルト（現在四半期）
+  const chartPeriod = (periodStart && periodEnd) 
+    ? { start: periodStart, end: periodEnd }
+    : getDefaultPeriod()
+  
   return {
     // Dashboard用の状態
     dashboardIssues: loadDashboardIssuesFromStorage(sessionId),
@@ -480,6 +491,7 @@ const createInitialState = (): AppState => {
     dashboardError: null,
     dashboardFilters: loadDashboardFiltersFromStorage(sessionId),
     dashboardCacheTimestamp: loadDashboardCacheTimestamp(sessionId),
+    dashboardWarnings: null,
     
     // PBL-Viewer用の状態
     pblViewerIssues: loadPBLViewerIssuesFromStorage(sessionId),
@@ -489,7 +501,7 @@ const createInitialState = (): AppState => {
     pblViewerCacheTimestamp: loadPBLViewerCacheTimestamp(sessionId),
     
     // 共通状態
-    chartPeriod: getCurrentQuarterPeriod(),
+    chartPeriod: chartPeriod,
     gitlabConfig: loadGitLabConfigFromStorage(),
     sessionId: sessionId,
     
@@ -521,6 +533,8 @@ function appReducer(state: AppState, action: AppAction): AppState {
       return { ...state, dashboardFilters: { ...state.dashboardFilters, ...action.payload } }
     case 'SET_DASHBOARD_CACHE_TIMESTAMP':
       return { ...state, dashboardCacheTimestamp: action.payload }
+    case 'SET_DASHBOARD_WARNINGS':
+      return { ...state, dashboardWarnings: action.payload }
     
     // PBL-Viewer用のアクション
     case 'SET_PBL_VIEWER_ISSUES':

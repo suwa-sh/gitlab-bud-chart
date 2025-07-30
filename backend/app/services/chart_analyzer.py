@@ -5,7 +5,6 @@ import logging
 from app.models.issue import IssueModel
 from app.models.chart import ChartDataModel, BurnChartRequest, BurnChartResponse
 from app.utils.business_days import BusinessDayCalculator
-from app.utils.issue_filters import apply_unified_filters
 
 logger = logging.getLogger(__name__)
 
@@ -19,26 +18,23 @@ class ChartAnalyzer:
         self,
         issues: List[IssueModel],
         start_date: date,
-        end_date: date,
-        milestone: Optional[str] = None
+        end_date: date
     ) -> List[ChartDataModel]:
-        """Burn-downチャートデータ生成"""
+        """Burn-downチャートデータ生成
+        
+        Note: issuesは事前にフィルタリング済みであることを前提とする
+        """
         try:
-            # 統一フィルタを適用（除外ルールと日付補正）
-            filtered_issues = apply_unified_filters(issues)
-            
-            # マイルストーンフィルタ
-            filtered_issues = self._filter_by_milestone(filtered_issues, milestone)
+            # 事前フィルタリング済みのissuesを使用
+            filtered_issues = issues
             
             # 日付範囲生成
             date_range = self._generate_date_range(start_date, end_date)
             
-            # 開始時点の総ポイント計算（期間外Openedや期間内完了のissueも含む）
+            # 開始時点の総ポイント計算（期間内のポイントの合計）
             total_points = sum(
                 issue.point for issue in filtered_issues 
-                if issue.point and self._is_issue_in_scope_by_date(
-                    issue, start_date, start_date, end_date
-                )
+                if issue.point
             )
             
             chart_data = []
@@ -80,21 +76,20 @@ class ChartAnalyzer:
         self,
         issues: List[IssueModel],
         start_date: date,
-        end_date: date,
-        milestone: Optional[str] = None
+        end_date: date
     ) -> List[ChartDataModel]:
-        """Burn-upチャートデータ生成"""
+        """Burn-upチャートデータ生成
+        
+        Note: issuesは事前にフィルタリング済みであることを前提とする
+        """
         try:
-            # 統一フィルタを適用（除外ルールと日付補正）
-            filtered_issues = apply_unified_filters(issues)
-            
-            # マイルストーンフィルタ
-            filtered_issues = self._filter_by_milestone(filtered_issues, milestone)
+            # 事前フィルタリング済みのissuesを使用
+            filtered_issues = issues
             
             date_range = self._generate_date_range(start_date, end_date)
             
-            # 総ポイント（動的に変化する可能性あり）
-            total_points_by_date = self._calculate_total_points_by_date(
+            # 総ポイント（BurnUp仕様：created_atタイミングで増加）
+            total_points_by_date = self._calculate_total_points_by_created_date(
                 filtered_issues, date_range
             )
             
@@ -117,10 +112,7 @@ class ChartAnalyzer:
                     total_points=total_points,
                     completed_points=completed_points,
                     remaining_points=total_points - completed_points,
-                    total_issues=len([i for i in filtered_issues 
-                                    if self._is_issue_in_scope_by_date(
-                                        i, current_date, start_date, end_date
-                                    )]),
+                    total_issues=len(filtered_issues),
                     completed_issues=self._count_completed_issues_by_date(
                         filtered_issues, current_date
                     )
@@ -279,10 +271,27 @@ class ChartAnalyzer:
         for target_date in date_range:
             total_points = 0
             for issue in issues:
-                if (self._is_issue_in_scope_by_date(
-                    issue, target_date, date_range[0], date_range[-1]
-                ) and issue.point):
+                if issue.point:
                     total_points += issue.point
+            total_by_date[target_date] = total_points
+        return total_by_date
+    
+    def _calculate_total_points_by_created_date(
+        self, 
+        issues: List[IssueModel], 
+        date_range: List[date]
+    ) -> Dict[date, float]:
+        """BurnUp用：created_atタイミングで総ポイントが増加する計算"""
+        total_by_date = {}
+        for target_date in date_range:
+            total_points = 0
+            for issue in issues:
+                # created_atが対象日以前で、かつポイントが設定されているIssueを集計
+                if issue.created_at and issue.point:
+                    # timezone-awareなdatetimeから、UTCのdateを取得
+                    created_date = issue.created_at.astimezone(timezone.utc).date() if issue.created_at.tzinfo else issue.created_at.date()
+                    if created_date <= target_date:
+                        total_points += issue.point
             total_by_date[target_date] = total_points
         return total_by_date
     
@@ -293,35 +302,22 @@ class ChartAnalyzer:
         chart_start_date: date,
         chart_end_date: date
     ) -> bool:
-        """指定日時点でissueがスコープ内かどうか判定"""
-        # timezone-awareなdatetimeから、UTCのdateを取得
-        created_date = issue.created_at.astimezone(timezone.utc).date() if issue.created_at.tzinfo else issue.created_at.date()
-        
-        # created_atが表示期間終了日より未来の場合は除外
-        if created_date > chart_end_date:
-            return False
-        
-        # completed_atが表示期間終了日より未来の場合は除外
+        """指定日時点でissueがスコープ内かどうか判定（シンプルな除外ルール）"""
+        # completed_atがある場合のみチェック
         if issue.completed_at:
+            # timezone-awareなdatetimeから、UTCのdateを取得
             completed_date = issue.completed_at.astimezone(timezone.utc).date() if issue.completed_at.tzinfo else issue.completed_at.date()
+            
+            # 除外ルール1: completed_atが期間終了日より未来
             if completed_date > chart_end_date:
                 return False
+            
+            # 除外ルール2: completed_atが期間開始日より過去
+            if completed_date < chart_start_date:
+                return False
         
-        # Case 1: created_at <= target_date（従来の条件）
-        if created_date <= target_date:
-            return True
-        
-        # Case 2: created_atが範囲外でもOpenedなら対象（ただし期間内作成のみ）
-        if issue.state == 'opened':
-            return True
-        
-        # Case 3: completed_atが期間内なら対象（ただし期間内作成のみ）
-        if issue.completed_at:
-            completed_date = issue.completed_at.astimezone(timezone.utc).date() if issue.completed_at.tzinfo else issue.completed_at.date()
-            if chart_start_date <= completed_date <= chart_end_date:
-                return True
-        
-        return False
+        # 除外ルールに該当しなければスコープ内（未完了または期間内完了）
+        return True
 
 # グローバルインスタンス
 chart_analyzer = ChartAnalyzer()

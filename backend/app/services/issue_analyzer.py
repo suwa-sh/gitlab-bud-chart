@@ -126,22 +126,18 @@ class IssueAnalyzer:
         completed_at決定ロジック
         
         Rules:
-        1. due_dateが設定されていて、stateが'closed'の場合 -> due_date
-        2. kanban_statusが'完了'系の場合 -> updated_at
-        3. その他 -> None
+        1. due_dateが設定されていて、kanban_statusが「完了」「共有待ち」の場合 -> due_date
+        2. その他 -> None
+        
+        Note: stateがclosedでもcompleted_atは設定しない
         """
         try:
-            # Rule 1: due_date + closed state
-            if issue.due_date and issue.state == 'closed':
-                return issue.due_date
+            # Rule 1: due_date + kanban_status が「完了」「共有待ち」
+            if issue.due_date and issue.kanban_status:
+                if issue.kanban_status in ['完了', '共有待ち']:
+                    return issue.due_date
             
-            # Rule 2: kanban_statusが完了系
-            if issue.kanban_status:
-                completed_statuses = ['完了', '済', 'done', 'completed', 'finished']
-                if any(status in issue.kanban_status.lower() for status in completed_statuses):
-                    return issue.updated_at or issue.created_at
-            
-            # Rule 3: その他
+            # Rule 2: その他
             return None
             
         except Exception as e:

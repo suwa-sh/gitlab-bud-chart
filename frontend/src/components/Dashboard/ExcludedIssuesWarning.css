@@ -1,0 +1,97 @@
+.excluded-issues-warning {
+  margin: 1rem 0;
+  border: 1px solid #f5c842;
+  border-radius: 4px;
+  background-color: #fffbf0;
+  overflow: hidden;
+}
+
+.warning-header {
+  display: flex;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  cursor: pointer;
+  user-select: none;
+  background-color: #fff5e6;
+  transition: background-color 0.2s;
+}
+
+.warning-header:hover {
+  background-color: #ffefcc;
+}
+
+.warning-icon {
+  font-size: 1.2rem;
+  margin-right: 0.5rem;
+}
+
+.warning-title {
+  flex: 1;
+  font-weight: 500;
+  color: #856404;
+}
+
+.expand-icon {
+  color: #856404;
+  font-size: 0.875rem;
+}
+
+.warning-content {
+  padding: 1rem;
+  border-top: 1px solid #f5c842;
+}
+
+.excluded-section {
+  margin-bottom: 1.5rem;
+}
+
+.excluded-section:last-child {
+  margin-bottom: 0;
+}
+
+.excluded-section h4 {
+  margin: 0 0 0.75rem 0;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #856404;
+}
+
+.excluded-issues-list {
+  margin-left: 1rem;
+}
+
+.excluded-issue-item {
+  margin-bottom: 0.5rem;
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.issue-link {
+  color: #0056b3;
+  text-decoration: none;
+  transition: color 0.2s, text-decoration 0.2s;
+}
+
+.issue-link:hover {
+  color: #004085;
+  text-decoration: underline;
+}
+
+.issue-date {
+  color: #6c757d;
+  margin-left: 0.5rem;
+  font-size: 0.8125rem;
+}
+
+.issue-status {
+  color: #6c757d;
+  margin-left: 0.5rem;
+  font-size: 0.8125rem;
+}
+
+.warning-description {
+  color: #856404;
+  font-size: 0.8125rem;
+  margin: 0 0 0.75rem 0;
+  font-style: italic;
+}

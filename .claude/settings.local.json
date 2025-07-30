@@ -30,7 +30,8 @@
       "WebFetch(domain:reactjs.org)",
       "WebFetch(domain:legacy.reactjs.org)",
       "WebFetch(domain:react.dev)",
-      "WebFetch(domain:gitlab.com)"
+      "WebFetch(domain:gitlab.com)",
+      "WebFetch(domain:docs.gitlab.com)"
     ],
     "deny": []
   }

@@ -4,6 +4,7 @@ import { BurnUpChart } from '../Chart/BurnUpChart'
 import { PeriodSelector } from '../Common/PeriodSelector'
 import { chartsApi } from '../../services/api'
 import { ChartData, Issue } from '../../types/api'
+import { getOverlappingQuarters } from '../../utils/quarterUtils'
 import '../Chart/Chart.css'
 
 interface ChartSectionProps {
@@ -92,7 +93,7 @@ export const ChartSection = ({ period, issues, loading, onPeriodChange, issueFil
     setError('')
     
     try {
-      // フィルタパラメータを準備
+      // フィルタパラメータを準備（完全なフィルタセット）
       const chartFilters = issueFilters ? {
         service: issueFilters.service || undefined,
         assignee: issueFilters.assignee || undefined,
@@ -100,7 +101,12 @@ export const ChartSection = ({ period, issues, loading, onPeriodChange, issueFil
         state: issueFilters.state || undefined,
         is_epic: issueFilters.is_epic || undefined,
         point_min: issueFilters.point_min,
-        point_max: issueFilters.point_max
+        point_max: issueFilters.point_max,
+        search: issueFilters.search || undefined,
+        created_after: issueFilters.created_at_from || undefined,
+        created_before: issueFilters.created_at_to || undefined,
+        completed_after: issueFilters.completed_at_from || undefined,
+        completed_before: issueFilters.completed_at_to || undefined
       } : undefined
       
       const [burnDown, burnUp] = await Promise.all([
@@ -167,17 +173,14 @@ export const ChartSection = ({ period, issues, loading, onPeriodChange, issueFil
 
   return (
     <div className="chart-section">
+      {/* 期間選択 - 独立したグループ */}
+      <PeriodSelector 
+        value={period}
+        onChange={onPeriodChange}
+      />
 
       {/* フィルタ・表示条件 */}
       <div className="chart-filters">
-        {/* 期間フィルタ */}
-        <div className="filter-group">
-          <PeriodSelector 
-            value={period}
-            onChange={onPeriodChange}
-          />
-        </div>
-        
         {/* 表示タイプフィルタ */}
         <div className="filter-group">
           <div className="view-toggle">
@@ -462,6 +465,14 @@ export const ChartSection = ({ period, issues, loading, onPeriodChange, issueFil
       {(burnUpData.length > 0 || burnDownData.length > 0) && (
         <div className="unified-chart-summary">
           <h3>プロジェクト統計</h3>
+          <div className="summary-period">
+            期間: {period.start} ～ {period.end}
+            {(() => {
+              // 期間から四半期情報を取得
+              const quarters = getOverlappingQuarters(period.start, period.end)
+              return quarters.length > 0 ? ` （${quarters.join(', ')}）` : ''
+            })()}
+          </div>
           <div className="summary-grid">
             {(() => {
               // BurnUpとBurnDownのどちらかのデータを使用して統計を計算
