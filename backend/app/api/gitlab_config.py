@@ -78,6 +78,7 @@ async def connect_gitlab(
         )
 
 @router.get("/status")
+@router.get("/status/")
 async def get_gitlab_status(
     x_session_id: Optional[str] = Header(None)
 ):

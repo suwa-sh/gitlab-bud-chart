@@ -7,9 +7,11 @@ from app.models.issue import (
     IssueListRequest, 
     IssueListResponse,
     IssueSearchRequest,
-    IssueModel
+    IssueModel,
+    ExcludedIssue,
+    IssueListWithWarningsResponse
 )
-from app.utils.issue_filters import apply_unified_filters
+from app.utils.issue_filters import apply_unified_filters, apply_scope_filters
 import logging
 
 logger = logging.getLogger(__name__)
@@ -205,13 +207,13 @@ async def get_issues(
             analyze=True
         )
         
-        # まず統一フィルタを適用（除外ルールと日付補正）
-        # 期間開始日を渡して日付補正を適用
-        issues = apply_unified_filters(issues, chart_start_date)
-        
-        # スコープフィルタ適用（チャートと同条件）
+        # スコープフィルタ適用（警告情報も取得）
+        warnings = []
         if chart_start_date and chart_end_date:
-            issues = _apply_scope_filter(issues, chart_start_date, chart_end_date)
+            issues, warnings = apply_scope_filters(issues, chart_start_date, chart_end_date)
+        else:
+            # 期間指定がない場合は統一フィルタのみ適用
+            issues = apply_unified_filters(issues, chart_start_date)
         
         # stateフィルタを後から適用
         if normalized_state and normalized_state != 'all':
@@ -232,9 +234,19 @@ async def get_issues(
         # メタデータ収集
         metadata = _collect_metadata(filtered_issues)
         
+        # 警告情報をレスポンス形式に変換
+        excluded_issues = []
+        for warning in warnings:
+            excluded_issues.append(ExcludedIssue(
+                issue=_issue_to_response(warning['issue']),
+                reason=warning['reason']
+            ))
+        
         return {
             'issues': [_issue_to_response(issue) for issue in paginated_issues],
+            'warnings': [excluded.dict() for excluded in excluded_issues],
             'total_count': len(filtered_issues),
+            'warning_count': len(excluded_issues),
             'page': page,
             'per_page': per_page,
             'total_pages': (len(filtered_issues) + per_page - 1) // per_page,

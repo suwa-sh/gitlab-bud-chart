@@ -136,9 +136,12 @@ def create_project_and_issues(token, gitlab_url, project_name=None, project_desc
         {'name': 's:infrastructure', 'color': '#27ae60', 'description': 'サービス: infrastructure'},
         {'name': 's:API', 'color': '#3498db', 'description': 'サービス: API'},
         # 四半期分類
-        {'name': '@FY25Q1', 'color': '#bcbd22', 'description': 'Quarter: FY25Q1'},
-        {'name': '@FY25Q2', 'color': '#17becf', 'description': 'Quarter: FY25Q2'},
-        {'name': '@FY25Q3', 'color': '#ab1222', 'description': 'Quarter: FY25Q3'}
+        {'name': '@FY23Q4', 'color': '#ff7f0e', 'description': 'Quarter: FY23Q4'},
+        {'name': '@FY24Q1', 'color': '#bcbd22', 'description': 'Quarter: FY24Q1'},
+        {'name': '@FY24Q2', 'color': '#17becf', 'description': 'Quarter: FY24Q2'},
+        {'name': '@FY25Q1', 'color': '#ab1222', 'description': 'Quarter: FY25Q1'},
+        {'name': '@FY25Q2', 'color': '#9b59b6', 'description': 'Quarter: FY25Q2'},
+        {'name': '@FY25Q3', 'color': '#e74c3c', 'description': 'Quarter: FY25Q3'}
     ]
     
     for label in labels:
@@ -195,271 +198,95 @@ def create_project_and_issues(token, gitlab_url, project_name=None, project_desc
     print("テストイシューを作成中...")
     
     test_issues = [
-        # Phase 1: 基本動作確認用Issue（5個）
-        {
-            "title": "Issue 1: 基本機能実装",
-            "description": "基本的なバックエンド機能の実装",
-            "labels": ["p:5.0", "#完了", "s:backend", "@FY25Q1"],
-            "custom_created_at": get_test_datetime("2024-02-01", "10:00:00"),
-            "closed": True,
-            "closed_days_ago": 10
-        },
-        {
-            "title": "Issue 2: フロントエンド開発",
-            "description": "UI/UXの実装とテスト",
-            "labels": ["p:8.0", "#作業中", "s:frontend", "@FY25Q1"],
-            "custom_created_at": get_test_datetime("2024-02-05", "10:00:00"),
-            "assignee": 1,
-            "closed": False
-        },
-        {
-            "title": "Issue 3: インフラ構築",
-            "description": "インフラストラクチャーの構築",
-            "labels": ["p:3.0", "#完了", "s:infrastructure", "@FY25Q1"],
-            "custom_created_at": get_test_datetime("2024-01-20", "10:00:00"),
-            "closed": True,
-            "closed_days_ago": 20
-        },
-        {
-            "title": "Issue 4: 設計タスク",
-            "description": "システム設計とアーキテクチャ",
-            "labels": ["p:13.0", "#ToDo", "s:backend", "@FY25Q2"],
-            "custom_created_at": get_test_datetime("2024-02-10", "10:00:00"),
-            "closed": False
-        },
-        {
-            "title": "Issue 5: 未着手タスク",
-            "description": "まだ開始していないタスク",
-            "labels": ["p:5.0", "#未着手", "s:frontend", "@FY25Q2"],
-            "custom_created_at": get_test_datetime("2024-02-15", "10:00:00"),
-            "closed": False
-        },
-        
-        # Phase 2: 統一フィルタルール境界テスト（3個）- 除外対象
-        {
-            "title": "Issue 10: [除外テスト] テンプレート",
-            "description": "統一フィルタ除外テスト: kanban_status=テンプレート（自動除外されるべき）",
-            "labels": ["p:1.0", "#テンプレート", "s:backend", "@FY25Q1"],
-            "custom_created_at": get_test_datetime("2024-02-01", "10:00:00"),
-            "closed": False
-        },
-        {
-            "title": "Issue 11: [除外テスト] ゴール/アナウンス",
-            "description": "統一フィルタ除外テスト: kanban_status=ゴール/アナウンス（自動除外されるべき）",
-            "labels": ["p:2.0", "#ゴール/アナウンス", "s:frontend", "@FY25Q1"],
-            "custom_created_at": get_test_datetime("2024-02-15", "14:00:00"),
-            "closed": False
-        },
-        {
-            "title": "Issue 12: [除外テスト] 不要",
-            "description": "統一フィルタ除外テスト: kanban_status=不要（自動除外されるべき）",
-            "labels": ["p:3.0", "#不要", "s:infrastructure", "@FY25Q1"],
-            "custom_created_at": get_test_datetime("2024-03-01", "16:00:00"),
-            "closed": True,
-            "closed_days_ago": 5
-        },
-        
-        # Phase 3: completed_at決定ロジック境界テスト（3個）
-        {
-            "title": "Issue 15: [completed_at] closed+due_date",
-            "description": "completed_at決定テスト: state=closed + due_date → due_dateがcompleted_atになる",
-            "labels": ["p:5.0", "#完了", "s:backend", "@FY25Q1"],
-            "custom_created_at": get_test_datetime("2024-01-15", "09:00:00"),
-            "due_date": get_test_datetime("2024-02-01", "17:00:00"),
-            "closed": True,
-            "closed_days_ago": 30
-        },
-        {
-            "title": "Issue 16: [completed_at] opened+due_date",
-            "description": "completed_at決定テスト: state=opened + due_date → completed_at=None",
-            "labels": ["p:3.0", "#作業中", "s:frontend", "@FY25Q1"],
-            "custom_created_at": get_test_datetime("2024-02-01", "10:00:00"),
-            "due_date": get_test_datetime("2024-03-01", "17:00:00"),
-            "closed": False
-        },
-        {
-            "title": "Issue 17: [completed_at] 完了ラベル+opened",
-            "description": "completed_at決定テスト: kanban_status=完了 + state=opened → updated_atがcompleted_at",
-            "labels": ["p:8.0", "#完了", "s:infrastructure", "@FY25Q1"],
-            "custom_created_at": get_test_datetime("2024-02-15", "11:00:00"),
-            "closed": False
-        },
-        
-        # Phase 4: スコープルール境界テスト（5個）
-        {
-            "title": "Issue 20: [スコープ] 期間開始日",
-            "description": "スコープテスト: created_at=2024-01-01（期間開始日、含まれるべき）",
-            "labels": ["p:5.0", "#作業中", "s:backend", "@FY25Q1"],
-            "custom_created_at": get_test_datetime("2024-01-01", "09:00:00"),
-            "closed": False
-        },
-        {
-            "title": "Issue 21: [スコープ] 期間終了日",
-            "description": "スコープテスト: created_at=2024-03-31（期間終了日、含まれるべき）",
-            "labels": ["p:3.0", "#作業中", "s:frontend", "@FY25Q1"],
-            "custom_created_at": get_test_datetime("2024-03-31", "15:00:00"),
-            "closed": False
-        },
-        {
-            "title": "Issue 22: [スコープ] 期間外+opened",
-            "description": "スコープテスト: created_at=2023-12-31 + opened（期間外だがopenedなら含まれる）",
-            "labels": ["p:8.0", "#作業中", "s:infrastructure", "@FY25Q1"],
-            "custom_created_at": get_test_datetime("2023-12-31", "20:00:00"),
-            "closed": False
-        },
-        {
-            "title": "Issue 23: [スコープ] 期間外+完了",
-            "description": "スコープテスト: created_at=2023-12-15, completed_at=2024-02-15（期間外created+期間内completed、含まれる）",
-            "labels": ["p:13.0", "#完了", "s:backend", "@FY25Q1"],
-            "custom_created_at": get_test_datetime("2023-12-15", "14:00:00"),
-            "closed": True,
-            "closed_days_ago": 15
-        },
-        {
-            "title": "Issue 24: [スコープ] 期間終了日+1",
-            "description": "スコープテスト: created_at=2024-04-01（期間終了日+1日、除外されるべき）",
-            "labels": ["p:5.0", "#ToDo", "s:backend", "@FY25Q2"],
-            "custom_created_at": get_test_datetime("2024-04-01", "10:00:00"),
-            "closed": False
-        },
-        
-        # Phase 0: スコープ判定具体例テスト（9個）- README.mdの表と完全一致
+        # README.mdスコープ判定の具体例テスト（10個）- テスト期間: 2024-01-01 ～ 2024-03-31
         {
             "title": "Issue A: [スコープ具体例] 期間内完了",
             "description": "スコープ判定具体例: created_at=2024-01-15, completed_at=2024-02-15（期間内完了、含まれる）",
-            "labels": ["p:5.0", "#完了", "s:backend", "@FY25Q1"],
+            "labels": ["p:5.0", "#完了", "s:backend", "@FY23Q4"],
             "custom_created_at": get_test_datetime("2024-01-15", "10:00:00"),
             "closed": True,
-            "closed_days_ago": 45  # 約2024-02-15
+            "due_date": get_test_datetime("2024-02-15", "10:00:00"),
         },
         {
             "title": "Issue B: [スコープ具体例] 未完了",
             "description": "スコープ判定具体例: created_at=2024-02-01, completed_at=null（未完了、含まれる）",
-            "labels": ["p:8.0", "#作業中", "s:frontend", "@FY25Q1"],
+            "labels": ["p:8.0", "#作業中", "s:frontend", "@FY23Q4"],
             "custom_created_at": get_test_datetime("2024-02-01", "10:00:00"),
             "closed": False
         },
         {
             "title": "Issue C: [スコープ具体例] 期間外→期間内完了",
             "description": "スコープ判定具体例: created_at=2023-12-01, completed_at=2024-02-01（期間外created+期間内completed、含まれる）",
-            "labels": ["p:3.0", "#完了", "s:infrastructure", "@FY25Q1"],
+            "labels": ["p:3.0", "#完了", "s:infrastructure", "@FY23Q4"],
             "custom_created_at": get_test_datetime("2023-12-01", "10:00:00"),
             "closed": True,
-            "closed_days_ago": 60  # 約2024-02-01
+            "due_date": get_test_datetime("2024-02-01", "10:00:00"),
         },
         {
             "title": "Issue D: [スコープ具体例] 期間外→未完了",
             "description": "スコープ判定具体例: created_at=2023-11-01, completed_at=null（期間外created+未完了、含まれる）",
-            "labels": ["p:13.0", "#作業中", "s:backend", "@FY25Q1"],
+            "labels": ["p:13.0", "#作業中", "s:backend", "@FY23Q4"],
             "custom_created_at": get_test_datetime("2023-11-01", "10:00:00"),
             "closed": False
         },
         {
-            "title": "Issue E: [スコープ具体例] 期間内→期間後完了",
-            "description": "スコープ判定具体例: created_at=2024-02-15, completed_at=2024-04-15（期間内created+期間後completed、除外）",
-            "labels": ["p:5.0", "#完了", "s:backend", "@FY25Q2"],
-            "custom_created_at": get_test_datetime("2024-02-15", "10:00:00"),
-            "closed": True,
-            "closed_days_ago": -15  # 約2024-04-15（未来日）
-        },
-        {
-            "title": "Issue F: [スコープ具体例] 期間前完了",
-            "description": "スコープ判定具体例: created_at=2023-11-01, completed_at=2023-12-15（期間前完了、除外）",
-            "labels": ["p:8.0", "#完了", "s:frontend", "@FY25Q1"],
-            "custom_created_at": get_test_datetime("2023-11-01", "10:00:00"),
-            "closed": True,
-            "closed_days_ago": 107  # 約2023-12-15
-        },
-        {
-            "title": "Issue G: [スコープ具体例] 期間後→未完了",
+            "title": "Issue E: [スコープ具体例] 期間後→未完了",
             "description": "スコープ判定具体例: created_at=2024-04-15, completed_at=null（期間後created+未完了、含まれる）",
-            "labels": ["p:21.0", "#作業中", "s:infrastructure", "@FY25Q2"],
+            "labels": ["p:21.0", "#作業中", "s:infrastructure", "@FY23Q4"],
             "custom_created_at": get_test_datetime("2024-04-15", "10:00:00"),
             "closed": False
         },
         {
+            "title": "Issue F: [スコープ具体例] 期間内→期間後完了",
+            "description": "スコープ判定具体例: created_at=2024-02-15, completed_at=2024-04-15（期間内created+期間後completed、除外→警告表示）",
+            "labels": ["p:5.0", "#完了", "s:backend", "@FY23Q4"],
+            "custom_created_at": get_test_datetime("2024-02-15", "10:00:00"),
+            "closed": True,
+            "due_date": get_test_datetime("2024-04-15", "10:00:00"),
+        },
+        {
+            "title": "Issue G: [スコープ具体例] 期間前完了",
+            "description": "スコープ判定具体例: created_at=2023-11-01, completed_at=2023-12-15（期間前完了、除外→警告表示）",
+            "labels": ["p:8.0", "#完了", "s:frontend", "@FY23Q4"],
+            "custom_created_at": get_test_datetime("2023-11-01", "10:00:00"),
+            "closed": True,
+            "due_date": get_test_datetime("2023-12-15", "10:00:00"),
+        },
+        {
             "title": "Issue H: [スコープ具体例] テンプレート除外",
             "description": "スコープ判定具体例: kanban_status=テンプレート（統一フィルタで除外）",
-            "labels": ["p:1.0", "#テンプレート", "s:backend", "@FY25Q1"],
+            "labels": ["p:1.0", "#テンプレート", "s:backend", "@FY23Q4"],
             "custom_created_at": get_test_datetime("2024-02-01", "10:00:00"),
             "closed": False
         },
         {
             "title": "Issue I: [スコープ具体例] 不要除外",
             "description": "スコープ判定具体例: kanban_status=不要（統一フィルタで除外）",
-            "labels": ["p:2.0", "#不要", "s:frontend", "@FY25Q1"],
+            "labels": ["p:2.0", "#不要", "s:frontend", "@FY23Q4"],
             "custom_created_at": get_test_datetime("2024-01-10", "10:00:00"),
             "closed": True,
-            "closed_days_ago": 70  # 約2024-01-20
         },
-        
-        # Phase 5: フィルタ項目境界テスト（9個）
         {
-            "title": "Issue 30: [フィルタ] service=API",
-            "description": "フィルタテスト: service=API での絞り込み確認用",
-            "labels": ["p:5.0", "#作業中", "s:API", "@FY25Q1"],
+            "title": "Issue J: [スコープ具体例] 四半期フィルタ除外",
+            "description": "スコープ判定具体例: @FY24Q2（対象期間外の四半期、除外）",
+            "labels": ["p:5.0", "#作業中", "s:backend", "@FY24Q2"],
             "custom_created_at": get_test_datetime("2024-02-01", "10:00:00"),
             "closed": False
         },
         {
-            "title": "Issue 31: [フィルタ] milestone",
-            "description": "フィルタテスト: milestone=2024Q1 での絞り込み確認用",
-            "labels": ["p:8.0", "#完了", "s:backend", "@FY25Q1"],
-            "custom_created_at": get_test_datetime("2024-01-15", "10:00:00"),
-            "milestone_title": "2024Q1",
-            "closed": True,
-            "closed_days_ago": 20
-        },
-        {
-            "title": "Issue 32: [フィルタ] epic",
-            "description": "フィルタテスト: is_epic=true での絞り込み確認用",
-            "labels": ["p:21.0", "epic", "#作業中", "s:frontend", "@FY25Q2"],
+            "title": "Issue K: [スコープ具体例] Due Date未設定完了",
+            "description": "スコープ判定具体例: kanban_status=完了 + due_date未設定（警告表示・スコープ除外）",
+            "labels": ["p:3.0", "#完了", "s:API", "@FY23Q4"],
             "custom_created_at": get_test_datetime("2024-02-01", "10:00:00"),
+            "closed": True
+            # due_dateを意図的に設定しない
+        },
+        {
+            "title": "Issue L: [スコープ具体例] 期間後作成",
+            "description": "スコープ判定具体例: created_at=2024-04-15（期間終了日より後に作成、警告表示・スコープ除外）",
+            "labels": ["p:2.0", "#作業中", "s:frontend", "@FY23Q4"],
+            "custom_created_at": get_test_datetime("2024-04-15", "10:00:00"),
             "closed": False
-        },
-        {
-            "title": "Issue 33: [フィルタ] point最小",
-            "description": "フィルタテスト: point=1.0（min_point境界）",
-            "labels": ["p:1.0", "#作業中", "s:backend", "@FY25Q1"],
-            "custom_created_at": get_test_datetime("2024-02-01", "10:00:00"),
-            "closed": False
-        },
-        {
-            "title": "Issue 34: [フィルタ] point最大",
-            "description": "フィルタテスト: point=21.0（max_point境界）",
-            "labels": ["p:21.0", "#作業中", "s:frontend", "@FY25Q1"],
-            "custom_created_at": get_test_datetime("2024-02-15", "10:00:00"),
-            "closed": False
-        },
-        {
-            "title": "Issue 35: [フィルタ] 日付補正",
-            "description": "日付補正テスト: created_at > completed_at（補正されるべき）",
-            "labels": ["p:5.0", "#完了", "s:backend", "@FY25Q1"],
-            "custom_created_at": get_test_datetime("2024-02-20", "10:00:00"),
-            "closed": True,
-            "closed_days_ago": 25  # 約2024-02-10にクローズ（created_atより前）
-        },
-        {
-            "title": "Issue 36: API実装タスク",
-            "description": "タイトル検索テスト: 「API」での検索確認用",
-            "labels": ["p:5.0", "#作業中", "s:backend", "@FY25Q1"],
-            "custom_created_at": get_test_datetime("2024-02-01", "10:00:00"),
-            "closed": False
-        },
-        {
-            "title": "Issue 37: [フィルタ] created_after境界",
-            "description": "期間フィルタテスト: created_at=2024-01-15（created_after境界）",
-            "labels": ["p:3.0", "#作業中", "s:frontend", "@FY25Q1"],
-            "custom_created_at": get_test_datetime("2024-01-15", "10:00:00"),
-            "closed": False
-        },
-        {
-            "title": "Issue 38: [フィルタ] completed_before境界",
-            "description": "期間フィルタテスト: completed_at=2024-03-15（completed_before境界）",
-            "labels": ["p:13.0", "#完了", "s:backend", "@FY25Q1"],
-            "custom_created_at": get_test_datetime("2024-02-01", "10:00:00"),
-            "closed": True,
-            "closed_days_ago": 7
         }
     ]
     
@@ -497,12 +324,6 @@ def create_project_and_issues(token, gitlab_url, project_name=None, project_desc
     for issue in test_issues:
         # created_atパラメータをサポート（管理者権限が必要）
         issue_data = issue.copy()
-        
-        # created_days_agoからcreated_atを計算
-        if 'created_days_ago' in issue_data:
-            days_ago = issue_data.pop('created_days_ago')
-            created_date = datetime.now() - timedelta(days=days_ago)
-            issue_data['created_at'] = created_date.strftime('%Y-%m-%dT%H:%M:%SZ')
         
         # custom_created_atが指定されている場合はそれを使用
         if 'custom_created_at' in issue_data:

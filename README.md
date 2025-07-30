@@ -59,6 +59,7 @@ GitLab の issue を分析し、burn-up/burn-down チャート表示と product 
 - **期間設定**: 開始日・終了日による分析期間の指定
 - **詳細フィルタ**: 12 種類のフィルタ（Service、Milestone、Epic、Title 検索、Point 範囲、Kanban Status、Assignee、作成日範囲、完了日範囲、State、Chart View）
 - **Issues 一覧**: デフォルトでページング無効、ウィンドウ幅 100%、ソート可能
+- **警告表示機能**: データ不整合の可能性があるIssueの警告表示（期間前完了・期間後完了・Due Date未設定の完了Issue）
 - **URL 共有機能**: 現在のフィルタ・ソート条件を含む URL をワンクリックでコピー
 
 ### PBL Viewer
@@ -132,9 +133,24 @@ Dashboard と PBL Viewer で共通のフィルタリング機能を適用：
 
 #### データフィルタリング・スコープルール
 
-Dashboard と PBL Viewer で適用される統一されたフィルタリングシステム。3 段階の処理で Issue の表示対象を決定します。
+Dashboard と PBL Viewer で適用される統一されたフィルタリングシステム。4 段階の処理で Issue の表示対象を決定します。
 
-##### 1. 統一フィルタルール
+##### 1. 四半期フィルタ
+
+期間に対応する会計年度四半期のラベルを持つIssueのみを対象とします。
+
+**四半期マッピング:**
+- Q1: 4月-6月
+- Q2: 7月-9月  
+- Q3: 10月-12月
+- Q4: 1月-3月
+
+**例:**
+- 期間: 2025-01-01～2025-07-31
+- 対象四半期: @FY24Q4, @FY25Q1, @FY25Q2
+- @FY25Q3ラベルのIssueは除外
+
+##### 2. 統一フィルタルール
 
 **除外対象 kanban_status:**
 
@@ -155,13 +171,45 @@ Dashboard と PBL Viewer で適用される統一されたフィルタリング�
 | `created_at ≤ completed_at` | created_at = 2024-02-10<br/>completed_at = 2024-02-15 | **補正なし**                                          | 正常なデータ                                       |
 | `completed_at = null`       | created_at = 2024-02-10<br/>completed_at = null       | **補正なし**                                          | 未完了 Issue（正常）                               |
 
-##### 3. スコープ判定ルール
+##### 4. スコープ判定ルール
 
 **除外ルール:**
 1. `completed_at` が期間終了日より未来の Issue は除外
-2. `completed_at` が期間開始日より過去の Issue は除外
+2. `completed_at` が期間開始日より過去の Issue は除外  
+3. kanban_statusが「完了」「共有待ち」で `due_date` が未設定の Issue は除外
+4. `created_at` が期間終了日より未来の Issue は除外
 
 上記の除外ルールに該当しない Issue（未完了の Issue および期間内に完了した Issue）が表示対象となります。
+
+##### 除外Issue警告表示
+
+**警告システム概要**
+
+バックエンドで警告判定を行い、データ不整合の可能性があるIssueを3種類に分類して警告表示します：
+
+**警告タイプ:**
+
+1. **期間前完了**: `completed_at` が期間開始日より前のIssue
+   - 例: 期間 2024-01-01～2024-03-31、completed_at = 2023-12-15
+   - 期間外で完了しているため、進捗チャートの精度に影響
+
+2. **期間後完了**: `completed_at` が期間終了日より後のIssue  
+   - 例: 期間 2024-01-01～2024-03-31、completed_at = 2024-04-15
+   - 期間外で完了しているため、進捗チャートの精度に影響
+
+3. **Due Date未設定**: kanban_statusが「完了」「共有待ち」だが `due_date` が未設定のIssue
+   - completed_atが正しく計算されないため、スコープから除外される
+   - 進捗管理の精度向上のためDue Date設定を推奨
+
+4. **期間後作成**: `created_at` が期間終了日より後のIssue
+   - 例: 期間 2024-01-01～2024-03-31、created_at = 2024-04-15
+   - 期間外で作成されているため、スコープから除外される
+
+**警告表示UI:**
+- 各IssueへのGitLabリンクを提供
+- 折りたたみ可能なUIで詳細確認
+- Issue一覧とチャートの両方に適用
+- 警告理由を明確に表示
 
 ##### スコープルール図解
 
@@ -176,13 +224,17 @@ gantt
     Issue B (未完了)          :active, issue_b, 2024-02-01, 2024-06-01
     Issue C (期間外→期間内完了) :done, issue_c, 2023-12-01, 2024-02-01
     Issue D (期間外→未完了)    :active, issue_d, 2023-11-01, 2024-06-01
-    Issue G (期間後→未完了)    :active, issue_g, 2024-04-15, 2024-06-01
+    Issue E (期間後→未完了)    :active, issue_e, 2024-04-15, 2024-06-01
 
     section ❌ 除外されるIssue
-    Issue E (期間内→期間後完了) :crit, issue_e, 2024-02-15, 2024-04-15
-    Issue F (期間前完了)       :crit, issue_f, 2023-11-01, 2023-12-15
+    Issue F (期間内→期間後完了) :crit, issue_f, 2024-02-15, 2024-04-15
+    Issue G (期間前完了)       :crit, issue_g, 2023-11-01, 2023-12-15
     Issue H (テンプレート)     :crit, issue_h, 2024-02-01, 2024-02-15
     Issue I (不要)            :crit, issue_i, 2024-01-10, 2024-01-20
+    Issue J (四半期外)        :crit, issue_j, 2024-02-01, 2024-02-15
+
+    Issue K (Due Date未設定完了) :crit, issue_k, 2024-02-01, 2024-02-28
+    Issue L (期間後作成)       :crit, issue_l, 2024-04-15, 2024-06-01
 
     section 重要な境界
     期間開始                  :milestone, period_start, 2024-01-01, 0d
@@ -193,23 +245,27 @@ gantt
 
 **テスト期間: 2024-01-01 ～ 2024-03-31**
 
-| Issue | 処理段階         | kanban_status | created_at | completed_at | state  | 最終判定 | 適用ルール                       |
-| ----- | ---------------- | ------------- | ---------- | ------------ | ------ | -------- | -------------------------------- |
-| A     | スコープ通過     | #完了         | 2024-01-15 | 2024-02-15   | closed | ✅ 含む  | 期間内完了                       |
-| B     | スコープ通過     | #作業中       | 2024-02-01 | -            | opened | ✅ 含む  | 未完了                           |
-| C     | スコープ通過     | #完了         | 2023-12-01 | 2024-02-01   | closed | ✅ 含む  | 期間内完了                       |
-| D     | スコープ通過     | #作業中       | 2023-11-01 | -            | opened | ✅ 含む  | 未完了                           |
-| E     | スコープ除外     | #完了         | 2024-02-15 | 2024-04-15   | closed | ❌ 除外  | 期間後完了（除外ルール1）        |
-| F     | スコープ除外     | #完了         | 2023-11-01 | 2023-12-15   | closed | ❌ 除外  | 期間前完了（除外ルール2）        |
-| G     | スコープ通過     | #作業中       | 2024-04-15 | -            | opened | ✅ 含む  | 未完了                           |
-| H     | 統一フィルタ除外 | #テンプレート | 2024-02-01 | -            | opened | ❌ 除外  | 統一フィルタルール               |
-| I     | 統一フィルタ除外 | #不要         | 2024-01-10 | 2024-01-20   | closed | ❌ 除外  | 統一フィルタルール               |
+| Issue | 四半期    | 処理段階         | kanban_status | created_at | completed_at | due_date | state  | 最終判定 | 適用ルール                       |
+| ----- | --------- | ---------------- | ------------- | ---------- | ------------ | -------- | ------ | -------- | -------------------------------- |
+| A     | @FY23Q4   | スコープ通過     | #完了         | 2024-01-15 | 2024-02-15   | 2024-02-15 | closed | ✅ 含む  | 期間内完了                       |
+| B     | @FY23Q4   | スコープ通過     | #作業中       | 2024-02-01 | -            | -        | opened | ✅ 含む  | 未完了                           |
+| C     | @FY23Q4   | スコープ通過     | #完了         | 2023-12-01 | 2024-02-01   | 2024-02-01 | closed | ✅ 含む  | 期間内完了                       |
+| D     | @FY23Q4   | スコープ通過     | #作業中       | 2023-11-01 | -            | -        | opened | ✅ 含む  | 未完了                           |
+| E     | @FY23Q4   | スコープ通過     | #作業中       | 2024-04-15 | -            | -        | opened | ✅ 含む  | 未完了                           |
+| F     | @FY23Q4   | スコープ除外     | #完了         | 2024-02-15 | 2024-04-15   | 2024-04-15 | closed | ❌ 除外  | 期間後完了（除外ルール1）→警告表示|
+| G     | @FY23Q4   | スコープ除外     | #完了         | 2023-11-01 | 2023-12-15   | 2023-12-15 | closed | ❌ 除外  | 期間前完了（除外ルール2）→警告表示|
+| H     | @FY23Q4   | 統一フィルタ除外 | #テンプレート | 2024-02-01 | -            | -        | opened | ❌ 除外  | 統一フィルタルール               |
+| I     | @FY23Q4   | 統一フィルタ除外 | #不要         | 2024-01-10 | 2024-01-20   | 2024-01-20 | closed | ❌ 除外  | 統一フィルタルール               |
+| J     | @FY24Q2   | 四半期フィルタ   | #作業中       | 2024-02-01 | -            | -        | opened | ❌ 除外  | 対象期間外の四半期               |
+| K     | @FY23Q4   | スコープ除外     | #完了         | 2024-02-01 | -            | -        | opened | ❌ 除外  | Due Date未設定完了（除外ルール3）→警告表示|
+| L     | @FY23Q4   | スコープ除外     | #作業中       | 2024-04-15 | -            | -        | opened | ❌ 除外  | 期間後作成（除外ルール4）→警告表示       |
 
 **処理フロー概要:**
 
-1. **統一フィルタ**: テンプレート・ゴール/アナウンス・不要を自動除外
-2. **日付補正**: `created_at > completed_at`の場合は`created_at = completed_at`に、`created_at < start_date`の場合は`created_at = start_date`に修正
-3. **スコープ判定**: completed_atベースのシンプルな除外ルールで判定
+1. **四半期フィルタ**: 期間に対応する会計年度四半期のラベルを持つIssueのみを対象
+2. **統一フィルタ**: テンプレート・ゴール/アナウンス・不要を自動除外
+3. **日付補正**: `created_at > completed_at`の場合は`created_at = completed_at`に、`created_at < start_date`の場合は`created_at = start_date`に修正
+4. **スコープ判定**: completed_atベースの除外ルール + Due Date未設定完了Issue除外で判定
 
 #### フィルタ項目（12 種類）
 
@@ -301,6 +357,75 @@ delete filtersWithoutPeriod.quarter;
 - **セッション期限切れ**: 401/403 エラー時に GitLab 設定画面表示
 - **接続エラー**: エラーメッセージ表示 + 再試行ボタン
 
+## 警告システムの詳細説明
+
+GitLab Bud Chart は、データ品質とプロジェクト管理の精度向上のため、問題となる可能性があるIssueを自動検出し警告表示する仕組みを提供しています。
+
+### 警告判定のタイミング
+
+警告判定は **バックエンドのスコープフィルタ処理時** に実行されます：
+
+1. **Dashboard画面**: 期間設定（`chart_start_date`、`chart_end_date`）が指定された時
+2. **API呼び出し**: `/api/issues/` エンドポイントで期間パラメータが渡された時
+3. **リアルタイム更新**: フィルタ条件変更時に自動的に再判定
+
+### 警告判定ロジック
+
+#### 1. 期間前完了警告
+```
+判定条件: completed_at < chart_start_date
+警告理由: 期間開始より前に完了しているため、進捗チャートに正確に反映されない
+対処法: Due Dateまたは期間設定の見直し
+```
+
+#### 2. 期間後完了警告
+```
+判定条件: completed_at > chart_end_date  
+警告理由: 期間終了より後に完了しているため、進捗チャートに正確に反映されない
+対処法: Due Dateまたは期間設定の見直し
+```
+
+#### 3. Due Date未設定完了警告
+```
+判定条件: kanban_status IN ['完了', '共有待ち'] AND due_date IS NULL
+警告理由: completed_atが計算できないため、スコープから除外される
+対処法: 該当IssueにDue Dateを設定
+```
+
+### 警告データの流れ
+
+```mermaid
+flowchart LR
+    A[フロントエンド<br/>期間設定] --> B[バックエンド<br/>API呼び出し]
+    B --> C[スコープフィルタ<br/>apply_scope_filters]
+    C --> D[警告判定<br/>3種類の警告チェック]
+    D --> E[レスポンス<br/>issues + warnings]
+    E --> F[フロントエンド<br/>警告表示]
+    
+    style C fill:#e1f5fe
+    style D fill:#fff3e0
+    style F fill:#f3e5f5
+```
+
+### 警告表示の実装
+
+#### バックエンド（Python）
+- **場所**: `backend/app/utils/issue_filters.py:apply_scope_filters()`
+- **戻り値**: `Tuple[List[IssueModel], List[Dict[str, Any]]]`
+- **警告フォーマット**: `{'issue': IssueModel, 'reason': str}`
+
+#### フロントエンド（React）
+- **状態管理**: `AppContext.dashboardWarnings`
+- **表示コンポーネント**: `ExcludedIssuesWarning.tsx`
+- **更新タイミング**: API呼び出し時に `SET_DASHBOARD_WARNINGS` アクションで更新
+
+### 運用での活用方法
+
+1. **定期的な警告確認**: Dashboard表示時に警告件数をチェック
+2. **データ品質向上**: 警告が出たIssueのDue Date設定を推進
+3. **期間設定見直し**: 期間前/後完了が多い場合は期間設定を調整
+4. **チーム教育**: 警告の意味と対処法をチームで共有
+
 ## Issue ラベル規則
 
 GitLab Bud Chart は以下のラベル規則に基づいて Issue を自動分析します：
@@ -333,6 +458,41 @@ GitLab Bud Chart は以下のラベル規則に基づいて Issue を自動分�
 ### エピック
 
 - `epic`
+
+### 完了日時（completed_at）決定ルール
+
+GitLab Bud Chart では、Issueの完了日時（`completed_at`）を以下のルールで自動決定します：
+
+#### 完了日時設定条件
+
+| 条件 | kanban_status | due_date | state | 結果 | 備考 |
+|------|---------------|----------|-------|------|------|
+| 1 | `完了` | 設定あり | 任意 | `completed_at = due_date` | 推奨パターン |
+| 2 | `共有待ち` | 設定あり | 任意 | `completed_at = due_date` | 推奨パターン |
+| 3 | `完了` | 未設定 | 任意 | `completed_at = null` | ⚠️ 警告対象・スコープ除外 |
+| 4 | `共有待ち` | 未設定 | 任意 | `completed_at = null` | ⚠️ 警告対象・スコープ除外 |
+| 5 | その他 | 任意 | `closed` | `completed_at = null` | stateのみでは完了扱いしない |
+| 6 | その他 | 任意 | `opened` | `completed_at = null` | 未完了 |
+
+#### 重要なポイント
+
+1. **GitLabの`closed_at`は使用しない**: kanban_statusとdue_dateベースで判定
+2. **Due Date必須**: 完了扱いするには`due_date`の設定が必要
+3. **警告システム連携**: Due Date未設定の完了Issueは自動で警告表示
+4. **スコープ除外**: 条件3,4のIssueはDashboardのスコープから除外される
+
+#### 実装場所
+
+- **バックエンド**: `backend/app/services/issue_analyzer.py:_determine_completed_at()`
+- **ロジック**: kanban_statusが「完了」「共有待ち」の場合のみdue_dateをcompleted_atに設定
+
+```python
+def _determine_completed_at(self, issue: IssueModel) -> Optional[datetime]:
+    if issue.due_date and issue.kanban_status:
+        if issue.kanban_status in ['完了', '共有待ち']:
+            return issue.due_date
+    return None
+```
 
 ## 設計
 

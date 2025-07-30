@@ -209,7 +209,8 @@ class IssueService:
             
             # Point集計
             total_points = sum(issue.point for issue in issues if issue.point)
-            avg_points = total_points / len([i for i in issues if i.point]) if any(i.point for i in issues) else 0
+            point_issues = [i for i in issues if i.point is not None and i.point > 0]
+            avg_points = total_points / len(point_issues) if len(point_issues) > 0 else 0
             
             # Kanban Status集計
             kanban_counts = {}

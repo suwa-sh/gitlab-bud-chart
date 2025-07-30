@@ -142,6 +142,11 @@ export const chartsApi = {
       is_epic?: string
       point_min?: number
       point_max?: number
+      search?: string
+      created_after?: string
+      created_before?: string
+      completed_after?: string
+      completed_before?: string
     }
   ): Promise<BurnChartResponse> => {
     const params: any = { start_date: startDate, end_date: endDate }
@@ -167,6 +172,11 @@ export const chartsApi = {
       is_epic?: string
       point_min?: number
       point_max?: number
+      search?: string
+      created_after?: string
+      created_before?: string
+      completed_after?: string
+      completed_before?: string
     }
   ): Promise<BurnChartResponse> => {
     const params: any = { start_date: startDate, end_date: endDate }
@@ -203,7 +213,7 @@ export const gitlabApi = {
   },
   
   getStatus: async () => {
-    const response = await api.get('/gitlab/status/')
+    const response = await api.get('/gitlab/status')
     return response.data
   },
   
@@ -240,7 +250,7 @@ export const gitlabApi = {
 export const sessionApi = {
   validateSession: async (): Promise<{ valid: boolean; session_id?: string }> => {
     try {
-      const response = await api.get('/gitlab/status/')
+      const response = await api.get('/gitlab/status')
       return { valid: true, session_id: response.data.session_id }
     } catch (error: any) {
       if (error.response?.status === 401 || error.response?.status === 404) {

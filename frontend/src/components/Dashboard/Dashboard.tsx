@@ -7,6 +7,7 @@ import { useDashboardIssues } from '../../hooks/useDashboardIssues'
 import { useApp } from '../../contexts/AppContext'
 import { filterIssues } from '../../utils/filterUtils'
 import { parseURLParams, generateShareURL, copyToClipboard, buildURLParams } from '../../utils/urlUtils'
+import { ExcludedIssuesWarning } from './ExcludedIssuesWarning'
 import './Dashboard.css'
 
 export const Dashboard = () => {
@@ -117,10 +118,22 @@ export const Dashboard = () => {
     setSearchParams(buildURLParams(updatedParams))
   }
 
-  // フィルタリングされたIssuesを計算
-  const filteredIssues = useMemo(() => {
-    return filterIssues(issues, issueFilters)
-  }, [issues, issueFilters])
+  // APIから取得したデータを使用（バックエンドで警告判定済み）
+  const { filteredIssues, excludedIssues } = useMemo(() => {
+    // デバッグログ
+    console.log('[Dashboard] Using backend-provided warnings:', {
+      totalIssues: issues.length,
+      excludedIssues: state.dashboardWarnings || []
+    })
+    
+    // UIフィルタを適用
+    const uiFiltered = filterIssues(issues, issueFilters)
+    
+    return {
+      filteredIssues: uiFiltered,
+      excludedIssues: state.dashboardWarnings || []
+    }
+  }, [issues, state.dashboardWarnings, issueFilters])
 
   useEffect(() => {
     if (state.gitlabConfig.isConnected) {
@@ -302,6 +315,15 @@ export const Dashboard = () => {
           onIssueFiltersChange={handleIssueFiltersChange}
           onExportIssues={() => exportIssues('csv')}
         />
+        
+        {state.gitlabConfig.projectId && (
+          <ExcludedIssuesWarning
+            excludedIssues={excludedIssues}
+            gitlabUrl={state.gitlabConfig.url}
+            projectId={state.gitlabConfig.projectId}
+            projectNamespace={state.gitlabConfig.projectNamespace}
+          />
+        )}
         
         <div className="issues-section">
           <IssueTable 

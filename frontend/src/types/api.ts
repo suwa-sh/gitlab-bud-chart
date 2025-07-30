@@ -48,6 +48,19 @@ export interface BurnChartResponse {
     final_completed_points?: number
     days_analyzed: number
   }
+  warnings?: Array<{
+    issue: {
+      id: number
+      iid: number
+      title: string
+      web_url: string
+      kanban_status: string
+      due_date: string | null
+      completed_at: string | null
+      created_at: string | null
+    }
+    reason: 'quarter' | 'template' | 'pre-period' | 'post-period' | 'unnecessary' | 'goal' | 'no-due-date' | 'created-after-period'
+  }>
 }
 
 export interface VelocityData {

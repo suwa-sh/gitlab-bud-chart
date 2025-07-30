@@ -4,6 +4,8 @@ from datetime import date
 import logging
 from app.services.session_manager import session_manager
 from app.models.chart import BurnChartResponse, ChartDataModel
+from app.utils.issue_filters import apply_unified_filters, apply_scope_filters
+from app.utils.shared_filters import apply_advanced_filters, sort_issues
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -20,6 +22,11 @@ async def get_burn_down_data(
     is_epic: Optional[str] = Query(None),
     point_min: Optional[float] = Query(None),
     point_max: Optional[float] = Query(None),
+    search: Optional[str] = Query(None),
+    created_after: Optional[date] = Query(None),
+    created_before: Optional[date] = Query(None),
+    completed_after: Optional[date] = Query(None),
+    completed_before: Optional[date] = Query(None),
     x_session_id: Optional[str] = Header(None)
 ):
     """Burn-downチャートデータ取得"""
@@ -44,34 +51,41 @@ async def get_burn_down_data(
     chart_analyzer = ChartAnalyzer()
     
     try:
-        # Issue取得・分析（チャートでは全状態を取得）
+        # Issue取得・分析（全状態で取得）
         issues, _ = await issue_service.get_analyzed_issues(
-            milestone=milestone,
-            service=service,
-            assignee=assignee,
-            kanban_status=kanban_status,
             state='all',  # チャートでは全状態のイシューを取得
             analyze=True
         )
         
-        # 追加のフィルタリング
-        if is_epic is not None:
-            is_epic_bool = is_epic == 'epic'
-            issues = [i for i in issues if i.is_epic == is_epic_bool]
+        # 統一されたフィルタリングパイプライン
+        # 1. 日付補正適用
+        issues = apply_unified_filters(issues, start_date)
         
-        if point_min is not None:
-            issues = [i for i in issues if i.point and i.point >= point_min]
+        # 2. スコープフィルタ適用（期間が指定されている場合）
+        warnings = []
+        issues, warnings = apply_scope_filters(issues, start_date, end_date)
         
-        if point_max is not None:
-            issues = [i for i in issues if i.point and i.point <= point_max]
+        # 3. 追加フィルタ適用（共通関数を使用）
+        issues = apply_advanced_filters(
+            issues,
+            min_point=point_min,
+            max_point=point_max,
+            search=search,
+            kanban_status=kanban_status,
+            is_epic=is_epic,
+            state=state,
+            created_after=created_after,
+            created_before=created_before,
+            completed_after=completed_after,
+            completed_before=completed_before,
+            assignee=assignee,
+            service=service,
+            milestone=milestone
+        )
         
-        # stateフィルタをチャート生成後に適用
-        if state and state != 'all':
-            issues = [i for i in issues if i.state == state]
-        
-        # チャートデータ生成
+        # チャートデータ生成（事前フィルタリング済みのissuesを渡す）
         chart_data = chart_analyzer.generate_burn_down_data(
-            issues, start_date, end_date, milestone
+            issues, start_date, end_date
         )
         
         # メタデータ・統計情報
@@ -87,10 +101,28 @@ async def get_burn_down_data(
         
         statistics = _calculate_chart_statistics(chart_data, 'burn_down')
         
+        # 警告情報をレスポンス形式に変換
+        formatted_warnings = []
+        for warning in warnings:
+            formatted_warnings.append({
+                'issue': {
+                    'id': warning['issue'].id,
+                    'iid': warning['issue'].iid,
+                    'title': warning['issue'].title,
+                    'web_url': warning['issue'].web_url,
+                    'kanban_status': warning['issue'].kanban_status,
+                    'due_date': warning['issue'].due_date.isoformat() if warning['issue'].due_date else None,
+                    'completed_at': warning['issue'].completed_at.isoformat() if warning['issue'].completed_at else None,
+                    'created_at': warning['issue'].created_at.isoformat() if warning['issue'].created_at else None
+                },
+                'reason': warning['reason']
+            })
+        
         return BurnChartResponse(
             chart_data=chart_data,
             metadata=metadata,
-            statistics=statistics
+            statistics=statistics,
+            warnings=formatted_warnings
         )
         
     except Exception as e:
@@ -109,6 +141,11 @@ async def get_burn_up_data(
     is_epic: Optional[str] = Query(None),
     point_min: Optional[float] = Query(None),
     point_max: Optional[float] = Query(None),
+    search: Optional[str] = Query(None),
+    created_after: Optional[date] = Query(None),
+    created_before: Optional[date] = Query(None),
+    completed_after: Optional[date] = Query(None),
+    completed_before: Optional[date] = Query(None),
     x_session_id: Optional[str] = Header(None)
 ):
     """Burn-upチャートデータ取得"""
@@ -133,32 +170,41 @@ async def get_burn_up_data(
     chart_analyzer = ChartAnalyzer()
     
     try:
+        # Issue取得・分析（全状態で取得）
         issues, _ = await issue_service.get_analyzed_issues(
-            milestone=milestone,
-            service=service,
-            assignee=assignee,
-            kanban_status=kanban_status,
             state='all',  # チャートでは全状態のイシューを取得
             analyze=True
         )
         
-        # 追加のフィルタリング
-        if is_epic is not None:
-            is_epic_bool = is_epic == 'epic'
-            issues = [i for i in issues if i.is_epic == is_epic_bool]
+        # 統一されたフィルタリングパイプライン
+        # 1. 日付補正適用
+        issues = apply_unified_filters(issues, start_date)
         
-        if point_min is not None:
-            issues = [i for i in issues if i.point and i.point >= point_min]
+        # 2. スコープフィルタ適用（期間が指定されている場合）
+        warnings = []
+        issues, warnings = apply_scope_filters(issues, start_date, end_date)
         
-        if point_max is not None:
-            issues = [i for i in issues if i.point and i.point <= point_max]
+        # 3. 追加フィルタ適用（共通関数を使用）
+        issues = apply_advanced_filters(
+            issues,
+            min_point=point_min,
+            max_point=point_max,
+            search=search,
+            kanban_status=kanban_status,
+            is_epic=is_epic,
+            state=state,
+            created_after=created_after,
+            created_before=created_before,
+            completed_after=completed_after,
+            completed_before=completed_before,
+            assignee=assignee,
+            service=service,
+            milestone=milestone
+        )
         
-        # stateフィルタをチャート生成後に適用
-        if state and state != 'all':
-            issues = [i for i in issues if i.state == state]
-        
+        # チャートデータ生成（事前フィルタリング済みのissuesを渡す）
         chart_data = chart_analyzer.generate_burn_up_data(
-            issues, start_date, end_date, milestone
+            issues, start_date, end_date
         )
         
         metadata = {
@@ -173,10 +219,28 @@ async def get_burn_up_data(
         
         statistics = _calculate_chart_statistics(chart_data, 'burn_up')
         
+        # 警告情報をレスポンス形式に変換
+        formatted_warnings = []
+        for warning in warnings:
+            formatted_warnings.append({
+                'issue': {
+                    'id': warning['issue'].id,
+                    'iid': warning['issue'].iid,
+                    'title': warning['issue'].title,
+                    'web_url': warning['issue'].web_url,
+                    'kanban_status': warning['issue'].kanban_status,
+                    'due_date': warning['issue'].due_date.isoformat() if warning['issue'].due_date else None,
+                    'completed_at': warning['issue'].completed_at.isoformat() if warning['issue'].completed_at else None,
+                    'created_at': warning['issue'].created_at.isoformat() if warning['issue'].created_at else None
+                },
+                'reason': warning['reason']
+            })
+        
         return BurnChartResponse(
             chart_data=chart_data,
             metadata=metadata,
-            statistics=statistics
+            statistics=statistics,
+            warnings=formatted_warnings
         )
         
     except Exception as e:

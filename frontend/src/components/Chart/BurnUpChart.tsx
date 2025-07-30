@@ -41,7 +41,7 @@ export const BurnUpChart = ({
       return data.map(item => ({
         date: format(new Date(item.date), 'MM/dd', { locale: ja }),
         理想: Math.round(item.planned_points * 10) / 10,
-        完了: Math.round(item.completed_points * 10) / 10,
+        実績: Math.round(item.completed_points * 10) / 10,
         総量: Math.round(item.total_points * 10) / 10
       }))
     } else {
@@ -58,7 +58,7 @@ export const BurnUpChart = ({
       return data.map((item, index) => ({
         date: format(new Date(item.date), 'MM/dd', { locale: ja }),
         理想: Math.round(businessDayIdealLine[index] * 10) / 10,
-        完了: Math.round(item.completed_points * 10) / 10,
+        実績: Math.round(item.completed_points * 10) / 10,
         総量: Math.round(item.total_points * 10) / 10
       }))
     }
@@ -152,10 +152,10 @@ export const BurnUpChart = ({
             dot={false}
           />
           
-          {/* 完了線 */}
+          {/* 実績線 */}
           <Line
             type="monotone"
-            dataKey="完了"
+            dataKey="実績"
             stroke="#82ca9d"
             strokeWidth={3}
             dot={{ r: 4 }}

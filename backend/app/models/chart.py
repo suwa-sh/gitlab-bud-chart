@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 from datetime import date
 
 class ChartDataModel(BaseModel):
@@ -31,6 +31,7 @@ class BurnChartResponse(BaseModel):
     chart_data: List[ChartDataModel]
     metadata: dict
     statistics: dict
+    warnings: Optional[List[Dict[str, Any]]] = []
 
 class VelocityDataModel(BaseModel):
     week_start: date

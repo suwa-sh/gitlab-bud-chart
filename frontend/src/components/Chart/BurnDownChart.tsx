@@ -48,7 +48,7 @@ export const BurnDownChart = ({
     }
 
     // Calculate business day aware ideal line
-    const totalPoints = data[0]?.remaining_points || 0
+    const totalPoints = data[0]?.total_points || 0
     const chartDates = data.map(item => item.date)
     const businessDayIdealLine = calculateBusinessDayIdealLine(
       totalPoints,

@@ -680,6 +680,17 @@
   color: #28a745;
 }
 
+/* 期間表示 */
+.summary-period {
+  font-size: 14px;
+  color: #666;
+  margin-bottom: 15px;
+  padding: 8px 12px;
+  background: #f8f9fa;
+  border-radius: 4px;
+  border-left: 3px solid #007bff;
+}
+
 @media (max-width: 768px) {
   .summary-grid {
     flex-direction: column;
@@ -688,5 +699,10 @@
   
   .unified-chart-summary {
     padding: 15px;
+  }
+  
+  .summary-period {
+    font-size: 13px;
+    padding: 6px 10px;
   }
 }
