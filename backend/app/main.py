@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 app = FastAPI(
     title="GitLab Bud Chart API",
     description="GitLab Issue Analysis and Chart Generation API",
-    version="0.1.0",
+    version="0.2.0",
 )
 
 # CORS設定
