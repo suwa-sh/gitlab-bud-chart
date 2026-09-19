@@ -7,12 +7,13 @@ interface IssueFiltersProps {
   useFetchAll?: boolean
 }
 
-export const IssueFilters: React.FC<IssueFiltersProps> = ({ useFetchAll = false }) => {
+export const IssueFilters: React.FC<IssueFiltersProps> = ({
+  useFetchAll = false,
+}) => {
   const { state, dispatch } = useApp()
   const { fetchIssues } = useIssues()
   const { fetchAllIssues } = usePBLViewerIssues()
   const filters = useFetchAll ? state.pblViewerFilters : state.filters
-
 
   const handleRemoveFilter = (key: string) => {
     const newFilters = { ...filters, [key]: undefined }
@@ -21,7 +22,7 @@ export const IssueFilters: React.FC<IssueFiltersProps> = ({ useFetchAll = false 
     } else {
       dispatch({ type: 'SET_FILTERS', payload: newFilters })
     }
-    
+
     if (useFetchAll) {
       // PBL Viewerでは期間フィルタを除外
       const filtersWithoutPeriod = { ...newFilters }
@@ -38,14 +39,14 @@ export const IssueFilters: React.FC<IssueFiltersProps> = ({ useFetchAll = false 
   const handleFilterChange = (key: string, value: string) => {
     const newFilters = {
       ...filters,
-      [key]: value === '' ? undefined : value
+      [key]: value === '' ? undefined : value,
     }
     if (useFetchAll) {
       dispatch({ type: 'SET_PBL_VIEWER_FILTERS', payload: newFilters })
     } else {
       dispatch({ type: 'SET_FILTERS', payload: newFilters })
     }
-    
+
     if (useFetchAll) {
       // PBL Viewerでは期間フィルタを除外
       const filtersWithoutPeriod = { ...newFilters }
@@ -63,24 +64,27 @@ export const IssueFilters: React.FC<IssueFiltersProps> = ({ useFetchAll = false 
     <div className="issue-filters">
       <div className="active-filters">
         <h4>適用中のフィルタ</h4>
-        {Object.entries(filters).map(([key, value]) => 
-          value && (
-            <div key={key} className="active-filter-tag">
-              <span>{key}: {value}</span>
-              <button 
-                onClick={() => handleRemoveFilter(key)}
-                className="remove-filter"
-              >
-                ×
-              </button>
-            </div>
-          )
+        {Object.entries(filters).map(
+          ([key, value]) =>
+            value && (
+              <div key={key} className="active-filter-tag">
+                <span>
+                  {key}: {value}
+                </span>
+                <button
+                  onClick={() => handleRemoveFilter(key)}
+                  className="remove-filter"
+                >
+                  ×
+                </button>
+              </div>
+            ),
         )}
       </div>
 
       <div className="detailed-filters">
         <h4>フィルタ</h4>
-        
+
         <div className="filter-grid">
           <div className="filter-group">
             <label htmlFor="filter-milestone">マイルストーン</label>
@@ -95,7 +99,7 @@ export const IssueFilters: React.FC<IssueFiltersProps> = ({ useFetchAll = false 
               <option value="v2.0">v2.0</option>
             </select>
           </div>
-          
+
           <div className="filter-group">
             <label htmlFor="filter-assignee">担当者</label>
             <select
@@ -109,7 +113,7 @@ export const IssueFilters: React.FC<IssueFiltersProps> = ({ useFetchAll = false 
               <option value="user3">user3</option>
             </select>
           </div>
-          
+
           <div className="filter-group">
             <label htmlFor="filter-service">サービス</label>
             <select
@@ -123,13 +127,15 @@ export const IssueFilters: React.FC<IssueFiltersProps> = ({ useFetchAll = false 
               <option value="infrastructure">infrastructure</option>
             </select>
           </div>
-          
+
           <div className="filter-group">
             <label htmlFor="filter-kanban-status">カンバンステータス</label>
             <select
               id="filter-kanban-status"
               value={filters.kanban_status || ''}
-              onChange={(e) => handleFilterChange('kanban_status', e.target.value)}
+              onChange={(e) =>
+                handleFilterChange('kanban_status', e.target.value)
+              }
             >
               <option value="">すべて</option>
               <option value="作業中">作業中</option>

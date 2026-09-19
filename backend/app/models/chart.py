@@ -2,6 +2,7 @@ from pydantic import BaseModel
 from typing import List, Optional, Dict, Any
 from datetime import date
 
+
 class ChartDataModel(BaseModel):
     date: date
     planned_points: float = 0.0
@@ -12,6 +13,7 @@ class ChartDataModel(BaseModel):
     completed_issues: int = 0
     total_issues: int = 0
 
+
 class ChartDataResponse(BaseModel):
     date: date
     planned_points: float = 0.0
@@ -21,17 +23,20 @@ class ChartDataResponse(BaseModel):
     completed_issues: int = 0
     total_issues: int = 0
 
+
 class BurnChartRequest(BaseModel):
     milestone: Optional[str] = None
     start_date: date
     end_date: date
     chart_type: str  # 'burn_down' or 'burn_up'
 
+
 class BurnChartResponse(BaseModel):
     chart_data: List[ChartDataModel]
     metadata: dict
     statistics: dict
     warnings: Optional[List[Dict[str, Any]]] = []
+
 
 class VelocityDataModel(BaseModel):
     week_start: date

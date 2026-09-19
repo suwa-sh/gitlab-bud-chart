@@ -158,7 +158,6 @@ ghcr で @docker/docker-compose.yml で自己ビルドする docker イメージ
 ```
 
 - テストデータ生成関連整理
-
   - mac で動作するよう調整。
   - token 生成と、テスト issue 生成を動くようにした。
 

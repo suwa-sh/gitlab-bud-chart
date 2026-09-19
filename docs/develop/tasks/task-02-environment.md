@@ -1,15 +1,18 @@
 # Task 02: 開発環境構築
 
 ## 概要
+
 FastAPI + React + TypeScript + Playwright の開発環境を構築し、基本的な動作確認を行う。
 
 ## 目的
+
 - Backend基盤（FastAPI + Uvicorn）構築
 - Frontend基盤（React + TypeScript + Vite）構築
 - Playwright E2E テスト環境構築
 - 開発サーバー起動・HTTP通信確認
 
 ## 前提条件
+
 - Task 01完了（ADR作成・プロジェクト構造確定）
 - Python 3.8+ インストール済み
 - Node.js 18+ インストール済み
@@ -19,6 +22,7 @@ FastAPI + React + TypeScript + Playwright の開発環境を構築し、基本�
 ### 1. Backend環境構築（FastAPI）
 
 #### 1.1 Python仮想環境・依存関係管理
+
 ```bash
 cd backend
 python -m venv venv
@@ -30,6 +34,7 @@ pip freeze > requirements.txt
 ```
 
 #### 1.2 pyproject.toml作成
+
 ```toml
 [project]
 name = "gitlab-bud-chart-backend"
@@ -63,6 +68,7 @@ build-backend = "hatchling.build"
 #### 1.3 基本FastAPIアプリケーション作成
 
 **app/main.py**:
+
 ```python
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -98,6 +104,7 @@ async def health_check():
 ```
 
 **app/config.py**:
+
 ```python
 from pydantic_settings import BaseSettings
 from typing import Optional
@@ -107,11 +114,11 @@ class Settings(BaseSettings):
     gitlab_url: Optional[str] = None
     gitlab_token: Optional[str] = None
     gitlab_project_id: Optional[str] = None
-    
+
     # API設定
     api_host: str = "127.0.0.1"
     api_port: int = 8000
-    
+
     class Config:
         env_file = ".env"
 
@@ -119,6 +126,7 @@ settings = Settings()
 ```
 
 **app/api/issues.py**:
+
 ```python
 from fastapi import APIRouter, HTTPException
 from typing import List, Optional
@@ -166,6 +174,7 @@ async def get_issue(issue_id: int):
 ```
 
 **app/api/charts.py**:
+
 ```python
 from fastapi import APIRouter
 from typing import List
@@ -211,6 +220,7 @@ async def get_burn_up_data(
 #### 1.4 データモデル作成
 
 **app/models/issue.py**:
+
 ```python
 from pydantic import BaseModel
 from typing import Optional, List
@@ -227,7 +237,7 @@ class IssueResponse(BaseModel):
     assignee: Optional[str] = None
     milestone: Optional[str] = None
     labels: List[str] = []
-    
+
     # 分析済みフィールド
     point: Optional[float] = None
     kanban_status: Optional[str] = None
@@ -237,6 +247,7 @@ class IssueResponse(BaseModel):
 ```
 
 **app/models/chart.py**:
+
 ```python
 from pydantic import BaseModel
 from datetime import date
@@ -254,6 +265,7 @@ class ChartDataResponse(BaseModel):
 #### 1.5 基本テスト作成
 
 **tests/test_main.py**:
+
 ```python
 import pytest
 from httpx import AsyncClient
@@ -277,6 +289,7 @@ async def test_health_check():
 ### 2. Frontend環境構築（React + TypeScript）
 
 #### 2.1 Vite + React + TypeScript プロジェクト作成
+
 ```bash
 cd frontend
 npm create vite@latest . -- --template react-ts
@@ -287,6 +300,7 @@ npm install -D @types/node @playwright/test
 ```
 
 #### 2.2 package.json設定
+
 ```json
 {
   "name": "gitlab-bud-chart-frontend",
@@ -325,6 +339,7 @@ npm install -D @types/node @playwright/test
 #### 2.3 基本React アプリケーション作成
 
 **src/App.tsx**:
+
 ```tsx
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
 import { Dashboard } from './components/Dashboard/Dashboard'
@@ -336,10 +351,14 @@ function App() {
     <Router>
       <div className="App">
         <nav className="nav-tabs">
-          <a href="/dashboard" className="nav-tab">Dashboard</a>
-          <a href="/pbl-viewer" className="nav-tab">PBL Viewer</a>
+          <a href="/dashboard" className="nav-tab">
+            Dashboard
+          </a>
+          <a href="/pbl-viewer" className="nav-tab">
+            PBL Viewer
+          </a>
         </nav>
-        
+
         <Routes>
           <Route path="/" element={<Dashboard />} />
           <Route path="/dashboard" element={<Dashboard />} />
@@ -354,6 +373,7 @@ export default App
 ```
 
 **src/components/Dashboard/Dashboard.tsx**:
+
 ```tsx
 export const Dashboard = () => {
   return (
@@ -362,23 +382,23 @@ export const Dashboard = () => {
       <div className="config-section">
         <p>GitLab Config: http://localhost:8080/project/team</p>
       </div>
-      
+
       <div className="period-section">
         <p>Period: 2025-04 ~ 2025-06</p>
       </div>
-      
+
       <div className="charts-section">
         <div className="chart-container">
           <h2>Burn Down</h2>
           <div className="chart-placeholder">Chart will be here</div>
         </div>
-        
+
         <div className="chart-container">
           <h2>Burn Up</h2>
           <div className="chart-placeholder">Chart will be here</div>
         </div>
       </div>
-      
+
       <div className="issues-section">
         <h2>Issues</h2>
         <table className="issues-table">
@@ -414,6 +434,7 @@ export const Dashboard = () => {
 ```
 
 **src/components/PBLViewer/PBLViewer.tsx**:
+
 ```tsx
 export const PBLViewer = () => {
   return (
@@ -455,6 +476,7 @@ export const PBLViewer = () => {
 #### 2.4 型定義作成
 
 **src/types/api.ts**:
+
 ```typescript
 export interface Issue {
   id: number
@@ -467,7 +489,7 @@ export interface Issue {
   assignee?: string
   milestone?: string
   labels: string[]
-  
+
   // 分析済みフィールド
   point?: number
   kanban_status?: string
@@ -488,6 +510,7 @@ export interface ChartData {
 ```
 
 **src/services/api.ts**:
+
 ```typescript
 import axios from 'axios'
 import { Issue, ChartData } from '../types/api'
@@ -510,7 +533,7 @@ export const issuesApi = {
     const response = await api.get('/issues', { params })
     return response.data
   },
-  
+
   getIssue: async (id: number): Promise<Issue> => {
     const response = await api.get(`/issues/${id}`)
     return response.data
@@ -521,21 +544,21 @@ export const chartsApi = {
   getBurnDownData: async (
     milestone: string,
     startDate: string,
-    endDate: string
+    endDate: string,
   ): Promise<ChartData[]> => {
     const response = await api.get('/charts/burn-down', {
-      params: { milestone, start_date: startDate, end_date: endDate }
+      params: { milestone, start_date: startDate, end_date: endDate },
     })
     return response.data
   },
-  
+
   getBurnUpData: async (
     milestone: string,
     startDate: string,
-    endDate: string
+    endDate: string,
   ): Promise<ChartData[]> => {
     const response = await api.get('/charts/burn-up', {
-      params: { milestone, start_date: startDate, end_date: endDate }
+      params: { milestone, start_date: startDate, end_date: endDate },
     })
     return response.data
   },
@@ -547,6 +570,7 @@ export const chartsApi = {
 #### 3.1 Playwright設定
 
 **playwright.config.ts**:
+
 ```typescript
 import { defineConfig, devices } from '@playwright/test'
 
@@ -557,7 +581,7 @@ export default defineConfig({
   retries: process.env.CI ? 2 : 0,
   workers: process.env.CI ? 1 : undefined,
   reporter: 'html',
-  
+
   use: {
     baseURL: 'http://localhost:5173',
     trace: 'on-first-retry',
@@ -573,7 +597,8 @@ export default defineConfig({
 
   webServer: [
     {
-      command: 'cd backend && source venv/bin/activate && uvicorn app.main:app --host 127.0.0.1 --port 8000',
+      command:
+        'cd backend && source venv/bin/activate && uvicorn app.main:app --host 127.0.0.1 --port 8000',
       port: 8000,
       reuseExistingServer: !process.env.CI,
     },
@@ -589,6 +614,7 @@ export default defineConfig({
 #### 3.2 基本E2Eテスト作成
 
 **tests/e2e/basic.spec.ts**:
+
 ```typescript
 import { test, expect } from '@playwright/test'
 
@@ -633,6 +659,7 @@ test.describe('API Integration', () => {
 ### 4. 動作確認スクリプト作成
 
 #### 4.1 setup.sh
+
 ```bash
 #!/bin/bash
 set -e
@@ -662,6 +689,7 @@ echo "E2Eテスト実行: cd frontend && npm run test:e2e"
 ```
 
 #### 4.2 run-e2e.sh
+
 ```bash
 #!/bin/bash
 set -e
@@ -696,6 +724,7 @@ kill $BACKEND_PID $FRONTEND_PID
 ## 成果物
 
 ### 必須成果物
+
 1. **Backend環境**:
    - FastAPI アプリケーション動作確認
    - API エンドポイント（/health, /api/issues, /api/charts）
@@ -714,6 +743,7 @@ kill $BACKEND_PID $FRONTEND_PID
    - setup.sh, run-e2e.sh
 
 ### 確認用スクリーンショット
+
 - homepage.png
 - dashboard.png
 - pbl-viewer.png
@@ -721,11 +751,13 @@ kill $BACKEND_PID $FRONTEND_PID
 ## 検証項目
 
 ### 実施前確認
+
 - [ ] Task 01のADR確認完了
 - [ ] 技術スタック決定事項確認
 - [ ] 開発環境（Python, Node.js）準備完了
 
 ### 実施後確認
+
 - [ ] Backend サーバー正常起動（http://localhost:8000）
 - [ ] Frontend サーバー正常起動（http://localhost:5173）
 - [ ] API通信確認（/health, /api/issues）
@@ -734,6 +766,7 @@ kill $BACKEND_PID $FRONTEND_PID
 - [ ] スクリーンショット取得成功
 
 ### 品質確認
+
 - [ ] Backend APIドキュメント確認（http://localhost:8000/docs）
 - [ ] TypeScript型安全性確認
 - [ ] CORS設定確認
@@ -742,16 +775,19 @@ kill $BACKEND_PID $FRONTEND_PID
 ## 次のタスクへの引き継ぎ
 
 ### Task 03への引き継ぎ事項
+
 - 動作確認済み開発環境
 - API基盤構造
 - E2Eテスト実行環境
 
 ### 注意事項
+
 - 開発サーバーポート（Backend: 8000, Frontend: 5173）
 - CORS設定に注意
 - E2Eテスト実行前に両サーバー起動必須
 
 ## 作業時間見積もり
+
 - **Backend環境構築**: 2-3時間
 - **Frontend環境構築**: 2-3時間
 - **Playwright設定**: 1-2時間

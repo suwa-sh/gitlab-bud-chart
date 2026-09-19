@@ -14,32 +14,40 @@ interface IssueTableFiltersProps {
   issues: Issue[]
 }
 
-export const IssueTableFilters = ({ 
-  filters, 
-  onFiltersChange, 
-  issues 
+export const IssueTableFilters = ({
+  filters,
+  onFiltersChange,
+  issues,
 }: IssueTableFiltersProps) => {
   const [isExpanded, setIsExpanded] = useState(false)
-  
+
   // Get unique values for filter options
   const filterOptions = useMemo(() => {
-    const milestones = Array.from(new Set(issues.map(i => i.milestone).filter(Boolean)))
-    const assignees = Array.from(new Set(issues.map(i => i.assignee).filter(Boolean)))
-    const kanbanStatuses = Array.from(new Set(issues.map(i => i.kanban_status).filter(Boolean)))
-    const services = Array.from(new Set(issues.map(i => i.service).filter(Boolean)))
-    
+    const milestones = Array.from(
+      new Set(issues.map((i) => i.milestone).filter(Boolean)),
+    )
+    const assignees = Array.from(
+      new Set(issues.map((i) => i.assignee).filter(Boolean)),
+    )
+    const kanbanStatuses = Array.from(
+      new Set(issues.map((i) => i.kanban_status).filter(Boolean)),
+    )
+    const services = Array.from(
+      new Set(issues.map((i) => i.service).filter(Boolean)),
+    )
+
     return {
       milestones: milestones.sort(),
       assignees: assignees.sort(),
       kanbanStatuses: kanbanStatuses.sort(),
-      services: services.sort()
+      services: services.sort(),
     }
   }, [issues])
 
   const handleFilterChange = (key: string, value: string) => {
     onFiltersChange({
       ...filters,
-      [key]: value
+      [key]: value,
     })
   }
 
@@ -50,16 +58,16 @@ export const IssueTableFilters = ({
       assignee: '',
       kanban_status: '',
       service: '',
-      state: ''
+      state: '',
     })
   }
 
-  const activeFilterCount = Object.values(filters).filter(v => v).length
+  const activeFilterCount = Object.values(filters).filter((v) => v).length
 
   return (
     <div className="issue-table-filters">
       <div className="filters-header">
-        <button 
+        <button
           className="filters-toggle"
           onClick={() => setIsExpanded(!isExpanded)}
         >
@@ -69,12 +77,9 @@ export const IssueTableFilters = ({
             <span className="active-filter-count">{activeFilterCount}</span>
           )}
         </button>
-        
+
         {activeFilterCount > 0 && (
-          <button 
-            className="clear-filters"
-            onClick={handleClearFilters}
-          >
+          <button className="clear-filters" onClick={handleClearFilters}>
             クリア
           </button>
         )}
@@ -98,12 +103,16 @@ export const IssueTableFilters = ({
               <label>Milestone</label>
               <select
                 value={filters.milestone}
-                onChange={(e) => handleFilterChange('milestone', e.target.value)}
+                onChange={(e) =>
+                  handleFilterChange('milestone', e.target.value)
+                }
                 className="filter-select"
               >
                 <option value="">すべて</option>
-                {filterOptions.milestones.map(m => (
-                  <option key={m} value={m}>{m}</option>
+                {filterOptions.milestones.map((m) => (
+                  <option key={m} value={m}>
+                    {m}
+                  </option>
                 ))}
               </select>
             </div>
@@ -116,8 +125,10 @@ export const IssueTableFilters = ({
                 className="filter-select"
               >
                 <option value="">すべて</option>
-                {filterOptions.assignees.map(a => (
-                  <option key={a} value={a}>{a}</option>
+                {filterOptions.assignees.map((a) => (
+                  <option key={a} value={a}>
+                    {a}
+                  </option>
                 ))}
               </select>
             </div>
@@ -128,12 +139,16 @@ export const IssueTableFilters = ({
               <label>Kanban Status</label>
               <select
                 value={filters.kanban_status}
-                onChange={(e) => handleFilterChange('kanban_status', e.target.value)}
+                onChange={(e) =>
+                  handleFilterChange('kanban_status', e.target.value)
+                }
                 className="filter-select"
               >
                 <option value="">すべて</option>
-                {filterOptions.kanbanStatuses.map(k => (
-                  <option key={k} value={k}>{k}</option>
+                {filterOptions.kanbanStatuses.map((k) => (
+                  <option key={k} value={k}>
+                    {k}
+                  </option>
                 ))}
               </select>
             </div>
@@ -146,8 +161,10 @@ export const IssueTableFilters = ({
                 className="filter-select"
               >
                 <option value="">すべて</option>
-                {filterOptions.services.map(s => (
-                  <option key={s} value={s}>{s}</option>
+                {filterOptions.services.map((s) => (
+                  <option key={s} value={s}>
+                    {s}
+                  </option>
                 ))}
               </select>
             </div>

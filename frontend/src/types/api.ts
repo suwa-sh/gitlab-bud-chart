@@ -10,7 +10,7 @@ export interface Issue {
   assignee?: string
   milestone?: string
   labels: string[]
-  
+
   // 分析済みフィールド
   point?: number
   kanban_status?: string
@@ -59,7 +59,15 @@ export interface BurnChartResponse {
       completed_at: string | null
       created_at: string | null
     }
-    reason: 'quarter' | 'template' | 'pre-period' | 'post-period' | 'unnecessary' | 'goal' | 'no-due-date' | 'created-after-period'
+    reason:
+      | 'quarter'
+      | 'template'
+      | 'pre-period'
+      | 'post-period'
+      | 'unnecessary'
+      | 'goal'
+      | 'no-due-date'
+      | 'created-after-period'
   }>
 }
 

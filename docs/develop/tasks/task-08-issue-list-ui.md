@@ -1,15 +1,18 @@
 # Task 08: Issue一覧表示UI実装
 
 ## 概要
+
 rough_design.excalidraw.png準拠のIssue一覧表示UIを実装し、Dashboard/PBL Viewer画面を完成させる。
 
 ## 目的
+
 - Dashboard/PBL Viewerタブ実装
 - Issue一覧テーブル実装
 - GitLab Config設定UI実装
 - レスポンシブ対応
 
 ## 前提条件
+
 - Task 07完了（Frontend基盤構築済み）
 
 ## 作業手順
@@ -17,6 +20,7 @@ rough_design.excalidraw.png準拠のIssue一覧表示UIを実装し、Dashboard/
 ### 1. Dashboardコンポーネント実装
 
 **frontend/src/components/Dashboard/Dashboard.tsx**:
+
 ```tsx
 import { useState, useEffect } from 'react'
 import { ChartSection } from './ChartSection'
@@ -32,17 +36,22 @@ export const Dashboard = () => {
   const { issues, loading, fetchIssues } = useIssues()
   const [selectedPeriod, setSelectedPeriod] = useState({
     start: '2025-04',
-    end: '2025-06'
+    end: '2025-06',
   })
 
   useEffect(() => {
     if (state.gitlabConfig.isConnected) {
       fetchIssues({
         ...state.filters,
-        period: selectedPeriod
+        period: selectedPeriod,
       })
     }
-  }, [state.gitlabConfig.isConnected, state.filters, selectedPeriod, fetchIssues])
+  }, [
+    state.gitlabConfig.isConnected,
+    state.filters,
+    selectedPeriod,
+    fetchIssues,
+  ])
 
   if (!state.gitlabConfig.isConnected) {
     return (
@@ -61,27 +70,20 @@ export const Dashboard = () => {
           <div className="gitlab-status">
             ✓ GitLab接続済み: {state.gitlabConfig.url}
           </div>
-          <PeriodSelector 
-            value={selectedPeriod}
-            onChange={setSelectedPeriod}
-          />
+          <PeriodSelector value={selectedPeriod} onChange={setSelectedPeriod} />
         </div>
       </header>
 
       <div className="dashboard-content">
-        <ChartSection 
+        <ChartSection
           period={selectedPeriod}
           issues={issues}
           loading={loading}
         />
-        
+
         <div className="issues-section">
           <h2>Issues</h2>
-          <IssueTable 
-            issues={issues}
-            loading={loading}
-            showFilters={true}
-          />
+          <IssueTable issues={issues} loading={loading} showFilters={true} />
         </div>
       </div>
     </div>
@@ -92,6 +94,7 @@ export const Dashboard = () => {
 ### 2. Issueテーブルコンポーネント
 
 **frontend/src/components/IssueList/IssueTable.tsx**:
+
 ```tsx
 import { useState, useMemo } from 'react'
 import { Issue } from '../../types/api'
@@ -108,18 +111,18 @@ interface IssueTableProps {
   pageSize?: number
 }
 
-export const IssueTable = ({ 
-  issues, 
-  loading, 
-  showFilters = false, 
-  pageSize = 20 
+export const IssueTable = ({
+  issues,
+  loading,
+  showFilters = false,
+  pageSize = 20,
 }: IssueTableProps) => {
   const [filters, setFilters] = useState({
     search: '',
     milestone: '',
     assignee: '',
     kanban_status: '',
-    service: ''
+    service: '',
   })
   const [currentPage, setCurrentPage] = useState(1)
   const [sortConfig, setSortConfig] = useState<{
@@ -129,9 +132,11 @@ export const IssueTable = ({
 
   // フィルタリングロジック
   const filteredIssues = useMemo(() => {
-    return issues.filter(issue => {
-      if (filters.search && 
-          !issue.title.toLowerCase().includes(filters.search.toLowerCase())) {
+    return issues.filter((issue) => {
+      if (
+        filters.search &&
+        !issue.title.toLowerCase().includes(filters.search.toLowerCase())
+      ) {
         return false
       }
       if (filters.milestone && issue.milestone !== filters.milestone) {
@@ -140,7 +145,10 @@ export const IssueTable = ({
       if (filters.assignee && issue.assignee !== filters.assignee) {
         return false
       }
-      if (filters.kanban_status && issue.kanban_status !== filters.kanban_status) {
+      if (
+        filters.kanban_status &&
+        issue.kanban_status !== filters.kanban_status
+      ) {
         return false
       }
       if (filters.service && issue.service !== filters.service) {
@@ -153,11 +161,11 @@ export const IssueTable = ({
   // ソートロジック
   const sortedIssues = useMemo(() => {
     if (!sortConfig) return filteredIssues
-    
+
     return [...filteredIssues].sort((a, b) => {
       const aValue = a[sortConfig.key]
       const bValue = b[sortConfig.key]
-      
+
       if (aValue < bValue) {
         return sortConfig.direction === 'asc' ? -1 : 1
       }
@@ -177,7 +185,10 @@ export const IssueTable = ({
   const handleSort = (key: keyof Issue) => {
     setSortConfig({
       key,
-      direction: sortConfig?.key === key && sortConfig.direction === 'asc' ? 'desc' : 'asc'
+      direction:
+        sortConfig?.key === key && sortConfig.direction === 'asc'
+          ? 'desc'
+          : 'asc',
     })
   }
 
@@ -188,20 +199,20 @@ export const IssueTable = ({
   return (
     <div className="issue-table-container">
       {showFilters && (
-        <IssueTableFilters 
+        <IssueTableFilters
           filters={filters}
           onFiltersChange={setFilters}
           issues={issues}
         />
       )}
-      
+
       <div className="table-info">
         <span>総数: {filteredIssues.length}件</span>
         {filteredIssues.length !== issues.length && (
           <span>(全{issues.length}件中)</span>
         )}
       </div>
-      
+
       <div className="table-wrapper">
         <table className="issue-table">
           <thead>
@@ -209,63 +220,79 @@ export const IssueTable = ({
               <th onClick={() => handleSort('milestone')}>
                 Milestone
                 {sortConfig?.key === 'milestone' && (
-                  <span className={`sort-icon ${sortConfig.direction}`}>↕</span>
+                  <span className={`sort-icon ${sortConfig.direction}`}>
+                    ↕
+                  </span>
                 )}
               </th>
               <th onClick={() => handleSort('title')}>
                 Title
                 {sortConfig?.key === 'title' && (
-                  <span className={`sort-icon ${sortConfig.direction}`}>↕</span>
+                  <span className={`sort-icon ${sortConfig.direction}`}>
+                    ↕
+                  </span>
                 )}
               </th>
               <th onClick={() => handleSort('point')}>
                 Point
                 {sortConfig?.key === 'point' && (
-                  <span className={`sort-icon ${sortConfig.direction}`}>↕</span>
+                  <span className={`sort-icon ${sortConfig.direction}`}>
+                    ↕
+                  </span>
                 )}
               </th>
               <th onClick={() => handleSort('kanban_status')}>
                 Kanban Status
                 {sortConfig?.key === 'kanban_status' && (
-                  <span className={`sort-icon ${sortConfig.direction}`}>↕</span>
+                  <span className={`sort-icon ${sortConfig.direction}`}>
+                    ↕
+                  </span>
                 )}
               </th>
               <th onClick={() => handleSort('assignee')}>
                 Assignee
                 {sortConfig?.key === 'assignee' && (
-                  <span className={`sort-icon ${sortConfig.direction}`}>↕</span>
+                  <span className={`sort-icon ${sortConfig.direction}`}>
+                    ↕
+                  </span>
                 )}
               </th>
               <th onClick={() => handleSort('created_at')}>
                 Created At
                 {sortConfig?.key === 'created_at' && (
-                  <span className={`sort-icon ${sortConfig.direction}`}>↕</span>
+                  <span className={`sort-icon ${sortConfig.direction}`}>
+                    ↕
+                  </span>
                 )}
               </th>
               <th onClick={() => handleSort('completed_at')}>
                 Completed At
                 {sortConfig?.key === 'completed_at' && (
-                  <span className={`sort-icon ${sortConfig.direction}`}>↕</span>
+                  <span className={`sort-icon ${sortConfig.direction}`}>
+                    ↕
+                  </span>
                 )}
               </th>
               <th onClick={() => handleSort('state')}>
                 State
                 {sortConfig?.key === 'state' && (
-                  <span className={`sort-icon ${sortConfig.direction}`}>↕</span>
+                  <span className={`sort-icon ${sortConfig.direction}`}>
+                    ↕
+                  </span>
                 )}
               </th>
             </tr>
           </thead>
           <tbody>
-            {paginatedIssues.map(issue => (
+            {paginatedIssues.map((issue) => (
               <IssueTableRow key={issue.id} issue={issue} />
             ))}
           </tbody>
         </table>
       </div>
-      
+
       {sortedIssues.length > pageSize && (
-        <TablePagination 
+        <TablePagination
           currentPage={currentPage}
           totalItems={sortedIssues.length}
           pageSize={pageSize}
@@ -280,6 +307,7 @@ export const IssueTable = ({
 ### 3. PBL Viewerコンポーネント
 
 **frontend/src/components/PBLViewer/PBLViewer.tsx**:
+
 ```tsx
 import { useState, useEffect } from 'react'
 import { IssueTable } from '../IssueList/IssueTable'
@@ -314,7 +342,7 @@ export const PBLViewer = () => {
       <header className="pbl-header">
         <h1>Product Backlog Viewer</h1>
         <div className="pbl-controls">
-          <button 
+          <button
             onClick={() => setShowStatistics(!showStatistics)}
             className="toggle-stats-btn"
           >
@@ -329,13 +357,13 @@ export const PBLViewer = () => {
             <IssueStatistics issues={issues} />
           </div>
         )}
-        
+
         <div className="filters-section">
           <IssueFilters />
         </div>
-        
+
         <div className="issues-section">
-          <IssueTable 
+          <IssueTable
             issues={issues}
             loading={loading}
             showFilters={false}
@@ -351,12 +379,13 @@ export const PBLViewer = () => {
 ### 4. CSSスタイル実装
 
 **frontend/src/components/IssueList/IssueTable.css**:
+
 ```css
 .issue-table-container {
   background: white;
   border-radius: 8px;
   padding: 20px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .table-info {
@@ -479,7 +508,7 @@ export const PBLViewer = () => {
   .issue-table {
     font-size: 12px;
   }
-  
+
   .issue-table th,
   .issue-table td {
     padding: 8px 4px;
@@ -488,6 +517,7 @@ export const PBLViewer = () => {
 ```
 
 ## 成果物
+
 1. **Dashboardコンポーネント** (チャートエリア + Issue一覧)
 2. **PBL Viewerコンポーネント** (詳細Issue一覧)
 3. **IssueTableコンポーネント** (ソート・フィルタ・ページネーション)
@@ -495,6 +525,7 @@ export const PBLViewer = () => {
 5. **アクセシビリティ対応**
 
 ## 検証項目
+
 - [x] デザイン仕様通り表示
 - [x] UI操作直感的
 - [x] デバイス別適切表示

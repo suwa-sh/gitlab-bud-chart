@@ -85,7 +85,6 @@ GitLab の issue を分析し、burn-up/burn-down チャート表示と product 
 Dashboard と PBL Viewer で共通のフィルタリング機能を適用：
 
 1. **除外ルール**: 以下の kanban_status を自動除外
-
    - `テンプレート` (GitLab ラベル: `#テンプレート`)
    - `ゴール/アナウンス` (GitLab ラベル: `#ゴール/アナウンス`)
    - `不要` (GitLab ラベル: `#不要`)
@@ -196,17 +195,14 @@ Dashboard と PBL Viewer で適用される統一されたフィルタリング�
 **警告タイプ:**
 
 1. **期間前完了**: `completed_at` が期間開始日より前の Issue
-
    - 例: 期間 2024-01-01 ～ 2024-03-31、completed_at = 2023-12-15
    - 期間外で完了しているため、進捗チャートの精度に影響
 
 2. **期間後完了**: `completed_at` が期間終了日より後の Issue
-
    - 例: 期間 2024-01-01 ～ 2024-03-31、completed_at = 2024-04-15
    - 期間外で完了しているため、進捗チャートの精度に影響
 
 3. **Due Date 未設定**: kanban_status が「完了」「共有待ち」だが `due_date` が未設定の Issue
-
    - completed_at が正しく計算されないため、スコープから除外される
    - 進捗管理の精度向上のため Due Date 設定を推奨
 
@@ -325,10 +321,10 @@ Dashboard に合わせた統一フォーマット：
 
 ```javascript
 // PBL Viewer では以下のフィルタを API 呼び出し時に除外
-delete filtersWithoutPeriod.created_after;
-delete filtersWithoutPeriod.created_before;
-delete filtersWithoutPeriod.completed_after;
-delete filtersWithoutPeriod.quarter;
+delete filtersWithoutPeriod.created_after
+delete filtersWithoutPeriod.created_before
+delete filtersWithoutPeriod.completed_after
+delete filtersWithoutPeriod.quarter
 ```
 
 #### フィルタ項目（11 種類）
@@ -580,12 +576,10 @@ npm run dev
 ### GitLab 設定
 
 1. GitLab Personal Access Token を作成
-
    - GitLab > Settings > Access Tokens
    - 権限: `api`, `read_repository`, `read_user`
 
 2. アプリケーションで GitLab 設定
-
    - GitLab URL: `http://your-gitlab-url`
    - Access Token: 作成したトークン
    - Project ID: 対象プロジェクトの ID

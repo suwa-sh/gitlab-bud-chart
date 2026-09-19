@@ -6,6 +6,7 @@ import os
 
 logger = logging.getLogger(__name__)
 
+
 class GitLabClient:
     def __init__(self):
         self.gl: Optional[gitlab.Gitlab] = None
@@ -20,14 +21,22 @@ class GitLabClient:
         self.no_proxy: Optional[str] = None
         self.project_name: Optional[str] = None
         self.project_namespace: Optional[str] = None
-    
+
     @property
     def is_connected(self) -> bool:
         """GitLab接続状態を返す"""
         return self.gl is not None and self.project is not None
-        
-    def connect(self, gitlab_url: str, gitlab_token: str, project_identifier: str, api_version: str = "4", 
-                http_proxy: str = "", https_proxy: str = "", no_proxy: str = "") -> bool:
+
+    def connect(
+        self,
+        gitlab_url: str,
+        gitlab_token: str,
+        project_identifier: str,
+        api_version: str = "4",
+        http_proxy: str = "",
+        https_proxy: str = "",
+        no_proxy: str = "",
+    ) -> bool:
         """GitLab接続（プロジェクトIDまたは名前で指定可能）"""
         try:
             # 接続パラメータを保存
@@ -38,60 +47,74 @@ class GitLabClient:
             self.http_proxy = http_proxy or settings.http_proxy
             self.https_proxy = https_proxy or settings.https_proxy
             self.no_proxy = no_proxy or settings.no_proxy
-            
+
             # Proxy設定を環境変数に設定（パラメータ優先、次に設定ファイル）
             proxy_http = self.http_proxy
             proxy_https = self.https_proxy
             proxy_no = self.no_proxy
-            
+
             if proxy_http:
-                os.environ['HTTP_PROXY'] = proxy_http
-                os.environ['http_proxy'] = proxy_http
+                os.environ["HTTP_PROXY"] = proxy_http
+                os.environ["http_proxy"] = proxy_http
                 logger.info(f"HTTP Proxy設定: {proxy_http}")
             if proxy_https:
-                os.environ['HTTPS_PROXY'] = proxy_https
-                os.environ['https_proxy'] = proxy_https
+                os.environ["HTTPS_PROXY"] = proxy_https
+                os.environ["https_proxy"] = proxy_https
                 logger.info(f"HTTPS Proxy設定: {proxy_https}")
             if proxy_no:
-                os.environ['NO_PROXY'] = proxy_no
-                os.environ['no_proxy'] = proxy_no
+                os.environ["NO_PROXY"] = proxy_no
+                os.environ["no_proxy"] = proxy_no
                 logger.info(f"No Proxy設定: {proxy_no}")
-            
+
             # API versionを明示的に指定し、SSL検証とタイムアウトを設定
             self.gl = gitlab.Gitlab(
-                gitlab_url, 
+                gitlab_url,
                 private_token=gitlab_token,
                 api_version=api_version,
                 ssl_verify=settings.gitlab_ssl_verify,
-                timeout=30
+                timeout=30,
             )
-            
+
             # 認証テスト
             logger.info(f"GitLab認証開始: {gitlab_url}")
             self.gl.auth()
             logger.info(f"GitLab認証成功")
-            
+
             # プロジェクト取得テスト
-            logger.info(f"プロジェクト取得開始: project_identifier={project_identifier}")
-            
+            logger.info(
+                f"プロジェクト取得開始: project_identifier={project_identifier}"
+            )
+
             # プロジェクトIDが数値かどうかチェック
             if project_identifier.isdigit():
                 # 数値の場合はIDとして扱う
                 self.project = self.gl.projects.get(int(project_identifier))
                 self.project_name = self.project.name
-                self.project_namespace = getattr(self.project, 'namespace', {}).get('name', '')
-                logger.info(f"GitLab接続成功: {gitlab_url}, project: {self.project.name} (id: {project_identifier})")
+                self.project_namespace = getattr(self.project, "namespace", {}).get(
+                    "name", ""
+                )
+                logger.info(
+                    f"GitLab接続成功: {gitlab_url}, project: {self.project.name} (id: {project_identifier})"
+                )
             else:
                 # 数値でない場合は名前として検索
-                project_info = self.get_project_by_name(gitlab_url, gitlab_token, project_identifier, api_version)
+                project_info = self.get_project_by_name(
+                    gitlab_url, gitlab_token, project_identifier, api_version
+                )
                 if project_info:
-                    self.project = self.gl.projects.get(project_info['id'])
+                    self.project = self.gl.projects.get(project_info["id"])
                     self.project_name = self.project.name
-                    self.project_namespace = getattr(self.project, 'namespace', {}).get('name', '')
-                    logger.info(f"GitLab接続成功: {gitlab_url}, project: {self.project.name} (name: {project_identifier}, id: {project_info['id']})")
+                    self.project_namespace = getattr(self.project, "namespace", {}).get(
+                        "name", ""
+                    )
+                    logger.info(
+                        f"GitLab接続成功: {gitlab_url}, project: {self.project.name} (name: {project_identifier}, id: {project_info['id']})"
+                    )
                 else:
-                    raise Exception(f"プロジェクトが見つかりません: {project_identifier}")
-            
+                    raise Exception(
+                        f"プロジェクトが見つかりません: {project_identifier}"
+                    )
+
             return True
         except gitlab.exceptions.GitlabAuthenticationError as e:
             logger.error(f"GitLab認証失敗: {e}")
@@ -108,15 +131,12 @@ class GitLabClient:
             self.gl = None
             self.project = None
             return False
-    
+
     def test_connection(self) -> Dict[str, Any]:
         """接続テスト"""
         if not self.gl or not self.project:
-            return {
-                "connected": False,
-                "error": "GitLab接続が設定されていません"
-            }
-        
+            return {"connected": False, "error": "GitLab接続が設定されていません"}
+
         try:
             # プロジェクト情報取得テスト
             project_info = {
@@ -125,28 +145,21 @@ class GitLabClient:
                 "description": self.project.description,
                 "web_url": self.project.web_url,
                 "issues_enabled": self.project.issues_enabled,
-                "open_issues_count": getattr(self.project, 'open_issues_count', 0)
+                "open_issues_count": getattr(self.project, "open_issues_count", 0),
             }
-            
-            return {
-                "connected": True,
-                "project": project_info,
-                "user": "Connected"
-            }
+
+            return {"connected": True, "project": project_info, "user": "Connected"}
         except Exception as e:
             logger.error(f"GitLab接続テスト失敗: {e}")
-            return {
-                "connected": False,
-                "error": str(e)
-            }
-    
+            return {"connected": False, "error": str(e)}
+
     def get_issues_sample(self, limit: int = 5) -> List[Dict[str, Any]]:
         """サンプルissue取得（動作確認用）"""
         if not self.gl or not self.project:
             return []
-        
+
         try:
-            issues = self.project.issues.list(per_page=limit, state='all')
+            issues = self.project.issues.list(per_page=limit, state="all")
             return [
                 {
                     "id": issue.id,
@@ -154,57 +167,64 @@ class GitLabClient:
                     "state": issue.state,
                     "created_at": issue.created_at,
                     "labels": issue.labels,
-                    "assignee": issue.assignee['name'] if issue.assignee else None,
-                    "milestone": issue.milestone['title'] if issue.milestone else None
+                    "assignee": issue.assignee["name"] if issue.assignee else None,
+                    "milestone": issue.milestone["title"] if issue.milestone else None,
                 }
                 for issue in issues
             ]
         except Exception as e:
             logger.error(f"Issues取得失敗: {e}")
             return []
-    
-    def get_projects(self, gitlab_url: str, gitlab_token: str, api_version: str = "4",
-                     http_proxy: str = "", https_proxy: str = "", no_proxy: str = "") -> List[Dict[str, Any]]:
+
+    def get_projects(
+        self,
+        gitlab_url: str,
+        gitlab_token: str,
+        api_version: str = "4",
+        http_proxy: str = "",
+        https_proxy: str = "",
+        no_proxy: str = "",
+    ) -> List[Dict[str, Any]]:
         """ユーザーがアクセス可能なプロジェクト一覧を取得"""
         try:
             # Proxy設定を環境変数に設定（パラメータ優先、次に設定ファイル）
             proxy_http = http_proxy or settings.http_proxy
             proxy_https = https_proxy or settings.https_proxy
             proxy_no = no_proxy or settings.no_proxy
-            
+
             if proxy_http:
-                os.environ['HTTP_PROXY'] = proxy_http
-                os.environ['http_proxy'] = proxy_http
+                os.environ["HTTP_PROXY"] = proxy_http
+                os.environ["http_proxy"] = proxy_http
             if proxy_https:
-                os.environ['HTTPS_PROXY'] = proxy_https
-                os.environ['https_proxy'] = proxy_https
+                os.environ["HTTPS_PROXY"] = proxy_https
+                os.environ["https_proxy"] = proxy_https
             if proxy_no:
-                os.environ['NO_PROXY'] = proxy_no
-                os.environ['no_proxy'] = proxy_no
-            
+                os.environ["NO_PROXY"] = proxy_no
+                os.environ["no_proxy"] = proxy_no
+
             # 一時的なGitLabクライアントを作成
             temp_gl = gitlab.Gitlab(
                 gitlab_url,
                 private_token=gitlab_token,
                 api_version=api_version,
                 ssl_verify=settings.gitlab_ssl_verify,
-                timeout=30
+                timeout=30,
             )
-            
+
             # 認証テスト
             temp_gl.auth()
-            
+
             # プロジェクト一覧取得（アクセス可能なもののみ）
             projects = temp_gl.projects.list(membership=True, all=True)
-            
+
             return [
                 {
                     "id": project.id,
                     "name": project.name,
                     "path": project.path,
                     "path_with_namespace": project.path_with_namespace,
-                    "description": getattr(project, 'description', ''),
-                    "web_url": project.web_url
+                    "description": getattr(project, "description", ""),
+                    "web_url": project.web_url,
                 }
                 for project in projects
             ]
@@ -214,23 +234,35 @@ class GitLabClient:
         except Exception as e:
             logger.error(f"プロジェクト一覧取得失敗: {e}")
             raise Exception(f"プロジェクト一覧の取得に失敗しました: {str(e)}")
-    
-    def get_project_by_name(self, gitlab_url: str, gitlab_token: str, project_name: str, api_version: str = "4") -> Optional[Dict[str, Any]]:
+
+    def get_project_by_name(
+        self,
+        gitlab_url: str,
+        gitlab_token: str,
+        project_name: str,
+        api_version: str = "4",
+    ) -> Optional[Dict[str, Any]]:
         """プロジェクト名からプロジェクト情報を取得"""
         try:
             projects = self.get_projects(gitlab_url, gitlab_token, api_version)
-            
+
             # 名前で検索（完全一致優先、部分一致も考慮）
             exact_match = None
             partial_matches = []
-            
+
             for project in projects:
-                if project['name'] == project_name or project['path_with_namespace'] == project_name:
+                if (
+                    project["name"] == project_name
+                    or project["path_with_namespace"] == project_name
+                ):
                     exact_match = project
                     break
-                elif project_name.lower() in project['name'].lower() or project_name.lower() in project['path_with_namespace'].lower():
+                elif (
+                    project_name.lower() in project["name"].lower()
+                    or project_name.lower() in project["path_with_namespace"].lower()
+                ):
                     partial_matches.append(project)
-            
+
             if exact_match:
                 return exact_match
             elif len(partial_matches) == 1:
@@ -241,7 +273,7 @@ class GitLabClient:
             else:
                 logger.error(f"プロジェクトが見つかりません: {project_name}")
                 return None
-                
+
         except Exception as e:
             logger.error(f"プロジェクト名検索失敗: {e}")
             return None

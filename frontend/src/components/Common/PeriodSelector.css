@@ -40,7 +40,9 @@
   border: 1px solid #ced4da;
   border-radius: 4px;
   font-size: 14px;
-  transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+  transition:
+    border-color 0.15s ease-in-out,
+    box-shadow 0.15s ease-in-out;
 }
 
 .period-selector .filter-input:focus {
@@ -56,7 +58,9 @@
   border-radius: 4px;
   background-color: #fff;
   font-size: 14px;
-  transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+  transition:
+    border-color 0.15s ease-in-out,
+    box-shadow 0.15s ease-in-out;
 }
 
 .period-selector .filter-select:focus {
@@ -167,22 +171,22 @@
   .period-selector {
     padding: 15px;
   }
-  
+
   .apply-btn,
   .filter-reset-btn {
     width: 100%;
     justify-content: center;
   }
-  
+
   .period-dates .date-range-inputs {
     flex-direction: column;
     gap: 10px;
   }
-  
+
   .period-dates .date-input {
     width: 100% !important;
   }
-  
+
   .period-display {
     font-size: 13px;
     text-align: center;

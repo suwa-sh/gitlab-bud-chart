@@ -12,17 +12,20 @@ gitlab-bud-chartプロジェクトの技術スタックとして、以下の組�
 ## 根拠
 
 ### 1. プロジェクト要件との適合性
+
 - **高速開発**: Vite による高速な開発サーバー
 - **型安全性**: TypeScript による開発時エラー削減
 - **チャート機能**: Recharts による高品質な可視化
 - **GitLab統合**: Python-GitLab 公式ライブラリの活用
 
 ### 2. チーム生産性
+
 - **学習コスト**: 広く採用されている技術の選択
 - **エコシステム**: 豊富なライブラリとツールサポート
 - **開発体験**: モダンな開発ツールによる効率化
 
 ### 3. 保守性・拡張性
+
 - **コミュニティサポート**: 活発なコミュニティによる長期サポート
 - **パフォーマンス**: 実績ある高性能ライブラリの採用
 - **互換性**: 標準的な技術による将来の移行容易性
@@ -32,6 +35,7 @@ gitlab-bud-chartプロジェクトの技術スタックとして、以下の組�
 ### Frontend技術スタック
 
 #### React + TypeScript
+
 ```json
 {
   "選定理由": [
@@ -49,6 +53,7 @@ gitlab-bud-chartプロジェクトの技術スタックとして、以下の組�
 ```
 
 #### Vite
+
 ```json
 {
   "選定理由": [
@@ -66,6 +71,7 @@ gitlab-bud-chartプロジェクトの技術スタックとして、以下の組�
 ```
 
 #### Recharts
+
 ```json
 {
   "選定理由": [
@@ -83,6 +89,7 @@ gitlab-bud-chartプロジェクトの技術スタックとして、以下の組�
 ```
 
 #### その他Frontend依存関係
+
 ```typescript
 // package.json dependencies (予定)
 {
@@ -99,6 +106,7 @@ gitlab-bud-chartプロジェクトの技術スタックとして、以下の組�
 ### Backend技術スタック
 
 #### FastAPI + Python
+
 ```json
 {
   "選定理由": [
@@ -116,6 +124,7 @@ gitlab-bud-chartプロジェクトの技術スタックとして、以下の組�
 ```
 
 #### Python-GitLab
+
 ```json
 {
   "選定理由": [
@@ -133,6 +142,7 @@ gitlab-bud-chartプロジェクトの技術スタックとして、以下の組�
 ```
 
 #### Uvicorn + Pydantic
+
 ```json
 {
   "uvicorn": {
@@ -145,6 +155,7 @@ gitlab-bud-chartプロジェクトの技術スタックとして、以下の組�
 ```
 
 #### Backend依存関係
+
 ```python
 # pyproject.toml dependencies (予定)
 [tool.poetry.dependencies]
@@ -159,6 +170,7 @@ httpx = "^0.25.0"
 ### Testing技術スタック
 
 #### Playwright
+
 ```json
 {
   "選定理由": [
@@ -177,6 +189,7 @@ httpx = "^0.25.0"
 ```
 
 #### pytest + Vitest
+
 ```json
 {
   "pytest": {
@@ -193,6 +206,7 @@ httpx = "^0.25.0"
 ### 開発環境・ツール
 
 #### 開発言語バージョン
+
 ```bash
 # Node.js
 node: ">=18.18.0"
@@ -204,6 +218,7 @@ poetry: ">=1.6.0"
 ```
 
 #### コード品質管理
+
 ```json
 {
   "frontend": {
@@ -220,6 +235,7 @@ poetry: ">=1.6.0"
 ```
 
 #### ビルド・パッケージ管理
+
 ```json
 {
   "frontend": {
@@ -238,11 +254,13 @@ poetry: ">=1.6.0"
 ### パフォーマンス考慮事項
 
 #### Frontend最適化
+
 - **Code Splitting**: React.lazy による動的インポート
 - **Bundle Optimization**: Vite の Tree Shaking
 - **Cache Strategy**: ブラウザキャッシュ活用
 
 #### Backend最適化
+
 - **Async Processing**: FastAPI の async/await
 - **Response Compression**: uvicorn の gzip 圧縮
 - **Memory Management**: Python-GitLab の効率的利用
@@ -250,11 +268,13 @@ poetry: ">=1.6.0"
 ### セキュリティ考慮事項
 
 #### Frontend
+
 - **XSS Prevention**: React の標準エスケープ
 - **CSRF Protection**: SameSite Cookie 設定
 - **Content Security Policy**: 適切な CSP ヘッダー
 
 #### Backend
+
 - **Input Validation**: Pydantic バリデーション
 - **CORS Configuration**: 適切なオリジン制限
 - **API Rate Limiting**: 過度なリクエスト制御
@@ -262,6 +282,7 @@ poetry: ">=1.6.0"
 ### 技術選定のリスク評価
 
 #### 高リスク要因
+
 ```json
 {
   "dependency_conflicts": {
@@ -269,7 +290,7 @@ poetry: ">=1.6.0"
     "mitigation": "Poetry/npm lock ファイルによる固定"
   },
   "version_compatibility": {
-    "risk": "低", 
+    "risk": "低",
     "mitigation": "LTS バージョン採用"
   },
   "performance_bottleneck": {
@@ -280,6 +301,7 @@ poetry: ">=1.6.0"
 ```
 
 #### 技術負債回避戦略
+
 - **定期更新**: 四半期ごとの依存関係更新
 - **セキュリティ**: 脆弱性スキャン自動化
 - **監視**: パフォーマンス指標の継続測定

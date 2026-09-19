@@ -10,7 +10,7 @@ interface LayoutProps {
 
 export const Layout = ({ children }: LayoutProps) => {
   const { state } = useApp()
-  
+
   return (
     <div className="app-layout">
       <Navigation />

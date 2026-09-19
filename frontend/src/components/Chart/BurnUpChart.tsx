@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo } from 'react'
 import {
   LineChart,
   Line,
@@ -9,19 +9,19 @@ import {
   Legend,
   ResponsiveContainer,
   ReferenceLine,
-} from "recharts";
-import { ChartData } from "../../types/api";
-import { format } from "date-fns";
-import { ja } from "date-fns/locale";
-import { calculateBusinessDayIdealLineForBurnUp } from "../../utils/businessDays";
-import "./Chart.css";
+} from 'recharts'
+import { ChartData } from '../../types/api'
+import { format } from 'date-fns'
+import { ja } from 'date-fns/locale'
+import { calculateBusinessDayIdealLineForBurnUp } from '../../utils/businessDays'
+import './Chart.css'
 
 interface BurnUpChartProps {
-  data: ChartData[];
-  loading?: boolean;
-  height?: number;
-  startDate?: string;
-  endDate?: string;
+  data: ChartData[]
+  loading?: boolean
+  height?: number
+  startDate?: string
+  endDate?: string
 }
 
 export const BurnUpChart = ({
@@ -33,48 +33,48 @@ export const BurnUpChart = ({
 }: BurnUpChartProps) => {
   // Calculate dynamic height based on screen size
   const dynamicHeight = useMemo(() => {
-    if (typeof window !== "undefined") {
-      const screenWidth = window.innerWidth;
-      if (screenWidth >= 2000) return Math.max(height, 500);
-      if (screenWidth >= 1600) return Math.max(height, 450);
-      if (screenWidth >= 1200) return Math.max(height, 420);
+    if (typeof window !== 'undefined') {
+      const screenWidth = window.innerWidth
+      if (screenWidth >= 2000) return Math.max(height, 500)
+      if (screenWidth >= 1600) return Math.max(height, 450)
+      if (screenWidth >= 1200) return Math.max(height, 420)
     }
-    return height;
-  }, [height]);
+    return height
+  }, [height])
   // ALL HOOKS MUST BE CALLED FIRST - BEFORE ANY EARLY RETURNS
   const chartData = useMemo(() => {
     if (!data.length || !startDate || !endDate) {
       // Fallback to original calculation if dates not available
       return data.map((item) => ({
-        date: format(new Date(item.date), "MM/dd", { locale: ja }),
+        date: format(new Date(item.date), 'MM/dd', { locale: ja }),
         理想: Math.round(item.planned_points * 10) / 10,
         完了ポイント: Math.round(item.completed_points * 10) / 10,
         総ポイント: Math.round(item.total_points * 10) / 10,
-      }));
+      }))
     } else {
       // Calculate business day aware ideal line for burn up
-      const totalPoints = data[data.length - 1]?.total_points || 0;
-      const chartDates = data.map((item) => item.date);
+      const totalPoints = data[data.length - 1]?.total_points || 0
+      const chartDates = data.map((item) => item.date)
       const businessDayIdealLine = calculateBusinessDayIdealLineForBurnUp(
         totalPoints,
         startDate,
         endDate,
-        chartDates
-      );
+        chartDates,
+      )
 
       return data.map((item, index) => ({
-        date: format(new Date(item.date), "MM/dd", { locale: ja }),
+        date: format(new Date(item.date), 'MM/dd', { locale: ja }),
         理想: Math.round(businessDayIdealLine[index] * 10) / 10,
         完了ポイント: Math.round(item.completed_points * 10) / 10,
         総ポイント: Math.round(item.total_points * 10) / 10,
-      }));
+      }))
     }
-  }, [data, startDate, endDate]);
+  }, [data, startDate, endDate])
 
   // Reference line data - calculate using useMemo to ensure consistent hook order
   const totalPoints = useMemo(() => {
-    return data[data.length - 1]?.total_points || 0;
-  }, [data]);
+    return data[data.length - 1]?.total_points || 0
+  }, [data])
 
   // EARLY RETURNS AFTER ALL HOOKS
   if (loading) {
@@ -83,7 +83,7 @@ export const BurnUpChart = ({
         <div className="loading-spinner" />
         <p>チャートを読み込み中...</p>
       </div>
-    );
+    )
   }
 
   if (!data.length) {
@@ -91,7 +91,7 @@ export const BurnUpChart = ({
       <div className="chart-empty">
         <p>データがありません</p>
       </div>
-    );
+    )
   }
 
   // Tooltip function must be defined after early returns but before JSX
@@ -106,10 +106,10 @@ export const BurnUpChart = ({
             </p>
           ))}
         </div>
-      );
+      )
     }
-    return null;
-  };
+    return null
+  }
 
   return (
     <div className="burn-up-chart">
@@ -128,9 +128,9 @@ export const BurnUpChart = ({
           <YAxis
             tick={{ fontSize: 12 }}
             label={{
-              value: "ポイント",
+              value: 'ポイント',
               angle: -90,
-              position: "insideLeft",
+              position: 'insideLeft',
               style: { fontSize: 14 },
             }}
           />
@@ -172,11 +172,11 @@ export const BurnUpChart = ({
               y={totalPoints}
               stroke="#ff0000"
               strokeDasharray="3 3"
-              label={{ value: "目標", position: "right" }}
+              label={{ value: '目標', position: 'right' }}
             />
           )}
         </LineChart>
       </ResponsiveContainer>
     </div>
-  );
-};
+  )
+}

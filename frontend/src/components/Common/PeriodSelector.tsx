@@ -1,6 +1,9 @@
 import { useState, useEffect } from 'react'
 import { format } from 'date-fns'
-import { generateQuarterOptions, fiscalQuarterToDateRange } from '../../utils/quarterUtils'
+import {
+  generateQuarterOptions,
+  fiscalQuarterToDateRange,
+} from '../../utils/quarterUtils'
 import './PeriodSelector.css'
 
 interface PeriodSelectorProps {
@@ -31,7 +34,7 @@ export const PeriodSelector = ({ value, onChange }: PeriodSelectorProps) => {
     const newPeriod = { ...pendingPeriod, [field]: newValue }
     setPendingPeriod(newPeriod)
     setHasChanges(
-      newPeriod.start !== value.start || newPeriod.end !== value.end
+      newPeriod.start !== value.start || newPeriod.end !== value.end,
     )
     setSelectedQuarter('')
   }
@@ -46,18 +49,17 @@ export const PeriodSelector = ({ value, onChange }: PeriodSelectorProps) => {
       const { start, end } = fiscalQuarterToDateRange(quarterValue)
       const newPeriod = {
         start: format(start, 'yyyy-MM-dd'),
-        end: format(end, 'yyyy-MM-dd')
+        end: format(end, 'yyyy-MM-dd'),
       }
       setPendingPeriod(newPeriod)
       setHasChanges(
-        newPeriod.start !== value.start || newPeriod.end !== value.end
+        newPeriod.start !== value.start || newPeriod.end !== value.end,
       )
       setSelectedQuarter(quarterValue)
     } catch (error) {
       console.error('Invalid quarter format:', quarterValue)
     }
   }
-
 
   const handleApply = () => {
     onChange(pendingPeriod)
@@ -72,14 +74,14 @@ export const PeriodSelector = ({ value, onChange }: PeriodSelectorProps) => {
 
   const formatPeriodDisplay = (start: string, end: string): string => {
     if (!start || !end) return '期間を選択してください'
-    
+
     const startDate = new Date(start)
     const endDate = new Date(end)
-    
+
     const formatDate = (date: Date) => {
       return format(date, 'yyyy/MM/dd')
     }
-    
+
     return `${formatDate(startDate)} 〜 ${formatDate(endDate)}`
   }
 
@@ -95,7 +97,7 @@ export const PeriodSelector = ({ value, onChange }: PeriodSelectorProps) => {
             className="filter-select"
           >
             <option value="">四半期を選択...</option>
-            {quarterOptions.map(option => (
+            {quarterOptions.map((option) => (
               <option key={option.value} value={option.value}>
                 {option.label}
               </option>
@@ -138,14 +140,14 @@ export const PeriodSelector = ({ value, onChange }: PeriodSelectorProps) => {
 
       {/* Row 4: Action Buttons */}
       <div className="filter-reset-section">
-        <button 
+        <button
           className={`apply-btn ${hasChanges ? 'highlighted' : ''}`}
           onClick={handleApply}
           disabled={!hasChanges || !pendingPeriod.start || !pendingPeriod.end}
         >
           ✓ 適用
         </button>
-        <button 
+        <button
           className="filter-reset-btn"
           onClick={handleReset}
           disabled={!hasChanges}

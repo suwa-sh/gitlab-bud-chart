@@ -5,11 +5,11 @@ interface TablePaginationProps {
   onPageChange: (page: number) => void
 }
 
-export const TablePagination = ({ 
-  currentPage, 
-  totalItems, 
-  pageSize, 
-  onPageChange 
+export const TablePagination = ({
+  currentPage,
+  totalItems,
+  pageSize,
+  onPageChange,
 }: TablePaginationProps) => {
   const totalPages = Math.ceil(totalItems / pageSize)
   const startItem = (currentPage - 1) * pageSize + 1
@@ -49,7 +49,7 @@ export const TablePagination = ({
       <div className="pagination-info">
         {startItem}-{endItem} / {totalItems}件
       </div>
-      
+
       <div className="pagination-controls">
         <button
           onClick={() => handlePageChange(currentPage - 1)}
@@ -58,8 +58,8 @@ export const TablePagination = ({
         >
           前へ
         </button>
-        
-        {getPageNumbers().map(page => (
+
+        {getPageNumbers().map((page) => (
           <button
             key={page}
             onClick={() => handlePageChange(page)}
@@ -68,7 +68,7 @@ export const TablePagination = ({
             {page}
           </button>
         ))}
-        
+
         <button
           onClick={() => handlePageChange(currentPage + 1)}
           disabled={currentPage === totalPages}

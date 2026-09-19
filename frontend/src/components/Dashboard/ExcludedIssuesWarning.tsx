@@ -9,22 +9,22 @@ interface Props {
   projectNamespace?: string
 }
 
-export const ExcludedIssuesWarning: React.FC<Props> = ({ 
-  excludedIssues, 
-  gitlabUrl, 
+export const ExcludedIssuesWarning: React.FC<Props> = ({
+  excludedIssues,
+  gitlabUrl,
   projectId,
-  projectNamespace
+  projectNamespace,
 }) => {
   const [isExpanded, setIsExpanded] = useState(false)
-  
+
   // デバッグログ
   console.log('[ExcludedIssuesWarning] Props received:', {
     excludedIssuesCount: excludedIssues.length,
     excludedIssues,
     gitlabUrl,
-    projectId
+    projectId,
   })
-  
+
   // 除外理由の詳細を表示
   if (excludedIssues.length > 0) {
     console.log('[ExcludedIssuesWarning] Excluded issues details:')
@@ -34,52 +34,68 @@ export const ExcludedIssuesWarning: React.FC<Props> = ({
         title: excluded.issue.title,
         completed_at: excluded.issue.completed_at,
         state: excluded.issue.state,
-        kanban_status: excluded.issue.kanban_status
+        kanban_status: excluded.issue.kanban_status,
       })
     })
   }
-  
+
   // 期間前完了・期間後完了・Due date未設定・期間後作成のIssueをフィルタ
-  const prePeriodIssues = excludedIssues.filter(e => e.reason === 'pre-period')
-  const postPeriodIssues = excludedIssues.filter(e => e.reason === 'post-period')
-  const noDueDateIssues = excludedIssues.filter(e => e.reason === 'no-due-date')
-  const createdAfterPeriodIssues = excludedIssues.filter(e => e.reason === 'created-after-period')
-  
-  const warningIssues = [...prePeriodIssues, ...postPeriodIssues, ...noDueDateIssues, ...createdAfterPeriodIssues]
-  
+  const prePeriodIssues = excludedIssues.filter(
+    (e) => e.reason === 'pre-period',
+  )
+  const postPeriodIssues = excludedIssues.filter(
+    (e) => e.reason === 'post-period',
+  )
+  const noDueDateIssues = excludedIssues.filter(
+    (e) => e.reason === 'no-due-date',
+  )
+  const createdAfterPeriodIssues = excludedIssues.filter(
+    (e) => e.reason === 'created-after-period',
+  )
+
+  const warningIssues = [
+    ...prePeriodIssues,
+    ...postPeriodIssues,
+    ...noDueDateIssues,
+    ...createdAfterPeriodIssues,
+  ]
+
   console.log('[ExcludedIssuesWarning] Filtered issues:', {
     prePeriodCount: prePeriodIssues.length,
     postPeriodCount: postPeriodIssues.length,
     noDueDateCount: noDueDateIssues.length,
     createdAfterPeriodCount: createdAfterPeriodIssues.length,
-    warningIssuesCount: warningIssues.length
+    warningIssuesCount: warningIssues.length,
   })
-  
+
   if (warningIssues.length === 0) {
     return null
   }
-  
+
   const getIssueUrl = (iid: number) => {
     // projectNamespaceが利用可能な場合はそれを使用、そうでなければprojectIdにフォールバック
     const projectPath = projectNamespace || projectId
     return `${gitlabUrl}/${projectPath}/-/issues/${iid}`
   }
-  
+
   const formatDate = (dateStr: string | undefined) => {
     if (!dateStr) return '-'
     return new Date(dateStr).toLocaleDateString('ja-JP')
   }
-  
+
   return (
     <div className="excluded-issues-warning">
-      <div className="warning-header" onClick={() => setIsExpanded(!isExpanded)}>
+      <div
+        className="warning-header"
+        onClick={() => setIsExpanded(!isExpanded)}
+      >
         <span className="warning-icon">⚠️</span>
         <span className="warning-title">
           データ不整合の可能性があるIssue（{warningIssues.length}件）
         </span>
         <span className="expand-icon">{isExpanded ? '▼' : '▶'}</span>
       </div>
-      
+
       {isExpanded && (
         <div className="warning-content">
           {prePeriodIssues.length > 0 && (
@@ -88,9 +104,9 @@ export const ExcludedIssuesWarning: React.FC<Props> = ({
               <div className="excluded-issues-list">
                 {prePeriodIssues.map(({ issue }) => (
                   <div key={issue.id} className="excluded-issue-item">
-                    <a 
-                      href={getIssueUrl(issue.iid)} 
-                      target="_blank" 
+                    <a
+                      href={getIssueUrl(issue.iid)}
+                      target="_blank"
                       rel="noopener noreferrer"
                       className="issue-link"
                     >
@@ -104,16 +120,16 @@ export const ExcludedIssuesWarning: React.FC<Props> = ({
               </div>
             </div>
           )}
-          
+
           {postPeriodIssues.length > 0 && (
             <div className="excluded-section">
               <h4>期間後完了（{postPeriodIssues.length}件）</h4>
               <div className="excluded-issues-list">
                 {postPeriodIssues.map(({ issue }) => (
                   <div key={issue.id} className="excluded-issue-item">
-                    <a 
-                      href={getIssueUrl(issue.iid)} 
-                      target="_blank" 
+                    <a
+                      href={getIssueUrl(issue.iid)}
+                      target="_blank"
                       rel="noopener noreferrer"
                       className="issue-link"
                     >
@@ -127,19 +143,20 @@ export const ExcludedIssuesWarning: React.FC<Props> = ({
               </div>
             </div>
           )}
-          
+
           {noDueDateIssues.length > 0 && (
             <div className="excluded-section">
               <h4>Due Date未設定（{noDueDateIssues.length}件）</h4>
               <p className="warning-description">
-                「完了」または「共有待ち」ステータスですが、Due Dateが設定されていません
+                「完了」または「共有待ち」ステータスですが、Due
+                Dateが設定されていません
               </p>
               <div className="excluded-issues-list">
                 {noDueDateIssues.map(({ issue }) => (
                   <div key={issue.id} className="excluded-issue-item">
-                    <a 
-                      href={getIssueUrl(issue.iid)} 
-                      target="_blank" 
+                    <a
+                      href={getIssueUrl(issue.iid)}
+                      target="_blank"
                       rel="noopener noreferrer"
                       className="issue-link"
                     >
@@ -153,7 +170,7 @@ export const ExcludedIssuesWarning: React.FC<Props> = ({
               </div>
             </div>
           )}
-          
+
           {createdAfterPeriodIssues.length > 0 && (
             <div className="excluded-section">
               <h4>期間後作成（{createdAfterPeriodIssues.length}件）</h4>
@@ -163,9 +180,9 @@ export const ExcludedIssuesWarning: React.FC<Props> = ({
               <div className="excluded-issues-list">
                 {createdAfterPeriodIssues.map(({ issue }) => (
                   <div key={issue.id} className="excluded-issue-item">
-                    <a 
-                      href={getIssueUrl(issue.iid)} 
-                      target="_blank" 
+                    <a
+                      href={getIssueUrl(issue.iid)}
+                      target="_blank"
                       rel="noopener noreferrer"
                       className="issue-link"
                     >

@@ -14,11 +14,11 @@ export interface URLFilters {
   completed_before?: string
   is_epic?: string
   quarter?: string
-  
+
   // Dashboard specific
   period_start?: string
   period_end?: string
-  
+
   // Sort parameters
   sortKey?: string
   sortDirection?: 'asc' | 'desc'
@@ -29,31 +29,43 @@ export interface URLFilters {
  */
 export const parseURLParams = (searchParams: URLSearchParams): URLFilters => {
   const filters: URLFilters = {}
-  
+
   // 文字列型のパラメータ
   const stringParams = [
-    'search', 'milestone', 'assignee', 'kanban_status', 'service', 
-    'state', 'created_after', 'created_before', 'completed_after', 
-    'completed_before', 'is_epic', 'quarter', 'period_start', 
-    'period_end', 'sortKey', 'sortDirection'
+    'search',
+    'milestone',
+    'assignee',
+    'kanban_status',
+    'service',
+    'state',
+    'created_after',
+    'created_before',
+    'completed_after',
+    'completed_before',
+    'is_epic',
+    'quarter',
+    'period_start',
+    'period_end',
+    'sortKey',
+    'sortDirection',
   ]
-  
-  stringParams.forEach(param => {
+
+  stringParams.forEach((param) => {
     const value = searchParams.get(param)
     if (value) {
       filters[param as keyof URLFilters] = value as any
     }
   })
-  
+
   // 数値型のパラメータ
   const numberParams = ['min_point', 'max_point']
-  numberParams.forEach(param => {
+  numberParams.forEach((param) => {
     const value = searchParams.get(param)
     if (value && !isNaN(Number(value))) {
       filters[param as keyof URLFilters] = Number(value) as any
     }
   })
-  
+
   return filters
 }
 
@@ -62,32 +74,43 @@ export const parseURLParams = (searchParams: URLSearchParams): URLFilters => {
  */
 export const buildURLParams = (filters: URLFilters): URLSearchParams => {
   const params = new URLSearchParams()
-  
+
   Object.entries(filters).forEach(([key, value]) => {
     if (value !== undefined && value !== null && value !== '') {
       params.set(key, String(value))
     }
   })
-  
+
   return params
 }
 
 /**
  * 現在のURLにフィルタパラメータを反映（履歴を更新）
  */
-export const updateURLWithFilters = (filters: URLFilters, navigate: (to: string) => void, pathname: string) => {
+export const updateURLWithFilters = (
+  filters: URLFilters,
+  navigate: (to: string) => void,
+  pathname: string,
+) => {
   const params = buildURLParams(filters)
-  const newURL = params.toString() ? `${pathname}?${params.toString()}` : pathname
+  const newURL = params.toString()
+    ? `${pathname}?${params.toString()}`
+    : pathname
   navigate(newURL)
 }
 
 /**
  * 共有用のフルURLを生成
  */
-export const generateShareURL = (filters: URLFilters, pathname: string): string => {
+export const generateShareURL = (
+  filters: URLFilters,
+  pathname: string,
+): string => {
   const params = buildURLParams(filters)
   const origin = window.location.origin
-  const url = params.toString() ? `${origin}${pathname}?${params.toString()}` : `${origin}${pathname}`
+  const url = params.toString()
+    ? `${origin}${pathname}?${params.toString()}`
+    : `${origin}${pathname}`
   return url
 }
 

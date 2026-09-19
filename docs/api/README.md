@@ -1,19 +1,24 @@
 # GitLab Bud Chart API Documentation
 
 ## Base URL
+
 `http://localhost:8000`
 
 ## Interactive Documentation
+
 - Swagger UI: http://localhost:8000/docs
 - ReDoc: http://localhost:8000/redoc
 
 ## Endpoints
 
 ### Health Check
+
 #### GET /health
+
 アプリケーションの動作状態を確認します。
 
 **Response:**
+
 ```json
 {
   "status": "healthy",
@@ -24,18 +29,21 @@
 ### GitLab Connection
 
 #### POST /api/gitlab/connect
+
 GitLab接続を設定します。
 
 **Request Body:**
+
 ```json
 {
   "gitlab_url": "http://your-gitlab-url",
-  "gitlab_token": "glpat-xxxxxxxxxxxxxxxxxxxx", 
+  "gitlab_token": "glpat-xxxxxxxxxxxxxxxxxxxx",
   "project_id": "1"
 }
 ```
 
 **Response:**
+
 ```json
 {
   "status": "connected",
@@ -49,9 +57,11 @@ GitLab接続を設定します。
 ```
 
 #### GET /api/gitlab/status
+
 GitLab接続状態を確認します。
 
 **Response:**
+
 ```json
 {
   "is_connected": true,
@@ -63,9 +73,11 @@ GitLab接続状態を確認します。
 ```
 
 #### GET /api/gitlab/issues/sample
+
 GitLabからサンプルIssueを取得します（接続テスト用）。
 
 **Response:**
+
 ```json
 {
   "sample_issues": [
@@ -83,9 +95,11 @@ GitLabからサンプルIssueを取得します（接続テスト用）。
 ### Issues
 
 #### GET /api/issues
+
 Issue一覧を取得します。
 
 **Query Parameters:**
+
 - `milestone` (string): マイルストーンでフィルタ
 - `assignee` (string): 担当者でフィルタ
 - `state` (string): 状態でフィルタ（opened, closed）
@@ -104,6 +118,7 @@ Issue一覧を取得します。
 - `sort_order` (string): ソート順（asc, desc）
 
 **Response:**
+
 ```json
 {
   "issues": [
@@ -132,12 +147,15 @@ Issue一覧を取得します。
 ```
 
 #### GET /api/issues/{id}
+
 特定のIssue詳細を取得します。
 
 **Path Parameters:**
+
 - `id` (integer): Issue ID
 
 **Response:**
+
 ```json
 {
   "id": 1,
@@ -151,7 +169,7 @@ Issue一覧を取得します。
   "updated_at": "2024-12-28T12:00:00.000Z",
   "closed_at": null,
   "story_points": 3.0,
-  "kanban_status": "#作業中", 
+  "kanban_status": "#作業中",
   "service": "s:backend",
   "quarter": "@FY2501Q1",
   "web_url": "http://gitlab/issues/1"
@@ -159,9 +177,11 @@ Issue一覧を取得します。
 ```
 
 #### POST /api/issues/search
+
 Issue検索を実行します。
 
 **Request Body:**
+
 ```json
 {
   "query": "検索キーワード",
@@ -181,11 +201,13 @@ Issue検索を実行します。
 **Response:** Issue一覧と同じ形式
 
 #### GET /api/issues/analyzed
+
 分析済みIssue一覧を取得します。
 
 **Query Parameters:** Issue一覧と同じ
 
 **Response:**
+
 ```json
 {
   "issues": [...],
@@ -201,12 +223,15 @@ Issue検索を実行します。
 ```
 
 #### GET /api/issues/statistics
+
 Issue統計情報を取得します。
 
 **Query Parameters:**
+
 - フィルタ系パラメータ（Issue一覧と同じ）
 
 **Response:**
+
 ```json
 {
   "total_issues": 100,
@@ -245,9 +270,11 @@ Issue統計情報を取得します。
 ```
 
 #### GET /api/issues/validation
+
 Issue データ品質検証を実行します。
 
 **Response:**
+
 ```json
 {
   "validation_results": {
@@ -275,9 +302,11 @@ Issue データ品質検証を実行します。
 ```
 
 #### GET /api/issues/export/{format}
+
 Issue一覧をエクスポートします。
 
 **Path Parameters:**
+
 - `format` (string): エクスポート形式（csv, json）
 
 **Query Parameters:** Issue一覧と同じフィルタ
@@ -287,14 +316,17 @@ Issue一覧をエクスポートします。
 ### Charts
 
 #### GET /api/charts/burn-down
+
 Burn-downチャートデータを取得します。
 
 **Query Parameters:**
+
 - `start_date` (string): 開始日（YYYY-MM-DD形式）
 - `end_date` (string): 終了日（YYYY-MM-DD形式）
 - `milestone` (string, optional): マイルストーンでフィルタ
 
 **Response:**
+
 ```json
 {
   "chart_data": [
@@ -333,16 +365,18 @@ Burn-downチャートデータを取得します。
 ```
 
 #### GET /api/charts/burn-up
+
 Burn-upチャートデータを取得します。
 
 **Query Parameters:** Burn-downチャートと同じ
 
 **Response:**
+
 ```json
 {
   "chart_data": [
     {
-      "date": "2024-12-01", 
+      "date": "2024-12-01",
       "planned_points": 0.0,
       "actual_points": 0.0,
       "remaining_points": 100.0,
@@ -376,18 +410,21 @@ Burn-upチャートデータを取得します。
 ```
 
 #### GET /api/charts/velocity
+
 ベロシティデータを取得します。
 
 **Query Parameters:**
+
 - `weeks` (integer): 分析週数（デフォルト: 12）
 
 **Response:**
+
 ```json
 {
   "velocity_data": [
     {
       "week_start": "2024-11-04",
-      "week_end": "2024-11-10", 
+      "week_end": "2024-11-10",
       "completed_points": 25.0,
       "completed_issues": 8,
       "planned_points": 30.0
@@ -416,6 +453,7 @@ Burn-upチャートデータを取得します。
 ## Error Responses
 
 ### 400 Bad Request
+
 ```json
 {
   "detail": "無効なパラメータです",
@@ -427,6 +465,7 @@ Burn-upチャートデータを取得します。
 ```
 
 ### 401 Unauthorized
+
 ```json
 {
   "detail": "認証が必要です",
@@ -435,6 +474,7 @@ Burn-upチャートデータを取得します。
 ```
 
 ### 404 Not Found
+
 ```json
 {
   "detail": "リソースが見つかりません",
@@ -443,6 +483,7 @@ Burn-upチャートデータを取得します。
 ```
 
 ### 422 Validation Error
+
 ```json
 {
   "detail": [
@@ -456,6 +497,7 @@ Burn-upチャートデータを取得します。
 ```
 
 ### 500 Internal Server Error
+
 ```json
 {
   "detail": "内部サーバーエラーが発生しました",

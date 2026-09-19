@@ -2,7 +2,7 @@
   background: white;
   border-radius: 8px;
   padding: 20px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .issue-table-filters {
@@ -79,7 +79,9 @@
   border: 1px solid #ced4da;
   border-radius: 4px;
   font-size: 14px;
-  transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+  transition:
+    border-color 0.15s ease-in-out,
+    box-shadow 0.15s ease-in-out;
 }
 
 .filter-input:focus {
@@ -95,7 +97,9 @@
   border-radius: 4px;
   background-color: white;
   font-size: 14px;
-  transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+  transition:
+    border-color 0.15s ease-in-out,
+    box-shadow 0.15s ease-in-out;
 }
 
 .filter-select:focus {
@@ -403,11 +407,11 @@
   .issue-table-container {
     padding: 25px;
   }
-  
+
   .issue-table {
     min-width: 1400px;
   }
-  
+
   .issue-table th,
   .issue-table td {
     padding: 14px 10px;
@@ -418,11 +422,11 @@
   .issue-table-container {
     padding: 30px;
   }
-  
+
   .issue-table {
     min-width: 1600px;
   }
-  
+
   .issue-table th,
   .issue-table td {
     padding: 16px 12px;
@@ -433,11 +437,11 @@
   .issue-table-container {
     padding: 35px;
   }
-  
+
   .issue-table {
     min-width: 1800px;
   }
-  
+
   .issue-table th,
   .issue-table td {
     padding: 18px 14px;
@@ -448,25 +452,25 @@
   .table-wrapper {
     -webkit-overflow-scrolling: touch;
   }
-  
+
   .issue-table {
     font-size: 12px;
   }
-  
+
   .issue-table th,
   .issue-table td {
     padding: 8px 4px;
   }
-  
+
   .filter-row {
     flex-direction: column;
     align-items: stretch;
   }
-  
+
   .filter-group {
     min-width: auto;
   }
-  
+
   .table-pagination {
     flex-direction: column;
     gap: 10px;

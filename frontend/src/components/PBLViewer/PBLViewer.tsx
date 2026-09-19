@@ -6,29 +6,36 @@ import { GitLabConfig } from '../GitLabConfig/GitLabConfig'
 import { PBLFilters } from './PBLFilters'
 import { usePBLViewerIssues } from '../../hooks/usePBLViewerIssues'
 import { useApp } from '../../contexts/AppContext'
-import { parseURLParams, generateShareURL, copyToClipboard } from '../../utils/urlUtils'
+import {
+  parseURLParams,
+  generateShareURL,
+  copyToClipboard,
+} from '../../utils/urlUtils'
 import './PBLViewer.css'
 
 export const PBLViewer = () => {
   const { state, dispatch } = useApp()
-  const { issues, loading, fetchAllIssues, exportIssues, hasCachedData } = usePBLViewerIssues()
+  const { issues, loading, fetchAllIssues, exportIssues, hasCachedData } =
+    usePBLViewerIssues()
   const [isInitialLoad, setIsInitialLoad] = useState(true)
   const [showEditConfig, setShowEditConfig] = useState(false)
   const [showCopiedMessage, setShowCopiedMessage] = useState(false)
-  const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>(null)
+  const [sortConfig, setSortConfig] = useState<{
+    key: string
+    direction: 'asc' | 'desc'
+  } | null>(null)
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
-
 
   // URLパラメータから初期値を読み込み
   useEffect(() => {
     const urlFilters = parseURLParams(searchParams)
-    
+
     // URLからフィルタを復元
     if (Object.keys(urlFilters).length > 0) {
       const { sortKey, sortDirection, ...filters } = urlFilters
       dispatch({ type: 'SET_PBL_VIEWER_FILTERS', payload: filters })
-      
+
       // ソート設定を復元
       if (sortKey && sortDirection) {
         setSortConfig({ key: sortKey, direction: sortDirection })
@@ -75,7 +82,7 @@ export const PBLViewer = () => {
     state.pblViewerFilters.min_point,
     state.pblViewerFilters.max_point,
     state.pblViewerFilters.quarter,
-    isInitialLoad
+    isInitialLoad,
   ])
 
   // セッション期限切れイベントをリッスン
@@ -101,7 +108,7 @@ export const PBLViewer = () => {
     return (
       <div className="pbl-viewer">
         <h1>Product Backlog Viewer</h1>
-        <GitLabConfig 
+        <GitLabConfig
           editMode={showEditConfig}
           onConfigured={() => {
             setShowEditConfig(false)
@@ -127,11 +134,23 @@ export const PBLViewer = () => {
         <h1>Product Backlog Viewer</h1>
         <div className="pbl-controls">
           {hasCachedData() && !loading && state.pblViewerCacheTimestamp && (
-            <span className="cache-indicator" title="データはキャッシュから復元されました">
-              📄 {state.pblViewerCacheTimestamp.toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric' })} {state.pblViewerCacheTimestamp.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })}時点
+            <span
+              className="cache-indicator"
+              title="データはキャッシュから復元されました"
+            >
+              📄{' '}
+              {state.pblViewerCacheTimestamp.toLocaleDateString('ja-JP', {
+                month: 'numeric',
+                day: 'numeric',
+              })}{' '}
+              {state.pblViewerCacheTimestamp.toLocaleTimeString('ja-JP', {
+                hour: '2-digit',
+                minute: '2-digit',
+              })}
+              時点
             </span>
           )}
-          <button 
+          <button
             onClick={() => {
               const filtersWithoutPeriod = { ...state.pblViewerFilters }
               delete filtersWithoutPeriod.created_after
@@ -145,7 +164,7 @@ export const PBLViewer = () => {
           >
             {loading ? '読み込み中...' : 'データ再取得'}
           </button>
-          <button 
+          <button
             onClick={() => exportIssues('csv')}
             disabled={loading || issues.length === 0}
             className="export-btn"
@@ -158,8 +177,8 @@ export const PBLViewer = () => {
                 ...state.pblViewerFilters,
                 ...(sortConfig && {
                   sortKey: sortConfig.key,
-                  sortDirection: sortConfig.direction
-                })
+                  sortDirection: sortConfig.direction,
+                }),
               }
               const shareUrl = generateShareURL(shareFilters, '/pbl-viewer')
               const success = await copyToClipboard(shareUrl)
@@ -183,18 +202,22 @@ export const PBLViewer = () => {
         <div className="statistics-section">
           <PBLStatistics issues={issues} />
         </div>
-        
+
         <div className="filters-section">
           <PBLFilters issues={issues} />
         </div>
-        
+
         <div className="issues-section">
-          {!loading && issues.length === 0 && state.gitlabConfig.isConnected && (
-            <div className="no-issues-message">
-              <p>イシューが見つかりません。フィルターを確認するか、上部の「データ再取得」ボタンを押してください。</p>
-            </div>
-          )}
-          <IssueTable 
+          {!loading &&
+            issues.length === 0 &&
+            state.gitlabConfig.isConnected && (
+              <div className="no-issues-message">
+                <p>
+                  イシューが見つかりません。フィルターを確認するか、上部の「データ再取得」ボタンを押してください。
+                </p>
+              </div>
+            )}
+          <IssueTable
             issues={issues}
             loading={loading}
             showFilters={false}
@@ -208,7 +231,7 @@ export const PBLViewer = () => {
               const newFilters = {
                 ...state.pblViewerFilters,
                 sortKey: key,
-                sortDirection: direction
+                sortDirection: direction,
               }
               const shareUrl = generateShareURL(newFilters, '/pbl-viewer')
               navigate(shareUrl.replace(window.location.origin, ''))
