@@ -2,6 +2,9 @@ import { useCallback, useState } from 'react'
 import { useApp } from '../contexts/AppContext'
 import { issuesApi } from '../services/api'
 
+// 複数コンポーネントから呼ばれても最新リクエストを判定できるようモジュールスコープで管理
+let latestFetchRequestId = 0
+
 export const useDashboardIssues = () => {
   const { state, dispatch } = useApp()
   const [isSearching, setIsSearching] = useState(false)
@@ -18,6 +21,8 @@ export const useDashboardIssues = () => {
 
   const fetchIssues = useCallback(
     async (params: any = {}) => {
+      // 後から発行したリクエストの結果だけを反映する（古いレスポンスでの上書き防止）
+      const requestId = ++latestFetchRequestId
       dispatch({ type: 'SET_DASHBOARD_LOADING', payload: true })
       dispatch({ type: 'SET_DASHBOARD_ERROR', payload: null })
 
@@ -37,6 +42,7 @@ export const useDashboardIssues = () => {
         }
 
         const response = await issuesApi.getIssues(apiParams)
+        if (requestId !== latestFetchRequestId) return response
 
         // レスポンスが配列の場合とオブジェクトの場合を処理
         if (Array.isArray(response)) {
@@ -63,6 +69,7 @@ export const useDashboardIssues = () => {
 
         return response
       } catch (error: any) {
+        if (requestId !== latestFetchRequestId) return
         // セッション期限切れのチェック
         if (error.response?.status === 401 || error.response?.status === 403) {
           dispatch({ type: 'SESSION_EXPIRED' })
@@ -71,7 +78,9 @@ export const useDashboardIssues = () => {
         }
         throw error
       } finally {
-        dispatch({ type: 'SET_DASHBOARD_LOADING', payload: false })
+        if (requestId === latestFetchRequestId) {
+          dispatch({ type: 'SET_DASHBOARD_LOADING', payload: false })
+        }
       }
     },
     [dispatch, state.dashboardFilters],

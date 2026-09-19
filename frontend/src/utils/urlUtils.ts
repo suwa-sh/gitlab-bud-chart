@@ -135,7 +135,7 @@ export const copyToClipboard = async (text: string): Promise<boolean> => {
       document.execCommand('copy')
       document.body.removeChild(textArea)
       return true
-    } catch (err) {
+    } catch {
       document.body.removeChild(textArea)
       return false
     }

@@ -1,8 +1,8 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.api import issues, charts, gitlab_config
-from app.config import settings
 import logging
+import os
 
 logger = logging.getLogger(__name__)
 
@@ -13,8 +13,6 @@ app = FastAPI(
 )
 
 # CORS設定
-import os
-
 cors_origins = os.getenv(
     "CORS_ORIGINS", "http://localhost:5173,http://localhost:3000,http://localhost"
 ).split(",")

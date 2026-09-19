@@ -106,7 +106,7 @@ export const GitLabConfig = ({
             setShowProjectDropdown(false)
             setError(validation.message)
           }
-        } catch (err: any) {
+        } catch {
           setCredentialsValid(false)
           setProjects([])
           setShowProjectDropdown(false)
@@ -153,7 +153,7 @@ export const GitLabConfig = ({
       if (!projectNamespace && result.project_info.project?.web_url) {
         // Extract namespace from URL like http://localhost:8080/root/test-project
         const urlMatch = result.project_info.project.web_url.match(
-          /https?:\/\/[^\/]+\/(.+)$/,
+          /https?:\/\/[^/]+\/(.+)$/,
         )
         if (urlMatch) {
           projectNamespace = urlMatch[1]
@@ -198,7 +198,7 @@ export const GitLabConfig = ({
         setError(status.error || '接続されていません')
         setStatus('')
       }
-    } catch (err: any) {
+    } catch {
       setError('接続状態確認に失敗しました')
       setStatus('')
     }
@@ -249,7 +249,7 @@ export const GitLabConfig = ({
             onChange={(e) =>
               setConfig((prev) => ({ ...prev, gitlab_token: e.target.value }))
             }
-            placeholder="glpat-xxxxxxxxxxxxxxxxxxxx"
+            placeholder="glpat-..."
           />
         </div>
 

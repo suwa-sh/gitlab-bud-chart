@@ -2,6 +2,9 @@ import { useCallback, useState } from 'react'
 import { useApp } from '../contexts/AppContext'
 import { issuesApi } from '../services/api'
 
+// 複数コンポーネントから呼ばれても最新リクエストを判定できるようモジュールスコープで管理
+let latestFetchAllRequestId = 0
+
 export const usePBLViewerIssues = () => {
   const { state, dispatch } = useApp()
   const [isSearching, setIsSearching] = useState(false)
@@ -95,86 +98,51 @@ export const usePBLViewerIssues = () => {
     [dispatch, state.pblViewerFilters],
   )
 
-  const fetchAllIssues = useCallback(
-    async (params: any = {}) => {
-      dispatch({ type: 'SET_PBL_VIEWER_LOADING', payload: true })
-      dispatch({ type: 'SET_PBL_VIEWER_ERROR', payload: null })
+  // 全issueを取得する。フィルタはクライアント側で適用するため、APIには渡さない
+  const fetchAllIssues = useCallback(async () => {
+    // 後から発行したリクエストの結果だけを反映する（古いレスポンスでの上書き防止）
+    const requestId = ++latestFetchAllRequestId
+    dispatch({ type: 'SET_PBL_VIEWER_LOADING', payload: true })
+    dispatch({ type: 'SET_PBL_VIEWER_ERROR', payload: null })
 
-      try {
-        // API パラメータ構築（大きなper_pageを設定）
-        // paramsが明示的に指定されている場合は、state.pblViewerFiltersを上書き
-        const apiParams = {
-          ...state.pblViewerFilters,
-          ...params, // paramsを後から適用してstate.pblViewerFiltersを上書き
-          page: 1,
-          per_page: 10000, // 大量のデータを取得
-        }
+    try {
+      const response = await issuesApi.getIssues({
+        page: 1,
+        per_page: 10000, // 大量のデータを取得
+      })
+      if (requestId !== latestFetchAllRequestId) return response
 
-        // 期間フィルタがある場合は直接getIssues APIを使用（Quarterラベルフィルタは使用しない）
-        if (params.period) {
-          // 期間フィルタをAPIパラメータに追加
-          apiParams.chart_start_date = params.period.start
-          apiParams.chart_end_date = params.period.end
-
-          const response = await issuesApi.getIssues(apiParams)
-
-          if (Array.isArray(response)) {
-            dispatch({ type: 'SET_PBL_VIEWER_ISSUES', payload: response })
-          } else {
-            dispatch({
-              type: 'SET_PBL_VIEWER_ISSUES',
-              payload: response.issues || response,
-            })
-            if (response.metadata) {
-              dispatch({ type: 'SET_METADATA', payload: response.metadata })
-            }
-          }
-
-          // キャッシュタイムスタンプを更新
-          dispatch({
-            type: 'SET_PBL_VIEWER_CACHE_TIMESTAMP',
-            payload: new Date(),
-          })
-
-          return response
-        }
-
-        // Default behavior for non-period filtering
-        const response = await issuesApi.getIssues(apiParams)
-
-        if (Array.isArray(response)) {
-          dispatch({ type: 'SET_PBL_VIEWER_ISSUES', payload: response })
-        } else {
-          dispatch({
-            type: 'SET_PBL_VIEWER_ISSUES',
-            payload: response.issues || response,
-          })
-          if (response.metadata) {
-            dispatch({ type: 'SET_METADATA', payload: response.metadata })
-          }
-        }
-
-        // キャッシュタイムスタンプを更新
+      if (Array.isArray(response)) {
+        dispatch({ type: 'SET_PBL_VIEWER_ISSUES', payload: response })
+      } else {
         dispatch({
-          type: 'SET_PBL_VIEWER_CACHE_TIMESTAMP',
-          payload: new Date(),
+          type: 'SET_PBL_VIEWER_ISSUES',
+          payload: response.issues || response,
         })
-
-        return response
-      } catch (error: any) {
-        // セッション期限切れのチェック
-        if (error.response?.status === 401 || error.response?.status === 403) {
-          dispatch({ type: 'SESSION_EXPIRED' })
-        } else {
-          dispatch({ type: 'SET_PBL_VIEWER_ERROR', payload: error.message })
+        if (response.metadata) {
+          dispatch({ type: 'SET_METADATA', payload: response.metadata })
         }
-        throw error
-      } finally {
+      }
+
+      // キャッシュタイムスタンプを更新
+      dispatch({ type: 'SET_PBL_VIEWER_CACHE_TIMESTAMP', payload: new Date() })
+
+      return response
+    } catch (error: any) {
+      if (requestId !== latestFetchAllRequestId) return
+      // セッション期限切れのチェック
+      if (error.response?.status === 401 || error.response?.status === 403) {
+        dispatch({ type: 'SESSION_EXPIRED' })
+      } else {
+        dispatch({ type: 'SET_PBL_VIEWER_ERROR', payload: error.message })
+      }
+      throw error
+    } finally {
+      if (requestId === latestFetchAllRequestId) {
         dispatch({ type: 'SET_PBL_VIEWER_LOADING', payload: false })
       }
-    },
-    [dispatch, state.pblViewerFilters],
-  )
+    }
+  }, [dispatch])
 
   const searchIssues = useCallback(
     async (searchQuery: string, overrideFilters: any = {}) => {

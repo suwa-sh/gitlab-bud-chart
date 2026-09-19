@@ -78,7 +78,7 @@ class GitLabClient:
             # 認証テスト
             logger.info(f"GitLab認証開始: {gitlab_url}")
             self.gl.auth()
-            logger.info(f"GitLab認証成功")
+            logger.info("GitLab認証成功")
 
             # プロジェクト取得テスト
             logger.info(

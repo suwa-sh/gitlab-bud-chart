@@ -14,19 +14,20 @@ import { ChartData } from '../../types/api'
 import { format } from 'date-fns'
 import { ja } from 'date-fns/locale'
 import { calculateBusinessDayIdealLineForBurnUp } from '../../utils/businessDays'
+import { calculateProjection } from '../../utils/chartProjection'
 import './Chart.css'
 
 interface BurnUpChartProps {
   data: ChartData[]
-  loading?: boolean
   height?: number
   startDate?: string
   endDate?: string
 }
 
+const round1 = (value: number) => Math.round(value * 10) / 10
+
 export const BurnUpChart = ({
   data,
-  loading = false,
   height = 400,
   startDate,
   endDate,
@@ -41,35 +42,36 @@ export const BurnUpChart = ({
     }
     return height
   }, [height])
+
+  const projection = useMemo(() => calculateProjection(data), [data])
+
   // ALL HOOKS MUST BE CALLED FIRST - BEFORE ANY EARLY RETURNS
   const chartData = useMemo(() => {
-    if (!data.length || !startDate || !endDate) {
-      // Fallback to original calculation if dates not available
-      return data.map((item) => ({
-        date: format(new Date(item.date), 'MM/dd', { locale: ja }),
-        理想: Math.round(item.planned_points * 10) / 10,
-        完了ポイント: Math.round(item.completed_points * 10) / 10,
-        総ポイント: Math.round(item.total_points * 10) / 10,
-      }))
-    } else {
-      // Calculate business day aware ideal line for burn up
-      const totalPoints = data[data.length - 1]?.total_points || 0
-      const chartDates = data.map((item) => item.date)
-      const businessDayIdealLine = calculateBusinessDayIdealLineForBurnUp(
-        totalPoints,
-        startDate,
-        endDate,
-        chartDates,
-      )
+    const totalPoints = data[data.length - 1]?.total_points || 0
+    // Calculate business day aware ideal line for burn up
+    const idealLine =
+      data.length && startDate && endDate
+        ? calculateBusinessDayIdealLineForBurnUp(
+            totalPoints,
+            startDate,
+            endDate,
+            data.map((item) => item.date),
+          )
+        : data.map((item) => item.planned_points)
 
-      return data.map((item, index) => ({
+    return data.map((item, index) => {
+      const trendCompleted = projection.trendCompleted[index]
+      return {
         date: format(new Date(item.date), 'MM/dd', { locale: ja }),
-        理想: Math.round(businessDayIdealLine[index] * 10) / 10,
-        完了ポイント: Math.round(item.completed_points * 10) / 10,
-        総ポイント: Math.round(item.total_points * 10) / 10,
-      }))
-    }
-  }, [data, startDate, endDate])
+        理想: round1(idealLine[index]),
+        // 当日より後の実績は未確定のため表示しない
+        完了ポイント:
+          index <= projection.todayIndex ? round1(item.completed_points) : null,
+        現在のペース: trendCompleted === null ? null : round1(trendCompleted),
+        総ポイント: round1(item.total_points),
+      }
+    })
+  }, [data, startDate, endDate, projection])
 
   // Reference line data - calculate using useMemo to ensure consistent hook order
   const totalPoints = useMemo(() => {
@@ -77,15 +79,6 @@ export const BurnUpChart = ({
   }, [data])
 
   // EARLY RETURNS AFTER ALL HOOKS
-  if (loading) {
-    return (
-      <div className="chart-loading">
-        <div className="loading-spinner" />
-        <p>チャートを読み込み中...</p>
-      </div>
-    )
-  }
-
   if (!data.length) {
     return (
       <div className="chart-empty">
@@ -100,16 +93,25 @@ export const BurnUpChart = ({
       return (
         <div className="custom-tooltip">
           <p className="tooltip-label">{label}</p>
-          {payload.map((entry: any, index: number) => (
-            <p key={index} style={{ color: entry.color }}>
-              {entry.name}: {entry.value} ポイント
-            </p>
-          ))}
+          {payload
+            .filter(
+              (entry: any) => entry.value !== null && entry.value !== undefined,
+            )
+            .map((entry: any, index: number) => (
+              <p key={index} style={{ color: entry.color }}>
+                {entry.name}: {entry.value} ポイント
+              </p>
+            ))}
         </div>
       )
     }
     return null
   }
+
+  const todayLabel =
+    projection.todayIndex >= 0 && projection.todayIndex < data.length - 1
+      ? chartData[projection.todayIndex].date
+      : null
 
   return (
     <div className="burn-up-chart">
@@ -117,7 +119,7 @@ export const BurnUpChart = ({
       <ResponsiveContainer width="100%" height={dynamicHeight}>
         <LineChart
           data={chartData}
-          margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+          margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
         >
           <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
           <XAxis
@@ -137,6 +139,16 @@ export const BurnUpChart = ({
           <Tooltip content={customTooltip} />
           <Legend wrapperStyle={{ fontSize: 14 }} iconType="line" />
 
+          {/* 当日 */}
+          {todayLabel && (
+            <ReferenceLine
+              x={todayLabel}
+              stroke="#999"
+              strokeDasharray="2 2"
+              label={{ value: '今日', position: 'top', fontSize: 12 }}
+            />
+          )}
+
           {/* スコープライン（総ポイント） */}
           <Line
             type="stepAfter"
@@ -144,6 +156,7 @@ export const BurnUpChart = ({
             stroke="#ff7300"
             strokeWidth={2}
             dot={false}
+            isAnimationActive={false}
           />
 
           {/* 理想線 */}
@@ -154,16 +167,30 @@ export const BurnUpChart = ({
             strokeWidth={2}
             strokeDasharray="5 5"
             dot={false}
+            isAnimationActive={false}
           />
 
-          {/* 完了ポイント線 */}
+          {/* 完了ポイント線（当日まで） */}
           <Line
             type="monotone"
             dataKey="完了ポイント"
             stroke="#82ca9d"
             strokeWidth={3}
-            dot={{ r: 4 }}
-            activeDot={{ r: 6 }}
+            dot={false}
+            isAnimationActive={false}
+            activeDot={{ r: 5 }}
+          />
+
+          {/* 現在のペースの直線（開始時点と当日の実績を結び、期間終了まで延長） */}
+          <Line
+            type="linear"
+            dataKey="現在のペース"
+            stroke="#2e8b57"
+            strokeWidth={2}
+            strokeDasharray="6 4"
+            dot={false}
+            isAnimationActive={false}
+            activeDot={{ r: 4 }}
           />
 
           {/* 目標ライン */}

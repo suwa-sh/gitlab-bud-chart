@@ -1,9 +1,8 @@
-from typing import List, Dict, Any, Optional, Tuple
-from datetime import datetime, date, timedelta, timezone
-from collections import defaultdict
+from typing import List, Dict, Optional
+from datetime import date, timedelta, timezone
 import logging
 from app.models.issue import IssueModel
-from app.models.chart import ChartDataModel, BurnChartRequest, BurnChartResponse
+from app.models.chart import ChartDataModel
 from app.utils.business_days import BusinessDayCalculator
 
 logger = logging.getLogger(__name__)

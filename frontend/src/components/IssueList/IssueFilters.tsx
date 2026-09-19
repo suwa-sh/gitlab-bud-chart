@@ -1,7 +1,6 @@
 import React from 'react'
 import { useApp } from '../../contexts/AppContext'
 import { useIssues } from '../../hooks/useIssues'
-import { usePBLViewerIssues } from '../../hooks/usePBLViewerIssues'
 
 interface IssueFiltersProps {
   useFetchAll?: boolean
@@ -12,7 +11,6 @@ export const IssueFilters: React.FC<IssueFiltersProps> = ({
 }) => {
   const { state, dispatch } = useApp()
   const { fetchIssues } = useIssues()
-  const { fetchAllIssues } = usePBLViewerIssues()
   const filters = useFetchAll ? state.pblViewerFilters : state.filters
 
   const handleRemoveFilter = (key: string) => {
@@ -23,15 +21,8 @@ export const IssueFilters: React.FC<IssueFiltersProps> = ({
       dispatch({ type: 'SET_FILTERS', payload: newFilters })
     }
 
-    if (useFetchAll) {
-      // PBL Viewerでは期間フィルタを除外
-      const filtersWithoutPeriod = { ...newFilters }
-      delete filtersWithoutPeriod.created_after
-      delete filtersWithoutPeriod.created_before
-      delete filtersWithoutPeriod.completed_after
-      delete filtersWithoutPeriod.quarter
-      fetchAllIssues(filtersWithoutPeriod)
-    } else {
+    // PBL Viewerは取得済みの全issueをクライアント側で絞り込むため再取得しない
+    if (!useFetchAll) {
       fetchIssues(newFilters)
     }
   }
@@ -47,15 +38,8 @@ export const IssueFilters: React.FC<IssueFiltersProps> = ({
       dispatch({ type: 'SET_FILTERS', payload: newFilters })
     }
 
-    if (useFetchAll) {
-      // PBL Viewerでは期間フィルタを除外
-      const filtersWithoutPeriod = { ...newFilters }
-      delete filtersWithoutPeriod.created_after
-      delete filtersWithoutPeriod.created_before
-      delete filtersWithoutPeriod.completed_after
-      delete filtersWithoutPeriod.quarter
-      fetchAllIssues(filtersWithoutPeriod)
-    } else {
+    // PBL Viewerは取得済みの全issueをクライアント側で絞り込むため再取得しない
+    if (!useFetchAll) {
       fetchIssues(newFilters)
     }
   }

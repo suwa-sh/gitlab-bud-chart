@@ -45,9 +45,9 @@ def apply_date_correction(issue: IssueModel, start_date=None) -> IssueModel:
                     corrected_issue = issue.model_copy()
                     need_copy = True
                 corrected_issue.created_at = issue.completed_at
-        except Exception:
+        except Exception as e:
             # If any error occurs during comparison, continue with other checks
-            pass
+            logger.debug(f"created_at/completed_at の比較に失敗したため補正を省略: {e}")
 
     # Check if created_at < start_date
     if start_date and issue.created_at:
@@ -76,9 +76,9 @@ def apply_date_correction(issue: IssueModel, start_date=None) -> IssueModel:
                     corrected_issue = issue.model_copy()
                     need_copy = True
                 corrected_issue.created_at = start_datetime
-        except Exception:
+        except Exception as e:
             # If any error occurs during comparison, just return the issue as is
-            pass
+            logger.debug(f"created_at と開始日の比較に失敗したため補正を省略: {e}")
 
     return corrected_issue
 

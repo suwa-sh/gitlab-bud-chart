@@ -8,24 +8,26 @@ import {
   Tooltip,
   Legend,
   ResponsiveContainer,
+  ReferenceLine,
 } from 'recharts'
 import { ChartData } from '../../types/api'
 import { format } from 'date-fns'
 import { ja } from 'date-fns/locale'
 import { calculateBusinessDayIdealLine } from '../../utils/businessDays'
+import { calculateProjection } from '../../utils/chartProjection'
 import './Chart.css'
 
 interface BurnDownChartProps {
   data: ChartData[]
-  loading?: boolean
   height?: number
   startDate?: string
   endDate?: string
 }
 
+const round1 = (value: number) => Math.round(value * 10) / 10
+
 export const BurnDownChart = ({
   data,
-  loading = false,
   height = 400,
   startDate,
   endDate,
@@ -41,48 +43,39 @@ export const BurnDownChart = ({
     return height
   }, [height])
 
+  const projection = useMemo(() => calculateProjection(data), [data])
+
   // ALL HOOKS MUST BE CALLED FIRST - BEFORE ANY EARLY RETURNS
   const chartData = useMemo(() => {
-    if (!data.length || !startDate || !endDate) {
-      const mapped = data.map((item) => ({
-        date: format(new Date(item.date), 'MM/dd', { locale: ja }),
-        理想: Math.round(item.planned_points * 10) / 10,
-        残ポイント: Math.round(item.actual_points * 10) / 10,
-        残り: Math.round(item.remaining_points * 10) / 10,
-      }))
-      return mapped
-    }
-
-    // Calculate business day aware ideal line
     const totalPoints = data[0]?.total_points || 0
-    const chartDates = data.map((item) => item.date)
-    const businessDayIdealLine = calculateBusinessDayIdealLine(
-      totalPoints,
-      startDate,
-      endDate,
-      chartDates,
-    )
+    // Calculate business day aware ideal line
+    const idealLine =
+      data.length && startDate && endDate
+        ? calculateBusinessDayIdealLine(
+            totalPoints,
+            startDate,
+            endDate,
+            data.map((item) => item.date),
+          )
+        : data.map((item) => item.planned_points)
 
-    const mapped = data.map((item, index) => ({
-      date: format(new Date(item.date), 'MM/dd', { locale: ja }),
-      理想: Math.round(businessDayIdealLine[index] * 10) / 10,
-      残ポイント: Math.round(item.actual_points * 10) / 10,
-      残り: Math.round(item.remaining_points * 10) / 10,
-    }))
-
-    return mapped
-  }, [data, startDate, endDate])
+    return data.map((item, index) => {
+      const trendCompleted = projection.trendCompleted[index]
+      return {
+        date: format(new Date(item.date), 'MM/dd', { locale: ja }),
+        理想: round1(idealLine[index]),
+        // 当日より後の実績は未確定のため表示しない
+        残ポイント:
+          index <= projection.todayIndex ? round1(item.actual_points) : null,
+        現在のペース:
+          trendCompleted === null
+            ? null
+            : round1(Math.max(0, totalPoints - trendCompleted)),
+      }
+    })
+  }, [data, startDate, endDate, projection])
 
   // EARLY RETURNS AFTER ALL HOOKS
-  if (loading) {
-    return (
-      <div className="chart-loading">
-        <div className="loading-spinner" />
-        <p>チャートを読み込み中...</p>
-      </div>
-    )
-  }
-
   if (!data.length) {
     return (
       <div className="chart-empty">
@@ -97,16 +90,25 @@ export const BurnDownChart = ({
       return (
         <div className="custom-tooltip">
           <p className="tooltip-label">{label}</p>
-          {payload.map((entry: any, index: number) => (
-            <p key={index} style={{ color: entry.color }}>
-              {entry.name}: {entry.value} ポイント
-            </p>
-          ))}
+          {payload
+            .filter(
+              (entry: any) => entry.value !== null && entry.value !== undefined,
+            )
+            .map((entry: any, index: number) => (
+              <p key={index} style={{ color: entry.color }}>
+                {entry.name}: {entry.value} ポイント
+              </p>
+            ))}
         </div>
       )
     }
     return null
   }
+
+  const todayLabel =
+    projection.todayIndex >= 0 && projection.todayIndex < data.length - 1
+      ? chartData[projection.todayIndex].date
+      : null
 
   return (
     <div className="burn-down-chart">
@@ -114,7 +116,7 @@ export const BurnDownChart = ({
       <ResponsiveContainer width="100%" height={dynamicHeight}>
         <LineChart
           data={chartData}
-          margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+          margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
         >
           <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
           <XAxis
@@ -134,6 +136,16 @@ export const BurnDownChart = ({
           <Tooltip content={customTooltip} />
           <Legend wrapperStyle={{ fontSize: 14 }} iconType="line" />
 
+          {/* 当日 */}
+          {todayLabel && (
+            <ReferenceLine
+              x={todayLabel}
+              stroke="#999"
+              strokeDasharray="2 2"
+              label={{ value: '今日', position: 'top', fontSize: 12 }}
+            />
+          )}
+
           {/* 理想線 */}
           <Line
             type="monotone"
@@ -142,16 +154,30 @@ export const BurnDownChart = ({
             strokeWidth={2}
             strokeDasharray="5 5"
             dot={false}
+            isAnimationActive={false}
           />
 
-          {/* 残ポイント線 */}
+          {/* 残ポイント線（当日まで） */}
           <Line
             type="monotone"
             dataKey="残ポイント"
             stroke="#82ca9d"
             strokeWidth={3}
-            dot={{ r: 4 }}
-            activeDot={{ r: 6 }}
+            dot={false}
+            isAnimationActive={false}
+            activeDot={{ r: 5 }}
+          />
+
+          {/* 現在のペースの直線（開始時点と当日の実績を結び、期間終了まで延長） */}
+          <Line
+            type="linear"
+            dataKey="現在のペース"
+            stroke="#2e8b57"
+            strokeWidth={2}
+            strokeDasharray="6 4"
+            dot={false}
+            isAnimationActive={false}
+            activeDot={{ r: 4 }}
           />
         </LineChart>
       </ResponsiveContainer>

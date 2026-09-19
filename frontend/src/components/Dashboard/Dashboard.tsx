@@ -13,7 +13,25 @@ import {
   buildURLParams,
 } from '../../utils/urlUtils'
 import { ExcludedIssuesWarning } from './ExcludedIssuesWarning'
+import { LoadingSpinner } from '../Common/LoadingSpinner'
 import './Dashboard.css'
+
+// URLに保持するissueフィルタのキー（期間・ソートは含まない）
+const ISSUE_FILTER_URL_KEYS = [
+  'search',
+  'milestone',
+  'assignee',
+  'kanban_status',
+  'service',
+  'state',
+  'min_point',
+  'max_point',
+  'created_after',
+  'created_before',
+  'completed_after',
+  'completed_before',
+  'is_epic',
+]
 
 export const Dashboard = () => {
   const { state, dispatch } = useApp()
@@ -21,6 +39,7 @@ export const Dashboard = () => {
     useDashboardIssues()
   const [showEditConfig, setShowEditConfig] = useState(false)
   const [showCopiedMessage, setShowCopiedMessage] = useState(false)
+  const [chartLoading, setChartLoading] = useState(false)
   const [sortConfig, setSortConfig] = useState<{
     key: string
     direction: 'asc' | 'desc'
@@ -122,7 +141,9 @@ export const Dashboard = () => {
       urlFilters.completed_before = newFilters.completed_at_to
     if (newFilters.is_epic) urlFilters.is_epic = newFilters.is_epic
 
-    const currentParams = Object.fromEntries(searchParams)
+    // 解除したフィルタがURLに残らないよう、フィルタ系のキーは一度すべて取り除いてから設定し直す
+    const currentParams: Record<string, any> = Object.fromEntries(searchParams)
+    ISSUE_FILTER_URL_KEYS.forEach((key) => delete currentParams[key])
     const updatedParams = {
       ...currentParams,
       ...urlFilters,
@@ -135,7 +156,7 @@ export const Dashboard = () => {
       }
     })
 
-    setSearchParams(buildURLParams(updatedParams))
+    setSearchParams(buildURLParams(updatedParams), { replace: true })
   }
 
   // APIから取得したデータを使用（バックエンドで警告判定済み）
@@ -353,10 +374,15 @@ export const Dashboard = () => {
         </div>
       </header>
 
+      {/* プリローダーはページで1つだけ表示する（issue取得・チャート取得を集約） */}
+      {(loading || chartLoading) && <LoadingSpinner />}
+
       <div className="dashboard-content">
         <ChartSection
           period={state.chartPeriod}
           issues={filteredIssues}
+          allIssues={issues}
+          onChartLoadingChange={setChartLoading}
           loading={loading}
           onPeriodChange={handlePeriodChange}
           issueFilters={issueFilters}
@@ -376,7 +402,6 @@ export const Dashboard = () => {
         <div className="issues-section">
           <IssueTable
             issues={filteredIssues}
-            loading={loading}
             showFilters={false}
             allowShowAll={true}
             initialShowAll={true}

@@ -1,6 +1,5 @@
 from typing import List, Optional, Dict, Any
 from datetime import datetime, date, timezone
-import re
 from app.models.issue import IssueModel
 import logging
 
@@ -128,7 +127,7 @@ class SearchService:
         """日付文字列パース"""
         try:
             return datetime.fromisoformat(date_str).date()
-        except:
+        except ValueError:
             return datetime.strptime(date_str, "%Y-%m-%d").date()
 
     def sort_issues(

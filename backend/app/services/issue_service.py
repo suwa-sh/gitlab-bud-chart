@@ -2,7 +2,7 @@ from typing import List, Optional, Dict, Any, Tuple
 from datetime import datetime
 import logging
 from app.services.gitlab_client import GitLabClient
-from app.models.issue import IssueModel, IssueResponse
+from app.models.issue import IssueModel
 from app.utils.retry import async_retry
 from app.services.issue_analyzer import issue_analyzer
 from app.utils.issue_filters import apply_exclusion_filter

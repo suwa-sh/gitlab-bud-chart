@@ -194,6 +194,10 @@ const loadDashboardCacheTimestamp = (sessionId?: string): Date | null => {
   return null
 }
 
+// PBL-Viewerのキャッシュは「フィルタ未適用の全issue」であることを示す印。
+// サーバー側で絞り込んだ結果を保存していた旧形式のキャッシュを全件として誤用しないために使う
+const PBL_VIEWER_CACHE_SCOPE = 'all'
+
 // LocalStorageからissuesデータを読み込む関数（PBL-Viewer用）
 const loadPBLViewerIssuesFromStorage = (sessionId?: string): Issue[] => {
   if (!sessionId) return []
@@ -202,8 +206,12 @@ const loadPBLViewerIssuesFromStorage = (sessionId?: string): Issue[] => {
     const stored = localStorage.getItem(`pbl-viewer-issues-${sessionId}`)
     if (stored) {
       const data = JSON.parse(stored)
-      // 1時間以内のキャッシュのみ有効
-      if (data.timestamp && Date.now() - data.timestamp < 3600000) {
+      // 1時間以内、かつ全件取得のキャッシュのみ有効
+      if (
+        data.scope === PBL_VIEWER_CACHE_SCOPE &&
+        data.timestamp &&
+        Date.now() - data.timestamp < 3600000
+      ) {
         return data.issues || []
       }
     }
@@ -221,7 +229,11 @@ const loadPBLViewerCacheTimestamp = (sessionId?: string): Date | null => {
     const stored = localStorage.getItem(`pbl-viewer-issues-${sessionId}`)
     if (stored) {
       const data = JSON.parse(stored)
-      if (data.timestamp && Date.now() - data.timestamp < 3600000) {
+      if (
+        data.scope === PBL_VIEWER_CACHE_SCOPE &&
+        data.timestamp &&
+        Date.now() - data.timestamp < 3600000
+      ) {
         return new Date(data.timestamp)
       }
     }
@@ -272,6 +284,7 @@ const savePBLViewerIssuesToStorage = (issues: Issue[], sessionId?: string) => {
   try {
     const data = {
       issues,
+      scope: PBL_VIEWER_CACHE_SCOPE,
       timestamp: Date.now(),
     }
     localStorage.setItem(`pbl-viewer-issues-${sessionId}`, JSON.stringify(data))
@@ -467,7 +480,7 @@ const migrateOldCacheToNewFormat = (sessionId?: string) => {
             'Migrated old filters cache to pbl-viewer cache (without period filters)',
           )
         }
-      } catch (error) {
+      } catch {
         // フォールバック：そのままコピー
         localStorage.setItem(`pbl-viewer-filters-${sessionId}`, oldFiltersData)
         console.log('Migrated old filters cache to pbl-viewer cache (fallback)')

@@ -3,12 +3,10 @@ import { Issue } from '../../types/api'
 import { IssueTableFilters } from './IssueTableFilters'
 import { IssueTableRow } from './IssueTableRow'
 import { TablePagination } from '../Common/TablePagination'
-import { LoadingSpinner } from '../Common/LoadingSpinner'
 import './IssueTable.css'
 
 interface IssueTableProps {
   issues: Issue[]
-  loading: boolean
   showFilters?: boolean
   pageSize?: number
   allowShowAll?: boolean
@@ -37,7 +35,6 @@ interface IssueTableProps {
 
 export const IssueTable = ({
   issues,
-  loading,
   showFilters = false,
   pageSize = 20,
   allowShowAll = false,
@@ -144,10 +141,6 @@ export const IssueTable = ({
         direction: newDirection,
       })
     }
-  }
-
-  if (loading) {
-    return <LoadingSpinner />
   }
 
   return (

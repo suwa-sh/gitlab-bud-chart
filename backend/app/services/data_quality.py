@@ -1,6 +1,5 @@
 import logging
 from typing import List, Dict, Any
-from collections import Counter
 from app.models.issue import IssueModel
 
 logger = logging.getLogger(__name__)

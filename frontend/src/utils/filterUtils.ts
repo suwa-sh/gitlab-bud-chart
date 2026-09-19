@@ -14,6 +14,7 @@ export interface IssueFilters {
   completed_at_from?: string
   completed_at_to?: string
   is_epic?: string
+  quarter?: string
 }
 
 export const filterIssues = (
@@ -21,12 +22,16 @@ export const filterIssues = (
   filters: IssueFilters,
 ): Issue[] => {
   return issues.filter((issue) => {
-    // Title検索フィルタ
-    if (
-      filters.search &&
-      !issue.title.toLowerCase().includes(filters.search.toLowerCase())
-    ) {
-      return false
+    // テキスト検索フィルタ - バックエンドと同じくタイトルと説明文を対象にする
+    if (filters.search) {
+      const keyword = filters.search.toLowerCase()
+      const inTitle = issue.title.toLowerCase().includes(keyword)
+      const inDescription = (issue.description || '')
+        .toLowerCase()
+        .includes(keyword)
+      if (!inTitle && !inDescription) {
+        return false
+      }
     }
 
     // Milestoneフィルタ
@@ -52,23 +57,30 @@ export const filterIssues = (
       return false
     }
 
-    // Stateフィルタ
-    if (filters.state && issue.state !== filters.state) {
+    // Stateフィルタ - バックエンドと同じく 'all' は絞り込みなしとして扱う
+    if (
+      filters.state &&
+      filters.state !== 'all' &&
+      issue.state !== filters.state
+    ) {
       return false
     }
 
-    // Pointフィルタ (範囲)
+    // Quarterフィルタ
+    if (filters.quarter && issue.quarter !== filters.quarter) {
+      return false
+    }
+
+    // Pointフィルタ (範囲) - バックエンドと同じくpoint未設定のissueは除外する
     if (
       filters.point_min !== undefined &&
-      issue.point !== undefined &&
-      issue.point < filters.point_min
+      (issue.point == null || issue.point < filters.point_min)
     ) {
       return false
     }
     if (
       filters.point_max !== undefined &&
-      issue.point !== undefined &&
-      issue.point > filters.point_max
+      (issue.point == null || issue.point > filters.point_max)
     ) {
       return false
     }
@@ -87,7 +99,10 @@ export const filterIssues = (
       }
     }
 
-    // Completed Atフィルタ (日付範囲)
+    // Completed Atフィルタ (日付範囲) - バックエンドと同じく、開始日指定時は未完了issueを除外する
+    if (filters.completed_at_from && !issue.completed_at) {
+      return false
+    }
     if (filters.completed_at_from && issue.completed_at) {
       const issueDate = new Date(issue.completed_at).toISOString().split('T')[0]
       if (issueDate < filters.completed_at_from) {

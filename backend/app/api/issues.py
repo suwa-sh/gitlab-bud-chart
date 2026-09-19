@@ -4,12 +4,10 @@ from datetime import date, timezone
 from app.services.session_manager import session_manager
 from app.models.issue import (
     IssueResponse,
-    IssueListRequest,
     IssueListResponse,
     IssueSearchRequest,
     IssueModel,
     ExcludedIssue,
-    IssueListWithWarningsResponse,
 )
 from app.utils.issue_filters import apply_unified_filters, apply_scope_filters
 import logging
@@ -84,7 +82,7 @@ def _apply_advanced_filters(
 
     # Epicフィルタ
     if is_epic:
-        original_count = len(filtered)
+        len(filtered)
         if is_epic == "epic":
             # is_epic が True の場合のみ
             filtered = [i for i in filtered if i.is_epic is True]
@@ -197,7 +195,7 @@ async def get_issues(
 
     issue_service = IssueService()
     issue_service.client = gitlab_client
-    issue_analyzer = IssueAnalyzer()
+    IssueAnalyzer()
 
     try:
         # パラメータ正規化

@@ -15,10 +15,10 @@ E2Eテスト用のプロジェクト、イシュー、ラベル等を作成
 
 import urllib.request
 import urllib.error
+import urllib.parse
 import json
 import os
 import re
-from datetime import datetime, timedelta
 
 # GitLab 設定（デフォルト値）
 DEFAULT_PROJECT_NAME = "test-project"
@@ -27,6 +27,17 @@ DEFAULT_PROJECT_DESCRIPTION = "E2E テスト用プロジェクト"
 # テスト期間設定（境界テスト用）
 TEST_PERIOD_START = "2024-01-01"
 TEST_PERIOD_END = "2024-03-31"
+
+
+def open_http(request):
+    """http / https の URL に限って開く。
+
+    gitlab_url は利用者の入力なので、file:// などローカルファイルを読めるスキームを通さない。
+    """
+    scheme = urllib.parse.urlparse(request.full_url).scheme
+    if scheme not in ("http", "https"):
+        raise ValueError(f"http / https 以外の URL は開けません: {request.full_url}")
+    return urllib.request.urlopen(request)  # nosec B310 - スキームを直前で検証済み
 
 
 def format_iso8601_datetime(date_str, time_str="12:00:00"):
@@ -75,7 +86,7 @@ def create_project_and_issues(
     )
 
     try:
-        project_response = urllib.request.urlopen(project_request)
+        project_response = open_http(project_request)
         project_content = project_response.read().decode("utf-8")
         project_status_code = project_response.getcode()
     except urllib.error.HTTPError as e:
@@ -93,7 +104,7 @@ def create_project_and_issues(
         )
 
         try:
-            projects_response = urllib.request.urlopen(projects_request)
+            projects_response = open_http(projects_request)
             projects_content = projects_response.read().decode("utf-8")
             projects_status_code = projects_response.getcode()
         except urllib.error.HTTPError as e:
@@ -175,7 +186,7 @@ def create_project_and_issues(
         )
 
         try:
-            label_response = urllib.request.urlopen(label_request)
+            label_response = open_http(label_request)
             label_status_code = label_response.getcode()
         except urllib.error.HTTPError as e:
             label_status_code = e.code
@@ -204,7 +215,7 @@ def create_project_and_issues(
         )
 
         try:
-            milestone_response = urllib.request.urlopen(milestone_request)
+            milestone_response = open_http(milestone_request)
             milestone_status_code = milestone_response.getcode()
         except urllib.error.HTTPError as e:
             milestone_status_code = e.code
@@ -320,7 +331,7 @@ def create_project_and_issues(
     )
 
     try:
-        milestones_response = urllib.request.urlopen(milestones_request)
+        milestones_response = open_http(milestones_request)
         milestones_content = milestones_response.read().decode("utf-8")
         milestones_status_code = milestones_response.getcode()
     except urllib.error.HTTPError as e:
@@ -365,7 +376,7 @@ def create_project_and_issues(
         )
 
         try:
-            issue_response = urllib.request.urlopen(issue_request)
+            issue_response = open_http(issue_request)
             issue_content = issue_response.read().decode("utf-8")
             issue_status_code = issue_response.getcode()
         except urllib.error.HTTPError as e:
@@ -377,7 +388,7 @@ def create_project_and_issues(
             print(f"イシュー作成成功: {issue['title']} (ID: {created_issue['id']})")
 
             # 完了状態のイシューをクローズ
-            if issue.get("closed") == True:
+            if issue.get("closed"):
                 close_data = json.dumps({"state_event": "close"}).encode("utf-8")
                 close_request = urllib.request.Request(
                     f"{gitlab_url}/api/v4/projects/{project_id}/issues/{created_issue['iid']}",
@@ -387,7 +398,7 @@ def create_project_and_issues(
                 close_request.get_method = lambda: "PUT"
 
                 try:
-                    close_response = urllib.request.urlopen(close_request)
+                    close_response = open_http(close_request)
                     close_status_code = close_response.getcode()
                 except urllib.error.HTTPError as e:
                     close_status_code = e.code
@@ -461,12 +472,12 @@ def main():
         if not token:
             print("❌ トークンが見つかりません")
             print("手動でGitLabにアクセスしてPersonal Access Tokenを作成し、")
-            print(f".envファイルのVITE_GITLAB_TOKENに設定してください")
+            print(".envファイルのVITE_GITLAB_TOKENに設定してください")
             return 1
 
         if not gitlab_url:
             print("❌ GitLab URLが見つかりません")
-            print(f".envファイルのVITE_GITLAB_URLに設定してください")
+            print(".envファイルのVITE_GITLAB_URLに設定してください")
             return 1
 
         print("✓ 環境変数から設定を取得しました")

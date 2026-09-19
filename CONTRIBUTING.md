@@ -126,8 +126,24 @@ npm run test:e2e
 ### **Full Test Suite**
 
 ```bash
-./scripts/run-tests.sh  # Will be created in future tasks
+make setup   # 初回のみ: 依存と qlty のツールをインストール
+make test    # frontend / backend のユニットテスト
 ```
+
+## ✅ Quality Gate
+
+整形・静的解析・セキュリティ検査は [qlty](https://qlty.sh) にまとめている。設定は `.qlty/qlty.toml`。
+
+| コマンド     | 内容                                                  |
+| ------------ | ----------------------------------------------------- |
+| `make fmt`   | 全ファイルを整形する (Prettier / ruff format)         |
+| `make lint`  | CI と同じゲート + 型チェック                          |
+| `make sast`  | セキュリティ検査だけを実行する                        |
+| `make check` | `lint` + `test`。**コミット前にこれが通る状態にする** |
+
+- ゲートは「medium 以上の指摘が 0 件」で合格する。依存の脆弱性・シークレット混入・CI 設定の不備もここで検出する
+- 複雑度や重複リテラルなどのコードスメルは low の助言扱いで、ゲートでは落とさない
+- `qlty check --fix` は使わない。指定にかかわらず全ファイルを整形するため、整形は `make fmt` で明示的に行う
 
 ## 📝 Code Style
 

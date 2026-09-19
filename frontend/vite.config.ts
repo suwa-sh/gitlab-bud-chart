@@ -29,7 +29,7 @@ export default defineConfig(({ mode }) => {
         '/api': {
           target: apiTarget,
           changeOrigin: true,
-          configure: (proxy, options) => {
+          configure: () => {
             // If HTTP_PROXY is set, configure the proxy agent
             if (env.VITE_HTTP_PROXY) {
               console.log(`Using HTTP proxy: ${env.VITE_HTTP_PROXY}`)
@@ -43,9 +43,10 @@ export default defineConfig(({ mode }) => {
       sourcemap: true,
     },
     test: {
-      globals: true,
-      environment: 'jsdom',
-      setupFiles: ['./src/test/setup.ts'],
+      // 現状のユニットテストはDOM不要のロジックのみ。
+      // コンポーネントテストを追加する際は jsdom を devDependencies に入れて environment を切り替える
+      environment: 'node',
+      include: ['src/**/*.test.{ts,tsx}'],
     },
   }
 })

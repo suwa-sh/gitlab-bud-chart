@@ -5,7 +5,7 @@ import logging
 from app.services.session_manager import session_manager
 from app.models.chart import BurnChartResponse, ChartDataModel
 from app.utils.issue_filters import apply_unified_filters, apply_scope_filters
-from app.utils.shared_filters import apply_advanced_filters, sort_issues
+from app.utils.shared_filters import apply_advanced_filters
 
 logger = logging.getLogger(__name__)
 router = APIRouter()

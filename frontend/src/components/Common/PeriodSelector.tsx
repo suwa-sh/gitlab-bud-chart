@@ -56,7 +56,7 @@ export const PeriodSelector = ({ value, onChange }: PeriodSelectorProps) => {
         newPeriod.start !== value.start || newPeriod.end !== value.end,
       )
       setSelectedQuarter(quarterValue)
-    } catch (error) {
+    } catch {
       console.error('Invalid quarter format:', quarterValue)
     }
   }

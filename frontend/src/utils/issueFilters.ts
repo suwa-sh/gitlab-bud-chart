@@ -78,7 +78,7 @@ export const applyDateCorrection = (
   issue: Issue,
   startDate?: string,
 ): Issue => {
-  let correctedIssue = { ...issue }
+  const correctedIssue = { ...issue }
 
   // If created_at > completed_at, adjust created_at to match completed_at
   if (issue.completed_at && issue.created_at > issue.completed_at) {

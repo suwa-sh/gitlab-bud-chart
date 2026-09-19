@@ -1,6 +1,6 @@
 import re
 import logging
-from typing import Dict, Optional, List, Tuple
+from typing import Dict, Optional, List
 from datetime import datetime
 from app.models.issue import IssueModel
 

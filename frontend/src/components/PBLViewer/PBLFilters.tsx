@@ -1,9 +1,9 @@
 import { useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useApp } from '../../contexts/AppContext'
-import { usePBLViewerIssues } from '../../hooks/usePBLViewerIssues'
 import { Issue } from '../../types/api'
 import { generateShareURL } from '../../utils/urlUtils'
+import { EMPTY_PBL_FILTERS } from '../../utils/pblFilters'
 
 interface PBLFiltersProps {
   issues: Issue[]
@@ -11,7 +11,6 @@ interface PBLFiltersProps {
 
 export const PBLFilters = ({ issues }: PBLFiltersProps) => {
   const { state, dispatch } = useApp()
-  const { fetchAllIssues } = usePBLViewerIssues()
   const [showFilters, setShowFilters] = useState(false)
   const navigate = useNavigate()
 
@@ -54,24 +53,17 @@ export const PBLFilters = ({ issues }: PBLFiltersProps) => {
       [key]: value,
     }
 
+    // 絞り込みは取得済みの全issueに対してクライアント側で行う（API再取得はしない）
     dispatch({ type: 'SET_PBL_VIEWER_FILTERS', payload: newFilters })
 
-    // URLを更新
+    // URLを更新（入力のたびに履歴が増えないよう置き換える）
     const shareUrl = generateShareURL(newFilters, '/pbl-viewer')
-    navigate(shareUrl.replace(window.location.origin, ''))
-
-    // PBL Viewerでは期間フィルタを除外して全issueを取得
-    const filtersWithoutPeriod = { ...newFilters }
-    delete filtersWithoutPeriod.created_after
-    delete filtersWithoutPeriod.created_before
-    delete filtersWithoutPeriod.completed_after
-    delete filtersWithoutPeriod.quarter
-    fetchAllIssues(filtersWithoutPeriod)
+    navigate(shareUrl.replace(window.location.origin, ''), { replace: true })
   }
 
   const activeFilterCount = filters
-    ? Object.entries(filters).filter(
-        ([_, value]) => value !== undefined && value !== null && value !== '',
+    ? Object.values(filters).filter(
+        (value) => value !== undefined && value !== null && value !== '',
       ).length
     : 0
 
@@ -146,7 +138,7 @@ export const PBLFilters = ({ issues }: PBLFiltersProps) => {
               <label>Title:</label>
               <input
                 type="text"
-                placeholder="タイトル検索..."
+                placeholder="タイトル・説明文を検索..."
                 value={filters.search || ''}
                 onChange={(e) => handleFilterChange('search', e.target.value)}
                 className="filter-input"
@@ -162,11 +154,13 @@ export const PBLFilters = ({ issues }: PBLFiltersProps) => {
                 <input
                   type="number"
                   placeholder="最小"
-                  value={filters.min_point || ''}
+                  value={filters.min_point ?? ''}
                   onChange={(e) =>
                     handleFilterChange(
                       'min_point',
-                      e.target.value ? Number(e.target.value) : undefined,
+                      e.target.value !== ''
+                        ? Number(e.target.value)
+                        : undefined,
                     )
                   }
                   className="filter-input number-input"
@@ -176,11 +170,13 @@ export const PBLFilters = ({ issues }: PBLFiltersProps) => {
                 <input
                   type="number"
                   placeholder="最大"
-                  value={filters.max_point || ''}
+                  value={filters.max_point ?? ''}
                   onChange={(e) =>
                     handleFilterChange(
                       'max_point',
-                      e.target.value ? Number(e.target.value) : undefined,
+                      e.target.value !== ''
+                        ? Number(e.target.value)
+                        : undefined,
                     )
                   }
                   className="filter-input number-input"
@@ -306,39 +302,15 @@ export const PBLFilters = ({ issues }: PBLFiltersProps) => {
           <div className="filter-reset-section">
             <button
               className="filter-reset-btn"
-              onClick={async () => {
-                const resetFilters = {
-                  search: '',
-                  milestone: '',
-                  assignee: '',
-                  kanban_status: '',
-                  service: '',
-                  state: '',
-                  min_point: undefined,
-                  max_point: undefined,
-                  created_after: '',
-                  created_before: '',
-                  completed_after: '',
-                  completed_before: '',
-                  is_epic: '',
-                  quarter: '',
-                }
-
+              onClick={() => {
                 // 状態をリセット
                 dispatch({
                   type: 'SET_PBL_VIEWER_FILTERS',
-                  payload: resetFilters,
+                  payload: EMPTY_PBL_FILTERS,
                 })
 
                 // URLをクリア
-                navigate('/pbl-viewer')
-
-                // リセット後のフィルタで明示的にAPIを呼び出し（全てのフィルタをクリア）
-                try {
-                  await fetchAllIssues(resetFilters)
-                } catch (error) {
-                  console.error('Filter reset failed:', error)
-                }
+                navigate('/pbl-viewer', { replace: true })
               }}
             >
               <span className="reset-icon">🔄</span>

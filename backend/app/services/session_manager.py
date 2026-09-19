@@ -11,14 +11,26 @@ import logging
 logger = logging.getLogger(__name__)
 
 
+def _default_persistence_file() -> str:
+    """セッション保存先の既定値。
+
+    GitLab トークンを含むため、他ユーザーも読める共有の一時ディレクトリには置かない。
+    SESSION_FILE 環境変数で上書きできる。
+    """
+    configured = os.environ.get("SESSION_FILE")
+    if configured:
+        return configured
+    return os.path.join(
+        os.path.expanduser("~"), ".local", "state", "gitlab-bud-chart", "sessions.json"
+    )
+
+
 class SessionManager:
-    def __init__(
-        self, timeout_days: int = 7, persistence_file: str = "/tmp/sessions.json"
-    ):
+    def __init__(self, timeout_days: int = 7, persistence_file: Optional[str] = None):
         self.sessions: Dict[str, Dict] = {}
         self.timeout_days = timeout_days
         self.cleanup_interval = 3600  # 1時間ごとにクリーンアップ
-        self.persistence_file = persistence_file
+        self.persistence_file = persistence_file or _default_persistence_file()
         self._load_sessions()
         self._start_cleanup_thread()
 
@@ -107,8 +119,17 @@ class SessionManager:
                     },
                 }
 
-            with open(self.persistence_file, "w") as f:
+            # トークンを含むため、ディレクトリ・ファイルとも所有者のみ読み書き可にする
+            directory = os.path.dirname(self.persistence_file)
+            if directory:
+                os.makedirs(directory, mode=0o700, exist_ok=True)
+            fd = os.open(
+                self.persistence_file, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600
+            )
+            with os.fdopen(fd, "w") as f:
                 json.dump(session_data, f, indent=2)
+            # 既存ファイルは作成時のモードが効かないため明示的に絞る
+            os.chmod(self.persistence_file, 0o600)
 
         except Exception as e:
             logger.warning(f"Failed to save sessions: {e}")
