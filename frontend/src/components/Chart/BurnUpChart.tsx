@@ -119,7 +119,8 @@ export const BurnUpChart = ({
       <ResponsiveContainer width="100%" height={dynamicHeight}>
         <LineChart
           data={chartData}
-          margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+          // 右端の「目標」ラベルが見切れないよう、右の余白を広めに取る
+          margin={{ top: 20, right: 50, left: 20, bottom: 5 }}
         >
           <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
           <XAxis

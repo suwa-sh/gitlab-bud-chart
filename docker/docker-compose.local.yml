@@ -47,11 +47,7 @@ services:
     extra_hosts:
       - 'host.docker.internal:host-gateway'
     restart: unless-stopped
-    healthcheck:
-      test: ['CMD', 'curl', '-f', 'http://localhost:8000/health']
-      interval: 30s
-      timeout: 10s
-      retries: 3
+    # ヘルスチェックは Dockerfile の HEALTHCHECK を使う (イメージに curl が無いため、ここでは定義しない)
 
   frontend:
     build:
@@ -75,11 +71,7 @@ services:
     extra_hosts:
       - 'host.docker.internal:host-gateway'
     restart: unless-stopped
-    healthcheck:
-      test: ['CMD', 'curl', '-f', 'http://localhost:3000']
-      interval: 30s
-      timeout: 10s
-      retries: 3
+    # ヘルスチェックは Dockerfile の HEALTHCHECK を使う (イメージに curl が無いため、ここでは定義しない)
 
 networks:
   app-network:
