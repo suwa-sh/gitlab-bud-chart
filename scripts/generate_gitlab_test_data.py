@@ -16,6 +16,7 @@ E2Eテスト用のプロジェクト、イシュー、ラベル等を作成
 import urllib.request
 import urllib.error
 import urllib.parse
+import datetime
 import json
 import os
 import re
@@ -38,6 +39,93 @@ def open_http(request):
     if scheme not in ("http", "https"):
         raise ValueError(f"http / https 以外の URL は開けません: {request.full_url}")
     return urllib.request.urlopen(request)  # nosec B310 - スキームを直前で検証済み
+
+
+def fiscal_quarter_of(target):
+    """日付が属する会計四半期を返す (4 月始まり)。
+
+    Returns:
+        (ラベル, 開始日, 終了日)。例: 2026-09-19 -> ("FY26Q2", 2026-07-01, 2026-09-30)
+        1〜3 月は前年度の Q4 になる。例: 2024-02-01 -> ("FY23Q4", 2024-01-01, 2024-03-31)
+    """
+    if target.month >= 4:
+        fiscal_year = target.year
+        quarter = (target.month - 4) // 3 + 1
+    else:
+        fiscal_year = target.year - 1
+        quarter = 4
+
+    start_month = ((target.month - 1) // 3) * 3 + 1
+    start = datetime.date(target.year, start_month, 1)
+    if start_month == 10:
+        end = datetime.date(target.year, 12, 31)
+    else:
+        end = datetime.date(target.year, start_month + 3, 1) - datetime.timedelta(
+            days=1
+        )
+    return f"FY{fiscal_year % 100:02d}Q{quarter}", start, end
+
+
+# 実行日の四半期に作るサンプル issue: (タイトル, point, service, 完了させるか)
+CURRENT_QUARTER_SAMPLES = [
+    ("ログイン画面の改修", "5.0", "frontend", True),
+    ("認証 API のトークン更新", "8.0", "backend", True),
+    ("監視ダッシュボードの整備", "3.0", "infrastructure", True),
+    ("検索 API のページング", "5.0", "API", True),
+    ("一覧画面のフィルタ", "8.0", "frontend", True),
+    ("バッチ処理のリトライ", "5.0", "backend", True),
+    ("CI の高速化", "3.0", "infrastructure", True),
+    ("通知設定 API", "5.0", "API", True),
+    ("プロフィール編集画面", "3.0", "frontend", True),
+    ("監査ログの出力", "5.0", "backend", True),
+    ("権限管理の見直し", "13.0", "backend", False),
+    ("レポート出力画面", "8.0", "frontend", False),
+    ("バックアップの自動化", "5.0", "infrastructure", False),
+    ("外部連携 API", "8.0", "API", False),
+    ("多言語対応", "5.0", "frontend", False),
+    ("パフォーマンス改善", "3.0", "backend", False),
+]
+
+
+def build_current_quarter_issues(today):
+    """実行日の四半期に属するサンプル issue を作る。
+
+    README のスコープ判定例 (Issue A〜J) は 2024/01〜03 に固定なので、それだけだと
+    今四半期で Dashboard を開いたときに 0 件になる。いつ実行しても Burn-up / Burn-down に
+    実績と「現在のペース」が出るよう、完了日を「四半期の開始日〜実行日」の間に均等に割り振る。
+    未来の完了日は作らない。
+    """
+    label, start, _ = fiscal_quarter_of(today)
+    elapsed_days = (today - start).days
+    done_count = sum(1 for sample in CURRENT_QUARTER_SAMPLES if sample[3])
+
+    issues = []
+    done_index = 0
+    for index, (title, point, service, done) in enumerate(CURRENT_QUARTER_SAMPLES):
+        # 作成日は四半期の最初の 3 日に寄せる。ただし実行日より後にはしない
+        created = min(start + datetime.timedelta(days=index % 3), today)
+        if done:
+            done_index += 1
+            kanban = "#完了"
+        else:
+            kanban = "#作業中" if index % 2 == 0 else "#ToDo"
+
+        issue = {
+            "title": f"[今四半期サンプル] {title}",
+            "description": f"実行日 ({today.isoformat()}) の四半期 {label} に合わせて生成したサンプル",
+            "labels": [f"p:{point}", kanban, f"s:{service}", f"@{label}"],
+            "custom_created_at": get_test_datetime(created.isoformat(), "10:00:00"),
+            "closed": done,
+        }
+        if done:
+            completed = start + datetime.timedelta(
+                days=elapsed_days * done_index // (done_count + 1)
+            )
+            # 完了日は作成日より前にしない
+            completed = max(completed, created)
+            issue["due_date"] = get_test_datetime(completed.isoformat(), "10:00:00")
+        issues.append(issue)
+    return issues
 
 
 def format_iso8601_datetime(date_str, time_str="12:00:00"):
@@ -176,6 +264,17 @@ def create_project_and_issues(
         {"name": "@FY25Q2", "color": "#9b59b6", "description": "Quarter: FY25Q2"},
         {"name": "@FY25Q3", "color": "#e74c3c", "description": "Quarter: FY25Q3"},
     ]
+
+    # 実行日の四半期のラベル (今四半期サンプル用)。固定の一覧に無い四半期でも作成されるようにする
+    current_quarter_label = fiscal_quarter_of(datetime.date.today())[0]
+    if not any(label["name"] == f"@{current_quarter_label}" for label in labels):
+        labels.append(
+            {
+                "name": f"@{current_quarter_label}",
+                "color": "#16a085",
+                "description": f"Quarter: {current_quarter_label}",
+            }
+        )
 
     for label in labels:
         label_json_data = json.dumps(label).encode("utf-8")
@@ -324,6 +423,9 @@ def create_project_and_issues(
             "closed": False,
         },
     ]
+
+    # 実行日の四半期のサンプルを末尾に追加する (先頭 3 件へのマイルストーン割り当てに影響しないよう末尾に置く)
+    test_issues.extend(build_current_quarter_issues(datetime.date.today()))
 
     # マイルストーンIDを取得
     milestones_request = urllib.request.Request(

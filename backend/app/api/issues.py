@@ -711,7 +711,7 @@ async def export_issues_csv(
                     issue.assignee or "",
                     issue.milestone or "",
                     "Epic" if issue.is_epic else "",
-                    issue.point or "",
+                    issue.point if issue.point is not None else "",
                     issue.kanban_status or "",
                     issue.service or "",
                     issue.quarter or "",

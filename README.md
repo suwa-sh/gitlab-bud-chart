@@ -42,6 +42,8 @@ GitLab の issue を分析し、burn-up/burn-down チャート表示と product 
   # gitlab containerのPAT(Personal Access Token)生成し、docker/.envに書き込み
   ../scripts/generate_gitlab_pat.sh
   # サンプルissue登録
+  # - README のスコープ判定例 (Issue A〜J。2024-01-01 〜 2024-03-31 に固定)
+  # - 実行日の四半期に合わせたサンプル (今四半期で開いてもチャートに実績とペースが出る)
   ../scripts/generate_gitlab_test_data.py
 
   # ローカルソースをビルドして実行
@@ -64,6 +66,7 @@ GitLab の issue を分析し、burn-up/burn-down チャート表示と product 
   - 適用/リセットボタンによる確定操作
 - **詳細フィルタ**: 12 種類のフィルタ（Service、Milestone、Epic、Title 検索、Point 範囲、Kanban Status、Assignee、作成日範囲、完了日範囲、State、Chart View）
 - **Issues 一覧**: デフォルトでページング無効、ウィンドウ幅 100%、ソート可能
+- **Issues CSV エクスポート**: 画面に表示している Issue をそのまま書き出す（期間・詳細フィルタ・並び順が画面と一致する）
 - **警告表示機能**: データ不整合の可能性がある Issue の警告表示（期間前完了・期間後完了・Due Date 未設定の完了 Issue・期間後作成）
 - **URL 共有機能**: 現在のフィルタ・ソート条件を含む URL をワンクリックでコピー
 
@@ -73,7 +76,7 @@ GitLab の issue を分析し、burn-up/burn-down チャート表示と product 
 - **統計情報**: Issue 件数、総ポイント数、完了ポイント、完了率（Dashboard と統一フォーマット）
 - **詳細フィルタ・検索**: 全 Issue を 1 回取得し、フィルタは画面側で即時に適用（フィルタ変更のたびに GitLab へ再取得しない）
 - **Issue 詳細表示**: ソート可能、全件表示対応
-- **CSV エクスポート**: フィルタ適用済みデータのエクスポート
+- **CSV エクスポート**: 画面に表示している Issue をそのまま書き出す（絞り込み・並び順が画面と一致する）
 - **キャッシュ優先**: 初回ロード時はキャッシュデータを優先利用
 - **デフォルトでページング無効**: 全件表示でデータ把握を重視
 - **URL 共有機能**: 現在のフィルタ・ソート条件を含む URL をワンクリックでコピー

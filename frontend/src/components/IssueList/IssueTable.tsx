@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react'
 import { Issue } from '../../types/api'
+import { sortIssues } from '../../utils/issueSort'
 import { IssueTableFilters } from './IssueTableFilters'
 import { IssueTableRow } from './IssueTableRow'
 import { TablePagination } from '../Common/TablePagination'
@@ -97,26 +98,11 @@ export const IssueTable = ({
     })
   }, [issues, filters, issueFilters])
 
-  // ソートロジック
-  const sortedIssues = useMemo(() => {
-    if (!sortConfig) return filteredIssues
-
-    return [...filteredIssues].sort((a, b) => {
-      const aValue = a[sortConfig.key as keyof Issue]
-      const bValue = b[sortConfig.key as keyof Issue]
-
-      if (aValue === null || aValue === undefined) return 1
-      if (bValue === null || bValue === undefined) return -1
-
-      if (aValue < bValue) {
-        return sortConfig.direction === 'asc' ? -1 : 1
-      }
-      if (aValue > bValue) {
-        return sortConfig.direction === 'asc' ? 1 : -1
-      }
-      return 0
-    })
-  }, [filteredIssues, sortConfig])
+  // ソートロジック（CSV エクスポートと同じ並びにするため共通関数を使う）
+  const sortedIssues = useMemo(
+    () => sortIssues(filteredIssues, sortConfig),
+    [filteredIssues, sortConfig],
+  )
 
   // ページネーション
   const paginatedIssues = useMemo(() => {

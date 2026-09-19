@@ -14,6 +14,8 @@ import {
 } from '../../utils/urlUtils'
 import { ExcludedIssuesWarning } from './ExcludedIssuesWarning'
 import { LoadingSpinner } from '../Common/LoadingSpinner'
+import { exportIssuesAsCsv } from '../../utils/csvExport'
+import { sortIssues } from '../../utils/issueSort'
 import './Dashboard.css'
 
 // URLに保持するissueフィルタのキー（期間・ソートは含まない）
@@ -35,8 +37,7 @@ const ISSUE_FILTER_URL_KEYS = [
 
 export const Dashboard = () => {
   const { state, dispatch } = useApp()
-  const { issues, loading, fetchIssues, exportIssues, hasCachedData } =
-    useDashboardIssues()
+  const { issues, loading, fetchIssues, hasCachedData } = useDashboardIssues()
   const [showEditConfig, setShowEditConfig] = useState(false)
   const [showCopiedMessage, setShowCopiedMessage] = useState(false)
   const [chartLoading, setChartLoading] = useState(false)
@@ -387,7 +388,13 @@ export const Dashboard = () => {
           onPeriodChange={handlePeriodChange}
           issueFilters={issueFilters}
           onIssueFiltersChange={handleIssueFiltersChange}
-          onExportIssues={() => exportIssues('csv')}
+          onExportIssues={() =>
+            // 画面に表示している issue をそのまま書き出す（絞り込み・並び順が必ず一致する）
+            exportIssuesAsCsv(
+              sortIssues(filteredIssues, sortConfig),
+              'dashboard_issues',
+            )
+          }
         />
 
         {state.gitlabConfig.projectId && (
