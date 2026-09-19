@@ -617,18 +617,79 @@ npm run dev
 ### テスト実行
 
 ```bash
-# 全テスト実行
-./scripts/final-verification.sh
+# 初回のみ: 依存と qlty のツールをインストール
+make setup
 
-# Backend テスト
-cd backend
-source venv/bin/activate
-pytest tests/ -v --cov=app
+# コミット前に通す: 静的解析 + セキュリティ検査 + 型チェック + ユニットテスト (CI と同じ内容)
+make check
 
-# Frontend E2E テスト
-cd frontend
-npx playwright test
+# 個別に実行する場合
+make test    # frontend / backend のユニットテスト
+make lint    # 静的解析 + セキュリティ検査のゲート + 型チェック
+make fmt     # 全ファイルを整形
 ```
+
+詳細は [CONTRIBUTING.md](CONTRIBUTING.md) の Quality Gate を参照。
+
+### リリース手順
+
+`main` へのマージで `latest` のイメージが、GitHub Release の作成でバージョン付きのイメージが、それぞれ自動で GHCR に push される (`.github/workflows/docker-build.yml`)。
+
+```mermaid
+flowchart LR
+    A[1. make bump] --> B[2. PR を作成]
+    B --> C[3. CI が pass]
+    C --> D[4. main にマージ]
+    D --> E[5. main の CI が pass]
+    E --> F[6. Release を作成]
+    F --> G[7. イメージを確認]
+    D -. 自動 .-> L[latest を push]
+    F -. 自動 .-> V[x.y.z / x.y / x を push]
+```
+
+1. **バージョンを上げる**。リリースする変更と同じ PR に含める (タグを打った後では直せないため)
+
+   ```bash
+   make bump VERSION=0.2.2
+   ```
+
+   バージョンは次の 3 か所 (+ lock ファイル) に書かれており、`make bump` がまとめて更新する。1 か所でも漏れると、API ドキュメント (`/docs`) の表示やイメージと食い違う
+
+   | ファイル                                      | 使われる場所                               |
+   | --------------------------------------------- | ------------------------------------------ |
+   | `frontend/package.json` / `package-lock.json` | frontend のパッケージバージョン            |
+   | `backend/pyproject.toml`                      | backend のパッケージバージョン             |
+   | `backend/app/main.py`                         | FastAPI の `version`。`/docs` に表示される |
+
+2. **PR を作成する**。`make check` が通る状態にしてから push する
+
+3. **PR の CI が pass するのを待つ** (frontend / backend / quality と、amd64 + arm64 のイメージビルド)
+
+4. **`main` にマージする**。マージ後のブランチは自動で削除される
+
+5. **`main` の CI が pass するのを待つ**
+
+6. **GitHub Release を作成する**。タグは `v` + バージョン。対象はマージコミットを **完全な 40 桁の SHA** で指定する (短縮形は拒否される)
+
+   ```bash
+   git checkout main && git pull
+   gh release create v0.2.2 --target "$(git rev-parse HEAD)" --title "v0.2.2" --notes-file <リリースノート>
+   ```
+
+   リリースノートには、利用者に影響する変更を先頭に書く (例: 再接続が必要、設定の変更が必要)
+
+7. **イメージを確認する**。ビルドは 2 本走る (`main` への push で `latest`、Release で `x.y.z` / `x.y` / `x`)。どちらも同じコミットから作られる
+
+   ```bash
+   # 2 本のビルドが成功したこと
+   gh run list --limit 4
+
+   # イメージの元のコミットが、タグを打ったコミットと一致すること
+   docker pull ghcr.io/suwa-sh/gitlab-bud-chart/backend:0.2.2
+   docker inspect -f '{{index .Config.Labels "org.opencontainers.image.revision"}}' ghcr.io/suwa-sh/gitlab-bud-chart/backend:0.2.2
+   ```
+
+バージョンの付け方: 利用者の操作や設定の変更が必要なら minor (`0.x.0`)、不具合の修正だけなら patch (`0.0.x`) を上げる。
 
 ### API エンドポイント
 

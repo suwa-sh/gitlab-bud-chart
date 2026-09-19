@@ -6,6 +6,7 @@
 #   make test    frontend / backend のユニットテスト
 #   make sast    セキュリティ検査だけを実行
 #   make check   lint + test をまとめて実行 (コミット前に通す)
+#   make bump VERSION=x.y.z   バージョン表記を 3 か所まとめて更新 (リリース手順は README を参照)
 #
 # 注意: `qlty check --fix` は --filter / --no-formatters の指定にかかわらず全ファイルを整形する。
 #       整形は `make fmt` で明示的に行い、ゲートは --no-fix で実行する
@@ -16,7 +17,7 @@ QLTY_GATE := qlty check --all --no-fix --no-progress --no-upgrade-check --no-for
 # セキュリティ系プラグイン (コード脆弱性 / 依存の脆弱性・コンテナ設定 / シークレット混入 / CI 設定)
 SAST_PLUGINS := bandit,trivy,osv-scanner,trufflehog,zizmor
 
-.PHONY: setup fmt lint test test-frontend test-backend sast check
+.PHONY: setup fmt lint test test-frontend test-backend sast check bump
 
 setup:
 	npm ci --prefix frontend --no-audit --no-fund
@@ -43,3 +44,15 @@ sast:
 	$(QLTY_GATE) --filter $(SAST_PLUGINS)
 
 check: lint test
+
+# バージョンは 3 か所に書かれている。1 か所でも漏れると /docs の表示やイメージと食い違うので、まとめて更新する
+bump:
+	@echo "$(VERSION)" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$$' || { echo "usage: make bump VERSION=x.y.z"; exit 1; }
+	npm version $(VERSION) --no-git-tag-version --allow-same-version --prefix frontend > /dev/null
+	sed -i.bak -E 's/^version = "[^"]+"/version = "$(VERSION)"/' backend/pyproject.toml && rm backend/pyproject.toml.bak
+	sed -i.bak -E 's/^(    version=)"[^"]+",/\1"$(VERSION)",/' backend/app/main.py && rm backend/app/main.py.bak
+	@echo "--- updated to $(VERSION):"
+	@grep -m1 '"version"' frontend/package.json
+	@grep -m1 '"version"' frontend/package-lock.json
+	@grep '^version = ' backend/pyproject.toml
+	@grep -E '^    version=' backend/app/main.py
