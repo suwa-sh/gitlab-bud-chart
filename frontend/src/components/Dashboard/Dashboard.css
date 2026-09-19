@@ -104,7 +104,6 @@
   opacity: 0.7;
 }
 
-
 .edit-config-btn {
   background: #007bff;
   color: white;
@@ -206,7 +205,7 @@
   background: white;
   border-radius: 8px;
   padding: 20px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .chart-container h2 {
@@ -310,11 +309,11 @@
     padding: 25px 40px;
     max-width: none;
   }
-  
+
   .charts-section {
     gap: 30px;
   }
-  
+
   .chart-container {
     padding: 25px;
   }
@@ -324,11 +323,11 @@
   .dashboard {
     padding: 30px 60px;
   }
-  
+
   .charts-section {
     gap: 40px;
   }
-  
+
   .dashboard-content {
     gap: 40px;
   }
@@ -338,7 +337,7 @@
   .dashboard {
     padding: 40px 80px;
   }
-  
+
   .charts-section {
     gap: 50px;
   }
@@ -355,37 +354,37 @@
   .dashboard {
     padding: 15px;
   }
-  
+
   .dashboard-header {
     flex-direction: column;
     align-items: stretch;
   }
-  
+
   .dashboard-controls {
     justify-content: space-between;
   }
-  
+
   .period-controls {
     justify-content: center;
   }
-  
+
   .charts-section {
     grid-template-columns: 1fr;
   }
-  
+
   .period-inputs {
     flex-wrap: wrap;
   }
-  
+
   .project-name {
     max-width: 150px;
   }
-  
+
   .gitlab-status {
     font-size: 13px;
     padding: 6px 10px;
   }
-  
+
   .project-id {
     display: none;
   }

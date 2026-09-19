@@ -114,7 +114,9 @@
   border-radius: 4px;
   font-size: 14px;
   background-color: white;
-  transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+  transition:
+    border-color 0.15s ease-in-out,
+    box-shadow 0.15s ease-in-out;
 }
 
 .filter-group select:focus {
@@ -127,20 +129,20 @@
   .quick-filters {
     flex-direction: column;
   }
-  
+
   .quick-filter-btn {
     width: 100%;
     text-align: center;
   }
-  
+
   .filter-grid {
     grid-template-columns: 1fr;
   }
-  
+
   .active-filters {
     text-align: left;
   }
-  
+
   .active-filter-tag {
     margin: 4px 4px 4px 0;
   }

@@ -8,16 +8,16 @@ import { format, parseISO, addDays, isWeekend } from 'date-fns'
  */
 export const isBusinessDay = (date: string | Date): boolean => {
   const dateObj = typeof date === 'string' ? parseISO(date) : date
-  
+
   // Check if it's weekend (Saturday or Sunday)
   if (isWeekend(dateObj)) {
     return false
   }
-  
+
   // Check if it's a Japanese holiday
   const dateString = format(dateObj, 'yyyy-MM-dd')
   const holiday = HolidayJp.isHoliday(new Date(dateString))
-  
+
   return !holiday
 }
 
@@ -27,11 +27,14 @@ export const isBusinessDay = (date: string | Date): boolean => {
  * @param endDate - End date in YYYY-MM-DD format
  * @returns Array of Date objects representing business days
  */
-export const getBusinessDaysBetween = (startDate: string, endDate: string): Date[] => {
+export const getBusinessDaysBetween = (
+  startDate: string,
+  endDate: string,
+): Date[] => {
   const businessDays: Date[] = []
   const start = parseISO(startDate)
   const end = parseISO(endDate)
-  
+
   let currentDate = start
   while (currentDate <= end) {
     if (isBusinessDay(currentDate)) {
@@ -39,7 +42,7 @@ export const getBusinessDaysBetween = (startDate: string, endDate: string): Date
     }
     currentDate = addDays(currentDate, 1)
   }
-  
+
   return businessDays
 }
 
@@ -55,29 +58,32 @@ export const calculateBusinessDayIdealLine = (
   totalPoints: number,
   startDate: string,
   endDate: string,
-  chartDates: string[]
+  chartDates: string[],
 ): number[] => {
   // Get all business days in the period
   const businessDays = getBusinessDaysBetween(startDate, endDate)
   const totalBusinessDays = businessDays.length
-  
+
   // If no business days, return array of totalPoints (no progress)
   if (totalBusinessDays === 0) {
     return chartDates.map(() => totalPoints)
   }
-  
+
   // Calculate points consumed per business day
   const pointsPerBusinessDay = totalPoints / totalBusinessDays
-  
+
   // Calculate ideal points for each chart date
-  return chartDates.map(dateString => {
+  return chartDates.map((dateString) => {
     // Count business days from start up to (and including) current date
-    const businessDaysCompleted = getBusinessDaysBetween(startDate, dateString).length
-    
+    const businessDaysCompleted = getBusinessDaysBetween(
+      startDate,
+      dateString,
+    ).length
+
     // For burndown: remaining points = total - consumed
     // For burnup: planned progress = consumed points
     const consumedPoints = businessDaysCompleted * pointsPerBusinessDay
-    
+
     // Return remaining points for burndown chart
     return Math.max(0, totalPoints - consumedPoints)
   })
@@ -95,28 +101,31 @@ export const calculateBusinessDayIdealLineForBurnUp = (
   totalPoints: number,
   startDate: string,
   endDate: string,
-  chartDates: string[]
+  chartDates: string[],
 ): number[] => {
   // Get all business days in the period
   const businessDays = getBusinessDaysBetween(startDate, endDate)
   const totalBusinessDays = businessDays.length
-  
+
   // If no business days, return array of zeros (no progress)
   if (totalBusinessDays === 0) {
     return chartDates.map(() => 0)
   }
-  
+
   // Calculate points completed per business day
   const pointsPerBusinessDay = totalPoints / totalBusinessDays
-  
+
   // Calculate ideal completed points for each chart date
-  return chartDates.map(dateString => {
+  return chartDates.map((dateString) => {
     // Count business days from start up to (and including) current date
-    const businessDaysCompleted = getBusinessDaysBetween(startDate, dateString).length
-    
+    const businessDaysCompleted = getBusinessDaysBetween(
+      startDate,
+      dateString,
+    ).length
+
     // For burnup: ideal completed points = accumulated progress
     const completedPoints = businessDaysCompleted * pointsPerBusinessDay
-    
+
     return Math.min(totalPoints, completedPoints)
   })
 }

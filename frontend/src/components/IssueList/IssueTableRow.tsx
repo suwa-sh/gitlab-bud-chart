@@ -51,8 +51,9 @@ export const IssueTableRow = ({ issue }: IssueTableRowProps) => {
   }
 
   // 完了判定
-  const isCompleted = issue.state === 'closed' || 
-    issue.kanban_status === 'completed' || 
+  const isCompleted =
+    issue.state === 'closed' ||
+    issue.kanban_status === 'completed' ||
     issue.kanban_status === '完了'
 
   return (
@@ -61,12 +62,16 @@ export const IssueTableRow = ({ issue }: IssueTableRowProps) => {
       <td>{issue.milestone || '-'}</td>
       <td>
         {issue.is_epic ? (
-          <span className="epic-badge" title="Epic Issue">📋</span>
-        ) : '-'}
+          <span className="epic-badge" title="Epic Issue">
+            📋
+          </span>
+        ) : (
+          '-'
+        )}
       </td>
       <td>
-        <a 
-          href={getGitLabIssueUrl(issue.iid)} 
+        <a
+          href={getGitLabIssueUrl(issue.iid)}
           className="issue-title"
           title={issue.description}
           target="_blank"
@@ -76,9 +81,7 @@ export const IssueTableRow = ({ issue }: IssueTableRowProps) => {
         </a>
       </td>
       <td>
-        {issue.point ? (
-          <span className="point-badge">{issue.point}</span>
-        ) : '-'}
+        {issue.point ? <span className="point-badge">{issue.point}</span> : '-'}
       </td>
       <td>
         <span className={getKanbanBadgeClass(issue.kanban_status)}>
@@ -89,14 +92,14 @@ export const IssueTableRow = ({ issue }: IssueTableRowProps) => {
       <td>
         {issue.quarter ? (
           <span className="quarter-badge">{issue.quarter}</span>
-        ) : '-'}
+        ) : (
+          '-'
+        )}
       </td>
       <td>{formatDate(issue.created_at)}</td>
       <td>{formatDate(issue.completed_at)}</td>
       <td>
-        <span className={getStateBadgeClass(issue.state)}>
-          {issue.state}
-        </span>
+        <span className={getStateBadgeClass(issue.state)}>{issue.state}</span>
       </td>
     </tr>
   )

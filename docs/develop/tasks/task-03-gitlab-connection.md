@@ -1,15 +1,18 @@
 # Task 03: GitLab API接続設定・基本テスト
 
 ## 概要
+
 GitLab API接続・認証設定を実装し、基本的なAPI呼び出しテストとE2Eテストを実行してPhase 1を完了する。
 
 ## 目的
+
 - GitLab API接続設定実装
 - 認証機能実装（Token認証）
 - 基本API呼び出しテスト実装
 - Phase 1完了 E2Eテスト実行
 
 ## 前提条件
+
 - Task 02完了（開発環境構築済み）
 - Self-hosted GitLab環境へのアクセス準備
 - GitLab Personal Access Token取得済み
@@ -19,7 +22,9 @@ GitLab API接続・認証設定を実装し、基本的なAPI呼び出しテス�
 ### 1. GitLab接続設定実装
 
 #### 1.1 GitLab設定管理
+
 **backend/app/services/gitlab_client.py**:
+
 ```python
 import gitlab
 from typing import Optional, List, Dict, Any
@@ -32,7 +37,7 @@ class GitLabClient:
     def __init__(self):
         self.gl: Optional[gitlab.Gitlab] = None
         self.project = None
-        
+
     def connect(self, gitlab_url: str, gitlab_token: str, project_id: str) -> bool:
         """GitLab接続"""
         try:
@@ -46,7 +51,7 @@ class GitLabClient:
             self.gl = None
             self.project = None
             return False
-    
+
     def test_connection(self) -> Dict[str, Any]:
         """接続テスト"""
         if not self.gl or not self.project:
@@ -54,7 +59,7 @@ class GitLabClient:
                 "connected": False,
                 "error": "GitLab接続が設定されていません"
             }
-        
+
         try:
             # プロジェクト情報取得テスト
             project_info = {
@@ -65,7 +70,7 @@ class GitLabClient:
                 "issues_enabled": self.project.issues_enabled,
                 "open_issues_count": self.project.open_issues_count
             }
-            
+
             return {
                 "connected": True,
                 "project": project_info,
@@ -77,12 +82,12 @@ class GitLabClient:
                 "connected": False,
                 "error": str(e)
             }
-    
+
     def get_issues_sample(self, limit: int = 5) -> List[Dict[str, Any]]:
         """サンプルissue取得（動作確認用）"""
         if not self.gl or not self.project:
             return []
-        
+
         try:
             issues = self.project.issues.list(per_page=limit, state='all')
             return [
@@ -106,7 +111,9 @@ gitlab_client = GitLabClient()
 ```
 
 #### 1.2 GitLab設定API実装
+
 **backend/app/api/gitlab_config.py**:
+
 ```python
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
@@ -133,7 +140,7 @@ async def connect_gitlab(config: GitLabConfigRequest):
         config.gitlab_token,
         config.project_id
     )
-    
+
     if success:
         test_result = gitlab_client.test_connection()
         if test_result["connected"]:
@@ -170,6 +177,7 @@ async def get_sample_issues():
 ```
 
 **backend/app/main.py** にルーター追加:
+
 ```python
 from app.api import gitlab_config
 
@@ -179,6 +187,7 @@ app.include_router(gitlab_config.router, prefix="/api/gitlab", tags=["gitlab"])
 #### 1.3 フロントエンド GitLab設定UI実装
 
 **frontend/src/components/GitLabConfig/GitLabConfig.tsx**:
+
 ```tsx
 import { useState } from 'react'
 import { gitlabApi } from '../../services/api'
@@ -191,7 +200,7 @@ export const GitLabConfig = ({ onConfigured }: GitLabConfigProps) => {
   const [config, setConfig] = useState({
     gitlab_url: 'http://localhost:8080',
     gitlab_token: '',
-    project_id: ''
+    project_id: '',
   })
   const [isConnecting, setIsConnecting] = useState(false)
   const [status, setStatus] = useState<string>('')
@@ -201,7 +210,7 @@ export const GitLabConfig = ({ onConfigured }: GitLabConfigProps) => {
     setIsConnecting(true)
     setError('')
     setStatus('接続中...')
-    
+
     try {
       const result = await gitlabApi.connect(config)
       setStatus(`接続成功: ${result.project_info.project?.name}`)
@@ -233,69 +242,68 @@ export const GitLabConfig = ({ onConfigured }: GitLabConfigProps) => {
   return (
     <div className="gitlab-config">
       <h3>GitLab Configuration</h3>
-      
+
       <div className="config-form">
         <div className="form-group">
           <label>GitLab URL:</label>
           <input
             type="text"
             value={config.gitlab_url}
-            onChange={(e) => setConfig(prev => ({ ...prev, gitlab_url: e.target.value }))}
+            onChange={(e) =>
+              setConfig((prev) => ({ ...prev, gitlab_url: e.target.value }))
+            }
             placeholder="http://localhost:8080"
           />
         </div>
-        
+
         <div className="form-group">
           <label>Access Token:</label>
           <input
             type="password"
             value={config.gitlab_token}
-            onChange={(e) => setConfig(prev => ({ ...prev, gitlab_token: e.target.value }))}
+            onChange={(e) =>
+              setConfig((prev) => ({ ...prev, gitlab_token: e.target.value }))
+            }
             placeholder="glpat-xxxxxxxxxxxxxxxxxxxx"
           />
         </div>
-        
+
         <div className="form-group">
           <label>Project ID:</label>
           <input
             type="text"
             value={config.project_id}
-            onChange={(e) => setConfig(prev => ({ ...prev, project_id: e.target.value }))}
+            onChange={(e) =>
+              setConfig((prev) => ({ ...prev, project_id: e.target.value }))
+            }
             placeholder="1"
           />
         </div>
-        
+
         <div className="form-actions">
-          <button 
-            onClick={handleConnect} 
-            disabled={isConnecting || !config.gitlab_token || !config.project_id}
+          <button
+            onClick={handleConnect}
+            disabled={
+              isConnecting || !config.gitlab_token || !config.project_id
+            }
           >
             {isConnecting ? '接続中...' : '接続'}
           </button>
-          
-          <button onClick={handleTestConnection}>
-            接続確認
-          </button>
+
+          <button onClick={handleTestConnection}>接続確認</button>
         </div>
       </div>
-      
-      {status && (
-        <div className="status success">
-          {status}
-        </div>
-      )}
-      
-      {error && (
-        <div className="status error">
-          {error}
-        </div>
-      )}
+
+      {status && <div className="status success">{status}</div>}
+
+      {error && <div className="status error">{error}</div>}
     </div>
   )
 }
 ```
 
 **frontend/src/services/api.ts** にGitLab API追加:
+
 ```typescript
 export const gitlabApi = {
   connect: async (config: {
@@ -306,12 +314,12 @@ export const gitlabApi = {
     const response = await api.post('/gitlab/connect', config)
     return response.data
   },
-  
+
   getStatus: async () => {
     const response = await api.get('/gitlab/status')
     return response.data
   },
-  
+
   getSampleIssues: async () => {
     const response = await api.get('/gitlab/issues/sample')
     return response.data
@@ -322,6 +330,7 @@ export const gitlabApi = {
 #### 1.4 Dashboard画面にGitLab設定統合
 
 **frontend/src/components/Dashboard/Dashboard.tsx** 更新:
+
 ```tsx
 import { useState, useEffect } from 'react'
 import { GitLabConfig } from '../GitLabConfig/GitLabConfig'
@@ -339,7 +348,7 @@ export const Dashboard = () => {
     try {
       const status = await gitlabApi.getStatus()
       setIsConfigured(status.connected)
-      
+
       if (status.connected) {
         const issues = await gitlabApi.getSampleIssues()
         setSampleIssues(issues.issues)
@@ -357,7 +366,7 @@ export const Dashboard = () => {
   return (
     <div className="dashboard">
       <h1>Dashboard</h1>
-      
+
       {!isConfigured ? (
         <GitLabConfig onConfigured={handleConfigured} />
       ) : (
@@ -366,23 +375,23 @@ export const Dashboard = () => {
             <p>✅ GitLab接続済み</p>
             <button onClick={() => setIsConfigured(false)}>設定変更</button>
           </div>
-          
+
           <div className="period-section">
             <p>Period: 2025-04 ~ 2025-06</p>
           </div>
-          
+
           <div className="charts-section">
             <div className="chart-container">
               <h2>Burn Down</h2>
               <div className="chart-placeholder">Chart will be here</div>
             </div>
-            
+
             <div className="chart-container">
               <h2>Burn Up</h2>
               <div className="chart-placeholder">Chart will be here</div>
             </div>
           </div>
-          
+
           <div className="issues-section">
             <h2>Issues (Sample Data)</h2>
             <table className="issues-table">
@@ -422,6 +431,7 @@ export const Dashboard = () => {
 #### 2.1 Backend GitLab接続テスト
 
 **backend/tests/test_gitlab_client.py**:
+
 ```python
 import pytest
 from unittest.mock import Mock, patch
@@ -435,29 +445,29 @@ class TestGitLabClient:
         mock_project = Mock()
         mock_gitlab.return_value = mock_gl
         mock_gl.projects.get.return_value = mock_project
-        
+
         client = GitLabClient()
         result = client.connect("http://localhost:8080", "token", "1")
-        
+
         assert result is True
         assert client.gl == mock_gl
         assert client.project == mock_project
-    
+
     @patch('gitlab.Gitlab')
     def test_connect_failure(self, mock_gitlab):
         mock_gitlab.side_effect = Exception("Connection failed")
-        
+
         client = GitLabClient()
         result = client.connect("http://localhost:8080", "token", "1")
-        
+
         assert result is False
         assert client.gl is None
         assert client.project is None
-    
+
     def test_test_connection_not_connected(self):
         client = GitLabClient()
         result = client.test_connection()
-        
+
         assert result["connected"] is False
         assert "GitLab接続が設定されていません" in result["error"]
 
@@ -465,7 +475,7 @@ class TestGitLabClient:
 async def test_gitlab_connect_api():
     from httpx import AsyncClient
     from app.main import app
-    
+
     async with AsyncClient(app=app, base_url="http://test") as ac:
         # 無効な設定でテスト
         response = await ac.post("/api/gitlab/connect", json={
@@ -479,6 +489,7 @@ async def test_gitlab_connect_api():
 #### 2.2 Frontend GitLab設定テスト
 
 **frontend/src/components/GitLabConfig/GitLabConfig.test.tsx**:
+
 ```typescript
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { GitLabConfig } from './GitLabConfig'
@@ -495,7 +506,7 @@ describe('GitLabConfig', () => {
 
   test('renders config form', () => {
     render(<GitLabConfig />)
-    
+
     expect(screen.getByLabelText(/GitLab URL/i)).toBeInTheDocument()
     expect(screen.getByLabelText(/Access Token/i)).toBeInTheDocument()
     expect(screen.getByLabelText(/Project ID/i)).toBeInTheDocument()
@@ -513,7 +524,7 @@ describe('GitLabConfig', () => {
     mockGitlabApi.connect.mockResolvedValue(mockResponse)
 
     render(<GitLabConfig />)
-    
+
     fireEvent.change(screen.getByLabelText(/GitLab URL/i), {
       target: { value: 'http://localhost:8080' }
     })
@@ -523,9 +534,9 @@ describe('GitLabConfig', () => {
     fireEvent.change(screen.getByLabelText(/Project ID/i), {
       target: { value: '1' }
     })
-    
+
     fireEvent.click(screen.getByRole('button', { name: /接続/i }))
-    
+
     await waitFor(() => {
       expect(screen.getByText(/接続成功: Test Project/i)).toBeInTheDocument()
     })
@@ -538,6 +549,7 @@ describe('GitLabConfig', () => {
 #### 3.1 GitLab接続E2Eテスト
 
 **frontend/tests/e2e/phase1-gitlab-connection.spec.ts**:
+
 ```typescript
 import { test, expect } from '@playwright/test'
 
@@ -551,26 +563,28 @@ test.describe('Phase 1: GitLab Connection E2E Tests', () => {
     await expect(page.getByLabel('GitLab URL')).toBeVisible()
     await expect(page.getByLabel('Access Token')).toBeVisible()
     await expect(page.getByLabel('Project ID')).toBeVisible()
-    
-    await page.screenshot({ path: 'test-results/phase1-gitlab-config-form.png' })
+
+    await page.screenshot({
+      path: 'test-results/phase1-gitlab-config-form.png',
+    })
   })
 
   test('should validate required fields', async ({ page }) => {
     const connectButton = page.getByRole('button', { name: '接続' })
     await expect(connectButton).toBeDisabled()
-    
+
     // Fill URL only
     await page.getByLabel('GitLab URL').fill('http://localhost:8080')
     await expect(connectButton).toBeDisabled()
-    
+
     // Fill token
     await page.getByLabel('Access Token').fill('test-token')
     await expect(connectButton).toBeDisabled()
-    
+
     // Fill project ID
     await page.getByLabel('Project ID').fill('1')
     await expect(connectButton).toBeEnabled()
-    
+
     await page.screenshot({ path: 'test-results/phase1-form-validation.png' })
   })
 
@@ -578,19 +592,21 @@ test.describe('Phase 1: GitLab Connection E2E Tests', () => {
     await page.getByLabel('GitLab URL').fill('http://invalid-url')
     await page.getByLabel('Access Token').fill('invalid-token')
     await page.getByLabel('Project ID').fill('999')
-    
+
     await page.getByRole('button', { name: '接続' }).click()
-    
+
     // Wait for error message
     await expect(page.getByText(/接続に失敗しました/)).toBeVisible()
-    
+
     await page.screenshot({ path: 'test-results/phase1-connection-error.png' })
   })
 
   test('should test connection status endpoint', async ({ page }) => {
-    const response = await page.request.get('http://localhost:8000/api/gitlab/status')
+    const response = await page.request.get(
+      'http://localhost:8000/api/gitlab/status',
+    )
     expect(response.status()).toBe(200)
-    
+
     const data = await response.json()
     expect(data).toHaveProperty('connected')
   })
@@ -599,10 +615,10 @@ test.describe('Phase 1: GitLab Connection E2E Tests', () => {
     // Test navigation
     await page.getByRole('link', { name: 'PBL Viewer' }).click()
     await expect(page.getByText('PBL Viewer')).toBeVisible()
-    
+
     await page.getByRole('link', { name: 'Dashboard' }).click()
     await expect(page.getByText('Dashboard')).toBeVisible()
-    
+
     await page.screenshot({ path: 'test-results/phase1-navigation.png' })
   })
 
@@ -617,7 +633,7 @@ test.describe('Phase 1: API Integration Tests', () => {
   test('backend health check', async ({ page }) => {
     const response = await page.request.get('http://localhost:8000/health')
     expect(response.status()).toBe(200)
-    
+
     const data = await response.json()
     expect(data.status).toBe('healthy')
   })
@@ -625,23 +641,27 @@ test.describe('Phase 1: API Integration Tests', () => {
   test('issues API basic response', async ({ page }) => {
     const response = await page.request.get('http://localhost:8000/api/issues')
     expect(response.status()).toBe(200)
-    
+
     const issues = await response.json()
     expect(Array.isArray(issues)).toBe(true)
   })
 
   test('charts API basic response', async ({ page }) => {
-    const response = await page.request.get('http://localhost:8000/api/charts/burn-down?milestone=v1.0&start_date=2024-01-01&end_date=2024-12-31')
+    const response = await page.request.get(
+      'http://localhost:8000/api/charts/burn-down?milestone=v1.0&start_date=2024-01-01&end_date=2024-12-31',
+    )
     expect(response.status()).toBe(200)
-    
+
     const chartData = await response.json()
     expect(Array.isArray(chartData)).toBe(true)
   })
 
   test('gitlab status API', async ({ page }) => {
-    const response = await page.request.get('http://localhost:8000/api/gitlab/status')
+    const response = await page.request.get(
+      'http://localhost:8000/api/gitlab/status',
+    )
     expect(response.status()).toBe(200)
-    
+
     const status = await response.json()
     expect(status).toHaveProperty('connected')
   })
@@ -651,6 +671,7 @@ test.describe('Phase 1: API Integration Tests', () => {
 #### 3.2 E2Eテスト実行スクリプト更新
 
 **scripts/run-phase1-e2e.sh**:
+
 ```bash
 #!/bin/bash
 set -e
@@ -697,6 +718,7 @@ echo "Phase 1 完了: GitLab接続設定・基本テスト成功"
 #### 4.1 Backend環境設定
 
 **backend/.env.example**:
+
 ```
 # GitLab Configuration
 GITLAB_URL=http://localhost:8080
@@ -711,6 +733,7 @@ API_PORT=8000
 #### 4.2 CSS追加
 
 **frontend/src/App.css** 追加:
+
 ```css
 .gitlab-config {
   max-width: 500px;
@@ -811,6 +834,7 @@ API_PORT=8000
 ## 成果物
 
 ### 必須成果物
+
 1. **GitLab接続機能**:
    - GitLabClient実装
    - 接続・認証機能
@@ -842,11 +866,13 @@ API_PORT=8000
 ## 検証項目
 
 ### 実施前確認
+
 - [ ] Task 02の開発環境動作確認
 - [ ] GitLab環境・Token準備完了
 - [ ] Backend/Frontend サーバー起動確認
 
 ### 実施後確認
+
 - [ ] GitLab API接続成功
 - [ ] 認証機能正常動作
 - [ ] GitLab設定UI正常動作
@@ -854,6 +880,7 @@ API_PORT=8000
 - [ ] Phase 1 E2Eテスト全件成功
 
 ### Phase 1完了条件
+
 - [ ] GitLab接続設定・確認機能完成
 - [ ] サンプルissue取得確認
 - [ ] Frontend/Backend統合動作確認
@@ -863,16 +890,19 @@ API_PORT=8000
 ## 次のタスクへの引き継ぎ
 
 ### Phase 2 (Task 04)への引き継ぎ事項
+
 - GitLab接続機能完成版
 - GitLabClient基盤クラス
 - 認証済み状態でのAPI呼び出し基盤
 
 ### 注意事項
+
 - GitLab Token管理（機密情報）
 - 接続エラー時の適切なメッセージ表示
 - E2Eテスト実行前の環境確認必須
 
 ## 作業時間見積もり
+
 - **GitLab接続実装**: 3-4時間
 - **Frontend設定UI**: 2-3時間
 - **テスト実装**: 2-3時間
@@ -880,4 +910,5 @@ API_PORT=8000
 - **合計**: 9-13時間
 
 ## Phase 1完了
+
 このタスク完了により **Phase 1: GitLab接続設定** が完了し、Phase 2: GitLab issue取得 に進むことができます。

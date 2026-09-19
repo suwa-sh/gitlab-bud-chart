@@ -4,7 +4,8 @@
 
 body {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+  font-family:
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
   line-height: 1.5;
   color: #333;
   background-color: #ffffff;
@@ -25,7 +26,12 @@ a:hover {
   text-decoration: underline;
 }
 
-h1, h2, h3, h4, h5, h6 {
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
   margin: 0 0 1rem 0;
   font-weight: 600;
   line-height: 1.2;
@@ -70,7 +76,8 @@ table {
   border-collapse: collapse;
 }
 
-input, select {
+input,
+select {
   padding: 8px 12px;
   border: 1px solid #ddd;
   border-radius: 4px;

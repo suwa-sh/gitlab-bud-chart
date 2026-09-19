@@ -55,7 +55,9 @@ GitLab の issue を分析し、burn-up/burn-down チャート表示と product 
 
 - **プロジェクト進捗の可視化**: Burn-up/Burn-down チャートによる進捗状況把握
 - **チャート表示**: レスポンシブ対応、ウィンドウ幅 100%、Both/Burn Down/Burn Up の表示切り替え
-- **統計情報**: 総ポイント、完了ポイント、完了率、残ポイント、残日数（営業日ベース）
+  - 実績は当日までを表示（当日より後は未確定のため表示しない）。当日の位置に「今日」の縦線を表示
+  - **現在のペース**: 期間開始時点と当日の実績を結び、期間終了まで延ばした直線。このまま進んだ場合の着地点が分かる
+- **統計情報**: 総ポイント、完了ポイント、完了率、残ポイント、残日数（営業日ベース）、現在のペース（pt/週）、このペースでの見込み（完了見込み日 または 期末の残ポイント）
 - **期間選択**: 独立したグループとして配置（チャート切替や詳細フィルタから分離）
   - 四半期選択（過去 2 年～将来 6 ヶ月）による自動期間設定
   - 開始日・終了日の手動入力
@@ -69,7 +71,7 @@ GitLab の issue を分析し、burn-up/burn-down チャート表示と product 
 
 - **Product Backlog 管理**: 全 Issue 一覧表示（ウィンドウ幅 100%、レスポンシブ対応）
 - **統計情報**: Issue 件数、総ポイント数、完了ポイント、完了率（Dashboard と統一フォーマット）
-- **詳細フィルタ・検索**: 11 種類のフィルタ（期間フィルタは表示のみ、API 送信なし）
+- **詳細フィルタ・検索**: 全 Issue を 1 回取得し、フィルタは画面側で即時に適用（フィルタ変更のたびに GitLab へ再取得しない）
 - **Issue 詳細表示**: ソート可能、全件表示対応
 - **CSV エクスポート**: フィルタ適用済みデータのエクスポート
 - **キャッシュ優先**: 初回ロード時はキャッシュデータを優先利用
@@ -85,7 +87,6 @@ GitLab の issue を分析し、burn-up/burn-down チャート表示と product 
 Dashboard と PBL Viewer で共通のフィルタリング機能を適用：
 
 1. **除外ルール**: 以下の kanban_status を自動除外
-
    - `テンプレート` (GitLab ラベル: `#テンプレート`)
    - `ゴール/アナウンス` (GitLab ラベル: `#ゴール/アナウンス`)
    - `不要` (GitLab ラベル: `#不要`)
@@ -196,17 +197,14 @@ Dashboard と PBL Viewer で適用される統一されたフィルタリング�
 **警告タイプ:**
 
 1. **期間前完了**: `completed_at` が期間開始日より前の Issue
-
    - 例: 期間 2024-01-01 ～ 2024-03-31、completed_at = 2023-12-15
    - 期間外で完了しているため、進捗チャートの精度に影響
 
 2. **期間後完了**: `completed_at` が期間終了日より後の Issue
-
    - 例: 期間 2024-01-01 ～ 2024-03-31、completed_at = 2024-04-15
    - 期間外で完了しているため、進捗チャートの精度に影響
 
 3. **Due Date 未設定**: kanban_status が「完了」「共有待ち」だが `due_date` が未設定の Issue
-
    - completed_at が正しく計算されないため、スコープから除外される
    - 進捗管理の精度向上のため Due Date 設定を推奨
 
@@ -325,10 +323,10 @@ Dashboard に合わせた統一フォーマット：
 
 ```javascript
 // PBL Viewer では以下のフィルタを API 呼び出し時に除外
-delete filtersWithoutPeriod.created_after;
-delete filtersWithoutPeriod.created_before;
-delete filtersWithoutPeriod.completed_after;
-delete filtersWithoutPeriod.quarter;
+delete filtersWithoutPeriod.created_after
+delete filtersWithoutPeriod.created_before
+delete filtersWithoutPeriod.completed_after
+delete filtersWithoutPeriod.quarter
 ```
 
 #### フィルタ項目（11 種類）
@@ -540,7 +538,7 @@ def _determine_completed_at(self, issue: IssueModel) -> Optional[datetime]:
 
 ### 前提条件
 
-- Node.js 18+
+- Node.js 22.12+ (vitest 5 の要件)
 - Python 3.8+
 - GitLab Personal Access Token
 
@@ -580,12 +578,10 @@ npm run dev
 ### GitLab 設定
 
 1. GitLab Personal Access Token を作成
-
    - GitLab > Settings > Access Tokens
    - 権限: `api`, `read_repository`, `read_user`
 
 2. アプリケーションで GitLab 設定
-
    - GitLab URL: `http://your-gitlab-url`
    - Access Token: 作成したトークン
    - Project ID: 対象プロジェクトの ID

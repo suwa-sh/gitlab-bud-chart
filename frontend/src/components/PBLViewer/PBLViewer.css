@@ -137,14 +137,14 @@
   background: white;
   border-radius: 8px;
   padding: 20px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .filters-section {
   background: white;
   border-radius: 8px;
   padding: 20px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .issue-filters h3 {
@@ -303,7 +303,7 @@
   padding: 40px 20px;
   background: white;
   border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   margin-bottom: 20px;
 }
 
@@ -391,7 +391,9 @@
   border: 1px solid #ced4da;
   border-radius: 4px;
   font-size: 14px;
-  transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+  transition:
+    border-color 0.15s ease-in-out,
+    box-shadow 0.15s ease-in-out;
 }
 
 .pbl-filters .detail-filters .filter-input:focus {
@@ -407,7 +409,9 @@
   border-radius: 4px;
   background-color: #fff;
   font-size: 14px;
-  transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+  transition:
+    border-color 0.15s ease-in-out,
+    box-shadow 0.15s ease-in-out;
 }
 
 .pbl-filters .detail-filters .filter-select:focus {
@@ -575,21 +579,21 @@
   .pbl-viewer {
     padding: 15px;
   }
-  
+
   .pbl-header {
     flex-direction: column;
     align-items: stretch;
     gap: 15px;
   }
-  
+
   .stats-grid {
     grid-template-columns: 1fr;
   }
-  
+
   .breakdown-section {
     grid-template-columns: 1fr;
   }
-  
+
   .filter-grid {
     grid-template-columns: 1fr;
   }
@@ -598,7 +602,7 @@
     flex-direction: column;
     gap: 15px;
   }
-  
+
   .pbl-filters .detail-filters .filter-group {
     min-width: auto;
   }
@@ -606,7 +610,7 @@
   .main-stats {
     grid-template-columns: 1fr;
   }
-  
+
   .breakdown-grid {
     grid-template-columns: 1fr;
   }

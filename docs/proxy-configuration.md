@@ -80,7 +80,7 @@ services:
       - HTTPS_PROXY=${HTTPS_PROXY}
       - NO_PROXY=${NO_PROXY}
       - GITLAB_SSL_VERIFY=${GITLAB_SSL_VERIFY}
-  
+
   frontend:
     environment:
       - VITE_HTTP_PROXY=${HTTP_PROXY}
@@ -94,6 +94,7 @@ services:
 ### Connection Timeout
 
 If you experience connection timeouts:
+
 1. Verify proxy settings are correct
 2. Check if GitLab URL is in the NO_PROXY list (if it shouldn't use proxy)
 3. Test proxy connectivity: `curl -x $HTTP_PROXY https://gitlab.example.com`
@@ -101,6 +102,7 @@ If you experience connection timeouts:
 ### SSL Certificate Errors
 
 If you get SSL certificate verification errors:
+
 1. For development only: Set `GITLAB_SSL_VERIFY=false`
 2. For production: Add the CA certificate to your system's certificate store
 3. Consider using the full certificate chain
@@ -108,6 +110,7 @@ If you get SSL certificate verification errors:
 ### Authentication Errors
 
 If proxy authentication fails:
+
 1. Ensure username and password are URL-encoded
 2. Check proxy authentication method (Basic, NTLM, etc.)
 3. Verify credentials with your network administrator
@@ -123,6 +126,7 @@ If proxy authentication fails:
 ### Frontend API Connection Issues
 
 If the frontend cannot connect to the backend API:
+
 1. Check `VITE_API_URL` is set correctly
 2. Ensure backend is accessible from frontend container
 3. For local development, verify Vite proxy configuration

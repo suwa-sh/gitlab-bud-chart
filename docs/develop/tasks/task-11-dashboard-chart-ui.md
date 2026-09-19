@@ -1,15 +1,18 @@
 # Task 11: Dashboard UI・チャート表示コンポーネント
 
 ## 概要
+
 チャート表示コンポーネントを実装し、Dashboard UIを完成させる。burn-up/burn-downチャートの美しい可視化を実現する。
 
 ## 目的
+
 - Burn-up/Burn-downチャートコンポーネント実装
 - 期間選択UI実装
 - チャート・テーブル連携実装
 - インタラクティブ機能実装
 
 ## 前提条件
+
 - Task 10完了（チャート分析ロジック実装済み）
 - Recharts ライブラリインストール済み
 
@@ -20,11 +23,19 @@
 #### 1.1 Burn-downチャートコンポーネント
 
 **frontend/src/components/Chart/BurnDownChart.tsx**:
+
 ```tsx
 import { useMemo } from 'react'
 import {
-  LineChart, Line, XAxis, YAxis, CartesianGrid, 
-  Tooltip, Legend, ResponsiveContainer, Area
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+  Area,
 } from 'recharts'
 import { ChartData } from '../../types/api'
 import { format } from 'date-fns'
@@ -37,18 +48,17 @@ interface BurnDownChartProps {
   height?: number
 }
 
-export const BurnDownChart = ({ 
-  data, 
-  loading = false, 
-  height = 400 
+export const BurnDownChart = ({
+  data,
+  loading = false,
+  height = 400,
 }: BurnDownChartProps) => {
-  
   const chartData = useMemo(() => {
-    return data.map(item => ({
+    return data.map((item) => ({
       date: format(new Date(item.date), 'MM/dd', { locale: ja }),
       理想: Math.round(item.planned_points * 10) / 10,
       実績: Math.round(item.actual_points * 10) / 10,
-      残り: Math.round(item.remaining_points * 10) / 10
+      残り: Math.round(item.remaining_points * 10) / 10,
     }))
   }, [data])
 
@@ -94,26 +104,23 @@ export const BurnDownChart = ({
           margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
         >
           <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-          <XAxis 
-            dataKey="date" 
+          <XAxis
+            dataKey="date"
             tick={{ fontSize: 12 }}
             interval="preserveStartEnd"
           />
-          <YAxis 
+          <YAxis
             tick={{ fontSize: 12 }}
-            label={{ 
-              value: 'ポイント', 
-              angle: -90, 
+            label={{
+              value: 'ポイント',
+              angle: -90,
               position: 'insideLeft',
-              style: { fontSize: 14 }
+              style: { fontSize: 14 },
             }}
           />
           <Tooltip content={customTooltip} />
-          <Legend 
-            wrapperStyle={{ fontSize: 14 }}
-            iconType="line"
-          />
-          
+          <Legend wrapperStyle={{ fontSize: 14 }} iconType="line" />
+
           {/* 理想線 */}
           <Line
             type="monotone"
@@ -123,7 +130,7 @@ export const BurnDownChart = ({
             strokeDasharray="5 5"
             dot={false}
           />
-          
+
           {/* 実績線 */}
           <Line
             type="monotone"
@@ -133,7 +140,7 @@ export const BurnDownChart = ({
             dot={{ r: 4 }}
             activeDot={{ r: 6 }}
           />
-          
+
           {/* 残りエリア */}
           <Area
             type="monotone"
@@ -144,7 +151,7 @@ export const BurnDownChart = ({
           />
         </LineChart>
       </ResponsiveContainer>
-      
+
       <div className="chart-summary">
         <div className="summary-item">
           <span className="summary-label">開始時点:</span>
@@ -161,7 +168,13 @@ export const BurnDownChart = ({
         <div className="summary-item">
           <span className="summary-label">進捗率:</span>
           <span className="summary-value">
-            {((1 - data[data.length - 1]?.remaining_points / data[0]?.remaining_points) * 100).toFixed(1)}%
+            {(
+              (1 -
+                data[data.length - 1]?.remaining_points /
+                  data[0]?.remaining_points) *
+              100
+            ).toFixed(1)}
+            %
           </span>
         </div>
       </div>
@@ -173,11 +186,19 @@ export const BurnDownChart = ({
 #### 1.2 Burn-upチャートコンポーネント
 
 **frontend/src/components/Chart/BurnUpChart.tsx**:
+
 ```tsx
 import { useMemo } from 'react'
 import {
-  LineChart, Line, XAxis, YAxis, CartesianGrid, 
-  Tooltip, Legend, ResponsiveContainer, ReferenceLine
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+  ReferenceLine,
 } from 'recharts'
 import { ChartData } from '../../types/api'
 import { format } from 'date-fns'
@@ -191,19 +212,18 @@ interface BurnUpChartProps {
   showVelocity?: boolean
 }
 
-export const BurnUpChart = ({ 
-  data, 
-  loading = false, 
+export const BurnUpChart = ({
+  data,
+  loading = false,
   height = 400,
-  showVelocity = false
+  showVelocity = false,
 }: BurnUpChartProps) => {
-  
   const { chartData, averageVelocity } = useMemo(() => {
-    const formatted = data.map(item => ({
+    const formatted = data.map((item) => ({
       date: format(new Date(item.date), 'MM/dd', { locale: ja }),
       理想: Math.round(item.planned_points * 10) / 10,
       完了: Math.round(item.completed_points * 10) / 10,
-      総量: Math.round(item.total_points * 10) / 10
+      総量: Math.round(item.total_points * 10) / 10,
     }))
 
     // ベロシティ計算
@@ -236,7 +256,8 @@ export const BurnUpChart = ({
 
   const totalPoints = data[data.length - 1]?.total_points || 0
   const completedPoints = data[data.length - 1]?.completed_points || 0
-  const completionRate = totalPoints > 0 ? (completedPoints / totalPoints * 100) : 0
+  const completionRate =
+    totalPoints > 0 ? (completedPoints / totalPoints) * 100 : 0
 
   return (
     <div className="burn-up-chart">
@@ -247,26 +268,23 @@ export const BurnUpChart = ({
           margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
         >
           <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-          <XAxis 
-            dataKey="date" 
+          <XAxis
+            dataKey="date"
             tick={{ fontSize: 12 }}
             interval="preserveStartEnd"
           />
-          <YAxis 
+          <YAxis
             tick={{ fontSize: 12 }}
-            label={{ 
-              value: 'ポイント', 
-              angle: -90, 
+            label={{
+              value: 'ポイント',
+              angle: -90,
               position: 'insideLeft',
-              style: { fontSize: 14 }
+              style: { fontSize: 14 },
             }}
           />
           <Tooltip />
-          <Legend 
-            wrapperStyle={{ fontSize: 14 }}
-            iconType="line"
-          />
-          
+          <Legend wrapperStyle={{ fontSize: 14 }} iconType="line" />
+
           {/* スコープライン（総量） */}
           <Line
             type="stepAfter"
@@ -275,7 +293,7 @@ export const BurnUpChart = ({
             strokeWidth={2}
             dot={false}
           />
-          
+
           {/* 理想線 */}
           <Line
             type="monotone"
@@ -285,7 +303,7 @@ export const BurnUpChart = ({
             strokeDasharray="5 5"
             dot={false}
           />
-          
+
           {/* 完了線 */}
           <Line
             type="monotone"
@@ -295,17 +313,17 @@ export const BurnUpChart = ({
             dot={{ r: 4 }}
             activeDot={{ r: 6 }}
           />
-          
+
           {/* 目標ライン */}
-          <ReferenceLine 
-            y={totalPoints} 
-            stroke="#ff0000" 
+          <ReferenceLine
+            y={totalPoints}
+            stroke="#ff0000"
             strokeDasharray="3 3"
-            label={{ value: "目標", position: "right" }}
+            label={{ value: '目標', position: 'right' }}
           />
         </LineChart>
       </ResponsiveContainer>
-      
+
       <div className="chart-summary">
         <div className="summary-item">
           <span className="summary-label">総ポイント:</span>
@@ -340,6 +358,7 @@ export const BurnUpChart = ({
 #### 2.1 ChartSection実装
 
 **frontend/src/components/Dashboard/ChartSection.tsx**:
+
 ```tsx
 import { useState, useEffect } from 'react'
 import { BurnDownChart } from '../Chart/BurnDownChart'
@@ -357,15 +376,23 @@ interface ChartSectionProps {
   loading: boolean
 }
 
-export const ChartSection = ({ period, issues, loading }: ChartSectionProps) => {
+export const ChartSection = ({
+  period,
+  issues,
+  loading,
+}: ChartSectionProps) => {
   const [burnDownData, setBurnDownData] = useState<ChartData[]>([])
   const [burnUpData, setBurnUpData] = useState<ChartData[]>([])
   const [chartLoading, setChartLoading] = useState(false)
   const [selectedMilestone, setSelectedMilestone] = useState<string>('')
-  const [chartView, setChartView] = useState<'both' | 'burndown' | 'burnup'>('both')
+  const [chartView, setChartView] = useState<'both' | 'burndown' | 'burnup'>(
+    'both',
+  )
 
   // マイルストーン一覧
-  const milestones = [...new Set(issues.map(i => i.milestone).filter(Boolean))]
+  const milestones = [
+    ...new Set(issues.map((i) => i.milestone).filter(Boolean)),
+  ]
 
   useEffect(() => {
     fetchChartData()
@@ -373,21 +400,21 @@ export const ChartSection = ({ period, issues, loading }: ChartSectionProps) => 
 
   const fetchChartData = async () => {
     setChartLoading(true)
-    
+
     try {
       const [burnDown, burnUp] = await Promise.all([
         chartsApi.getBurnDownData(
           selectedMilestone || undefined,
           period.start,
-          period.end
+          period.end,
         ),
         chartsApi.getBurnUpData(
           selectedMilestone || undefined,
           period.start,
-          period.end
-        )
+          period.end,
+        ),
       ])
-      
+
       setBurnDownData(burnDown.chart_data)
       setBurnUpData(burnUp.chart_data)
     } catch (error) {
@@ -404,12 +431,12 @@ export const ChartSection = ({ period, issues, loading }: ChartSectionProps) => 
       const svgData = new XMLSerializer().serializeToString(svg)
       const blob = new Blob([svgData], { type: 'image/svg+xml' })
       const url = URL.createObjectURL(blob)
-      
+
       const a = document.createElement('a')
       a.href = url
       a.download = `chart_${index === 0 ? 'burndown' : 'burnup'}_${new Date().toISOString()}.svg`
       a.click()
-      
+
       URL.revokeObjectURL(url)
     })
   }
@@ -419,34 +446,36 @@ export const ChartSection = ({ period, issues, loading }: ChartSectionProps) => 
       <div className="chart-controls">
         <div className="control-group">
           <label>マイルストーン:</label>
-          <select 
+          <select
             value={selectedMilestone}
             onChange={(e) => setSelectedMilestone(e.target.value)}
             className="milestone-select"
           >
             <option value="">すべて</option>
-            {milestones.map(m => (
-              <option key={m} value={m}>{m}</option>
+            {milestones.map((m) => (
+              <option key={m} value={m}>
+                {m}
+              </option>
             ))}
           </select>
         </div>
-        
+
         <div className="control-group">
           <label>表示:</label>
           <div className="view-toggle">
-            <button 
+            <button
               className={chartView === 'both' ? 'active' : ''}
               onClick={() => setChartView('both')}
             >
               両方
             </button>
-            <button 
+            <button
               className={chartView === 'burndown' ? 'active' : ''}
               onClick={() => setChartView('burndown')}
             >
               Burn Down
             </button>
-            <button 
+            <button
               className={chartView === 'burnup' ? 'active' : ''}
               onClick={() => setChartView('burnup')}
             >
@@ -454,8 +483,8 @@ export const ChartSection = ({ period, issues, loading }: ChartSectionProps) => 
             </button>
           </div>
         </div>
-        
-        <button 
+
+        <button
           className="export-button"
           onClick={handleExportChart}
           disabled={chartLoading}
@@ -467,17 +496,17 @@ export const ChartSection = ({ period, issues, loading }: ChartSectionProps) => 
       <div className={`charts-container ${chartView}`}>
         {(chartView === 'both' || chartView === 'burndown') && (
           <div className="chart-wrapper">
-            <BurnDownChart 
+            <BurnDownChart
               data={burnDownData}
               loading={chartLoading}
               height={chartView === 'both' ? 350 : 450}
             />
           </div>
         )}
-        
+
         {(chartView === 'both' || chartView === 'burnup') && (
           <div className="chart-wrapper">
-            <BurnUpChart 
+            <BurnUpChart
               data={burnUpData}
               loading={chartLoading}
               height={chartView === 'both' ? 350 : 450}
@@ -486,11 +515,16 @@ export const ChartSection = ({ period, issues, loading }: ChartSectionProps) => 
           </div>
         )}
       </div>
-      
+
       {selectedMilestone && (
         <div className="milestone-info">
-          <p>選択中のマイルストーン: <strong>{selectedMilestone}</strong></p>
-          <p>対象Issue数: {issues.filter(i => i.milestone === selectedMilestone).length}件</p>
+          <p>
+            選択中のマイルストーン: <strong>{selectedMilestone}</strong>
+          </p>
+          <p>
+            対象Issue数:{' '}
+            {issues.filter((i) => i.milestone === selectedMilestone).length}件
+          </p>
         </div>
       )}
     </div>
@@ -503,6 +537,7 @@ export const ChartSection = ({ period, issues, loading }: ChartSectionProps) => 
 #### 3.1 PeriodSelector実装
 
 **frontend/src/components/Common/PeriodSelector.tsx**:
+
 ```tsx
 import { useState } from 'react'
 import { format, addMonths, startOfMonth, endOfMonth } from 'date-fns'
@@ -555,7 +590,7 @@ export const PeriodSelector = ({ value, onChange }: PeriodSelectorProps) => {
 
     onChange({
       start: format(start, 'yyyy-MM-dd'),
-      end: format(end, 'yyyy-MM-dd')
+      end: format(end, 'yyyy-MM-dd'),
     })
     setIsCustom(false)
   }
@@ -563,29 +598,23 @@ export const PeriodSelector = ({ value, onChange }: PeriodSelectorProps) => {
   return (
     <div className="period-selector">
       <div className="period-presets">
-        <button onClick={() => handlePresetPeriod('this-month')}>
-          今月
-        </button>
-        <button onClick={() => handlePresetPeriod('last-month')}>
-          先月
-        </button>
+        <button onClick={() => handlePresetPeriod('this-month')}>今月</button>
+        <button onClick={() => handlePresetPeriod('last-month')}>先月</button>
         <button onClick={() => handlePresetPeriod('this-quarter')}>
           今四半期
         </button>
         <button onClick={() => handlePresetPeriod('last-quarter')}>
           前四半期
         </button>
-        <button onClick={() => handlePresetPeriod('this-year')}>
-          今年
-        </button>
-        <button 
+        <button onClick={() => handlePresetPeriod('this-year')}>今年</button>
+        <button
           className={isCustom ? 'active' : ''}
           onClick={() => setIsCustom(!isCustom)}
         >
           カスタム
         </button>
       </div>
-      
+
       {isCustom && (
         <div className="custom-period">
           <input
@@ -603,9 +632,11 @@ export const PeriodSelector = ({ value, onChange }: PeriodSelectorProps) => {
           />
         </div>
       )}
-      
+
       <div className="current-period">
-        <span>{value.start} 〜 {value.end}</span>
+        <span>
+          {value.start} 〜 {value.end}
+        </span>
       </div>
     </div>
   )
@@ -617,6 +648,7 @@ export const PeriodSelector = ({ value, onChange }: PeriodSelectorProps) => {
 #### 4.1 Chart.css
 
 **frontend/src/components/Chart/Chart.css**:
+
 ```css
 /* チャート共通スタイル */
 .burn-down-chart,
@@ -703,8 +735,12 @@ export const PeriodSelector = ({ value, onChange }: PeriodSelectorProps) => {
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 /* レスポンシブ対応 */
@@ -713,7 +749,7 @@ export const PeriodSelector = ({ value, onChange }: PeriodSelectorProps) => {
     flex-direction: column;
     gap: 15px;
   }
-  
+
   .burn-down-chart,
   .burn-up-chart {
     padding: 15px;
@@ -724,6 +760,7 @@ export const PeriodSelector = ({ value, onChange }: PeriodSelectorProps) => {
 #### 4.2 ChartSection.css
 
 **frontend/src/components/Dashboard/ChartSection.css**:
+
 ```css
 .chart-section {
   margin-bottom: 40px;
@@ -835,11 +872,11 @@ export const PeriodSelector = ({ value, onChange }: PeriodSelectorProps) => {
   .charts-container.both {
     grid-template-columns: 1fr;
   }
-  
+
   .chart-controls {
     flex-wrap: wrap;
   }
-  
+
   .export-button {
     margin-left: 0;
     margin-top: 10px;
@@ -853,7 +890,7 @@ export const PeriodSelector = ({ value, onChange }: PeriodSelectorProps) => {
     align-items: flex-start;
     width: 100%;
   }
-  
+
   .milestone-select,
   .view-toggle {
     width: 100%;
@@ -864,6 +901,7 @@ export const PeriodSelector = ({ value, onChange }: PeriodSelectorProps) => {
 ## 成果物
 
 ### 必須成果物
+
 1. **チャートコンポーネント**:
    - BurnDownChart（美しいburn-downチャート）
    - BurnUpChart（インタラクティブburn-upチャート）
@@ -888,11 +926,13 @@ export const PeriodSelector = ({ value, onChange }: PeriodSelectorProps) => {
 ## 検証項目
 
 ### 実施前確認
+
 - [x] Task 10のチャートAPI動作確認
 - [x] Rechartsライブラリインストール確認
 - [x] チャートデータ形式理解完了
 
 ### 実施後確認
+
 - [x] チャート美しく表示される
 - [x] インタラクション直感的
 - [x] データ正確に反映される
@@ -900,6 +940,7 @@ export const PeriodSelector = ({ value, onChange }: PeriodSelectorProps) => {
 - [x] レスポンシブ対応完璧
 
 ### 品質確認
+
 - [x] チャート描画速度 < 1秒
 - [x] スムーズなアニメーション
 - [x] 適切なカラーパレット
@@ -908,11 +949,13 @@ export const PeriodSelector = ({ value, onChange }: PeriodSelectorProps) => {
 ## 次のタスクへの引き継ぎ
 
 ### Task 12への引き継ぎ事項
+
 - 完成したチャートUI
 - Dashboard統合済み
 - 全Phase 4機能完成
 
 ### 注意事項
+
 - 大量データでの描画パフォーマンス
 - チャートライブラリの制限事項
 - ブラウザ互換性

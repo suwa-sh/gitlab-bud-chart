@@ -61,8 +61,7 @@
   color: #82ca9d;
 }
 
-/* ローディング・空状態 */
-.chart-loading,
+/* 空状態（ローディング表示はページ共通の LoadingSpinner に一本化） */
 .chart-empty {
   height: 400px;
   display: flex;
@@ -72,28 +71,13 @@
   color: #666;
 }
 
-.loading-spinner {
-  width: 40px;
-  height: 40px;
-  border: 3px solid #f3f3f3;
-  border-top: 3px solid #3498db;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-  margin-bottom: 20px;
-}
-
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
 /* レスポンシブ対応 */
 @media (max-width: 768px) {
   .chart-summary {
     flex-direction: column;
     gap: 15px;
   }
-  
+
   .burn-down-chart,
   .burn-up-chart {
     padding: 15px;
@@ -114,7 +98,6 @@
   margin-bottom: 15px;
   min-height: 50px;
 }
-
 
 .chart-indicator {
   display: flex;
@@ -256,7 +239,9 @@
   border: 1px solid #ced4da;
   border-radius: 4px;
   font-size: 14px;
-  transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+  transition:
+    border-color 0.15s ease-in-out,
+    box-shadow 0.15s ease-in-out;
 }
 
 .chart-filters .filter-input:focus {
@@ -272,7 +257,9 @@
   border-radius: 4px;
   background-color: #fff;
   font-size: 14px;
-  transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+  transition:
+    border-color 0.15s ease-in-out,
+    box-shadow 0.15s ease-in-out;
 }
 
 .chart-filters .filter-select:focus {
@@ -356,7 +343,9 @@
   border: 1px solid #ced4da;
   border-radius: 4px;
   font-size: 14px;
-  transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+  transition:
+    border-color 0.15s ease-in-out,
+    box-shadow 0.15s ease-in-out;
 }
 
 .detail-filters .filter-input:focus {
@@ -372,7 +361,9 @@
   border-radius: 4px;
   background-color: #fff;
   font-size: 14px;
-  transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+  transition:
+    border-color 0.15s ease-in-out,
+    box-shadow 0.15s ease-in-out;
 }
 
 .detail-filters .filter-select:focus {
@@ -490,12 +481,12 @@
   .burn-up-chart {
     padding: 25px;
   }
-  
+
   .chart-summary {
     justify-content: space-between;
     gap: 20px;
   }
-  
+
   .charts-container {
     gap: 30px;
   }
@@ -506,13 +497,13 @@
   .burn-up-chart {
     padding: 30px;
   }
-  
+
   .chart-summary {
     gap: 30px;
     margin-top: 25px;
     padding-top: 25px;
   }
-  
+
   .charts-container {
     gap: 40px;
   }
@@ -523,7 +514,7 @@
   .burn-up-chart {
     padding: 35px;
   }
-  
+
   .charts-container {
     gap: 50px;
   }
@@ -533,7 +524,7 @@
   .charts-container.both {
     grid-template-columns: 1fr;
   }
-  
+
   .chart-filters {
     flex-wrap: wrap;
   }
@@ -545,33 +536,33 @@
     align-items: stretch;
     gap: 15px;
   }
-  
+
   .chart-summary {
     flex-direction: column;
     gap: 15px;
   }
-  
+
   .burn-down-chart,
   .burn-up-chart {
     padding: 15px;
   }
-  
+
   .filter-group {
     flex-direction: column;
     align-items: flex-start;
     width: 100%;
     gap: 5px;
   }
-  
+
   .milestone-select,
   .view-toggle {
     width: 100%;
   }
-  
+
   .export-btn {
     width: 100%;
   }
-  
+
   .milestone-indicator,
   .chart-indicator {
     font-size: 11px;
@@ -698,11 +689,11 @@
     flex-direction: column;
     gap: 15px;
   }
-  
+
   .unified-chart-summary {
     padding: 15px;
   }
-  
+
   .summary-period {
     font-size: 20px;
     padding: 10px 14px;

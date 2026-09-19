@@ -1,4 +1,9 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+} from 'react-router-dom'
 import { AppProvider } from './contexts/AppContext'
 import { Layout } from './components/Layout/Layout'
 import { Dashboard } from './components/Dashboard/Dashboard'

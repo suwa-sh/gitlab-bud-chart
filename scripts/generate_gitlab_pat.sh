@@ -39,7 +39,7 @@ fi
 echo "GitLabコンテナの起動を待機しています..."
 
 # GitLabのヘルスチェックが 'healthy' になるまで待つ
-while [[ "$(docker inspect -f {{.State.Health.Status}} ${GITLAB_CONTAINER_NAME})" != "healthy" ]]; do
+while [[ "$(docker inspect -f '{{.State.Health.Status}}' "${GITLAB_CONTAINER_NAME}")" != "healthy" ]]; do
     sleep 10
     echo -n "."
 done

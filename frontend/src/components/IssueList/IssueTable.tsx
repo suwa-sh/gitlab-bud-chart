@@ -3,12 +3,10 @@ import { Issue } from '../../types/api'
 import { IssueTableFilters } from './IssueTableFilters'
 import { IssueTableRow } from './IssueTableRow'
 import { TablePagination } from '../Common/TablePagination'
-import { LoadingSpinner } from '../Common/LoadingSpinner'
 import './IssueTable.css'
 
 interface IssueTableProps {
   issues: Issue[]
-  loading: boolean
   showFilters?: boolean
   pageSize?: number
   allowShowAll?: boolean
@@ -35,16 +33,15 @@ interface IssueTableProps {
   onSortChange?: (key: string, direction: 'asc' | 'desc') => void
 }
 
-export const IssueTable = ({ 
-  issues, 
-  loading, 
-  showFilters = false, 
+export const IssueTable = ({
+  issues,
+  showFilters = false,
   pageSize = 20,
   allowShowAll = false,
   initialShowAll = false,
   issueFilters,
   sortConfig: externalSortConfig,
-  onSortChange
+  onSortChange,
 }: IssueTableProps) => {
   const [filters, setFilters] = useState({
     search: '',
@@ -52,7 +49,7 @@ export const IssueTable = ({
     assignee: '',
     kanban_status: '',
     service: '',
-    state: ''
+    state: '',
   })
   const [currentPage, setCurrentPage] = useState(1)
   const [showAll, setShowAll] = useState(initialShowAll)
@@ -60,7 +57,7 @@ export const IssueTable = ({
     key: keyof Issue
     direction: 'asc' | 'desc'
   } | null>(null)
-  
+
   // Use external sort config if provided, otherwise use internal
   const sortConfig = externalSortConfig || internalSortConfig
 
@@ -71,9 +68,11 @@ export const IssueTable = ({
       return issues
     }
     // 内部フィルタを使用（PBL-Viewerなど）
-    return issues.filter(issue => {
-      if (filters.search && 
-          !issue.title.toLowerCase().includes(filters.search.toLowerCase())) {
+    return issues.filter((issue) => {
+      if (
+        filters.search &&
+        !issue.title.toLowerCase().includes(filters.search.toLowerCase())
+      ) {
         return false
       }
       if (filters.milestone && issue.milestone !== filters.milestone) {
@@ -82,7 +81,10 @@ export const IssueTable = ({
       if (filters.assignee && issue.assignee !== filters.assignee) {
         return false
       }
-      if (filters.kanban_status && issue.kanban_status !== filters.kanban_status) {
+      if (
+        filters.kanban_status &&
+        issue.kanban_status !== filters.kanban_status
+      ) {
         return false
       }
       if (filters.service && issue.service !== filters.service) {
@@ -98,14 +100,14 @@ export const IssueTable = ({
   // ソートロジック
   const sortedIssues = useMemo(() => {
     if (!sortConfig) return filteredIssues
-    
+
     return [...filteredIssues].sort((a, b) => {
       const aValue = a[sortConfig.key as keyof Issue]
       const bValue = b[sortConfig.key as keyof Issue]
-      
+
       if (aValue === null || aValue === undefined) return 1
       if (bValue === null || bValue === undefined) return -1
-      
+
       if (aValue < bValue) {
         return sortConfig.direction === 'asc' ? -1 : 1
       }
@@ -126,8 +128,9 @@ export const IssueTable = ({
   }, [sortedIssues, currentPage, pageSize, showAll])
 
   const handleSort = (key: keyof Issue) => {
-    const newDirection = sortConfig?.key === key && sortConfig.direction === 'asc' ? 'desc' : 'asc'
-    
+    const newDirection =
+      sortConfig?.key === key && sortConfig.direction === 'asc' ? 'desc' : 'asc'
+
     if (onSortChange) {
       // If external handler provided, use it
       onSortChange(key, newDirection)
@@ -135,25 +138,21 @@ export const IssueTable = ({
       // Otherwise use internal state
       setInternalSortConfig({
         key,
-        direction: newDirection
+        direction: newDirection,
       })
     }
-  }
-
-  if (loading) {
-    return <LoadingSpinner />
   }
 
   return (
     <div className="issue-table-container">
       {showFilters && (
-        <IssueTableFilters 
+        <IssueTableFilters
           filters={filters}
           onFiltersChange={setFilters}
           issues={issues}
         />
       )}
-      
+
       <div className="table-info">
         <div className="table-info-left">
           <h3 className="issues-title">Issues</h3>
@@ -184,7 +183,7 @@ export const IssueTable = ({
           </div>
         )}
       </div>
-      
+
       <div className={`table-wrapper ${showAll ? 'show-all' : ''}`}>
         <table className="issue-table">
           <thead>
@@ -192,81 +191,103 @@ export const IssueTable = ({
               <th onClick={() => handleSort('service')}>
                 Service
                 {sortConfig?.key === 'service' && (
-                  <span className={`sort-icon ${sortConfig.direction}`}>↕</span>
+                  <span className={`sort-icon ${sortConfig.direction}`}>
+                    ↕
+                  </span>
                 )}
               </th>
               <th onClick={() => handleSort('milestone')}>
                 Milestone
                 {sortConfig?.key === 'milestone' && (
-                  <span className={`sort-icon ${sortConfig.direction}`}>↕</span>
+                  <span className={`sort-icon ${sortConfig.direction}`}>
+                    ↕
+                  </span>
                 )}
               </th>
               <th onClick={() => handleSort('is_epic')}>
                 Epic
                 {sortConfig?.key === 'is_epic' && (
-                  <span className={`sort-icon ${sortConfig.direction}`}>↕</span>
+                  <span className={`sort-icon ${sortConfig.direction}`}>
+                    ↕
+                  </span>
                 )}
               </th>
               <th onClick={() => handleSort('title')}>
                 Title
                 {sortConfig?.key === 'title' && (
-                  <span className={`sort-icon ${sortConfig.direction}`}>↕</span>
+                  <span className={`sort-icon ${sortConfig.direction}`}>
+                    ↕
+                  </span>
                 )}
               </th>
               <th onClick={() => handleSort('point')}>
                 Point
                 {sortConfig?.key === 'point' && (
-                  <span className={`sort-icon ${sortConfig.direction}`}>↕</span>
+                  <span className={`sort-icon ${sortConfig.direction}`}>
+                    ↕
+                  </span>
                 )}
               </th>
               <th onClick={() => handleSort('kanban_status')}>
                 Kanban Status
                 {sortConfig?.key === 'kanban_status' && (
-                  <span className={`sort-icon ${sortConfig.direction}`}>↕</span>
+                  <span className={`sort-icon ${sortConfig.direction}`}>
+                    ↕
+                  </span>
                 )}
               </th>
               <th onClick={() => handleSort('assignee')}>
                 Assignee
                 {sortConfig?.key === 'assignee' && (
-                  <span className={`sort-icon ${sortConfig.direction}`}>↕</span>
+                  <span className={`sort-icon ${sortConfig.direction}`}>
+                    ↕
+                  </span>
                 )}
               </th>
               <th onClick={() => handleSort('quarter')}>
                 Quarter
                 {sortConfig?.key === 'quarter' && (
-                  <span className={`sort-icon ${sortConfig.direction}`}>↕</span>
+                  <span className={`sort-icon ${sortConfig.direction}`}>
+                    ↕
+                  </span>
                 )}
               </th>
               <th onClick={() => handleSort('created_at')}>
                 Created At
                 {sortConfig?.key === 'created_at' && (
-                  <span className={`sort-icon ${sortConfig.direction}`}>↕</span>
+                  <span className={`sort-icon ${sortConfig.direction}`}>
+                    ↕
+                  </span>
                 )}
               </th>
               <th onClick={() => handleSort('completed_at')}>
                 Completed At
                 {sortConfig?.key === 'completed_at' && (
-                  <span className={`sort-icon ${sortConfig.direction}`}>↕</span>
+                  <span className={`sort-icon ${sortConfig.direction}`}>
+                    ↕
+                  </span>
                 )}
               </th>
               <th onClick={() => handleSort('state')}>
                 State
                 {sortConfig?.key === 'state' && (
-                  <span className={`sort-icon ${sortConfig.direction}`}>↕</span>
+                  <span className={`sort-icon ${sortConfig.direction}`}>
+                    ↕
+                  </span>
                 )}
               </th>
             </tr>
           </thead>
           <tbody>
-            {paginatedIssues.map(issue => (
+            {paginatedIssues.map((issue) => (
               <IssueTableRow key={issue.id} issue={issue} />
             ))}
           </tbody>
         </table>
       </div>
-      
+
       {!showAll && sortedIssues.length > pageSize && (
-        <TablePagination 
+        <TablePagination
           currentPage={currentPage}
           totalItems={sortedIssues.length}
           pageSize={pageSize}

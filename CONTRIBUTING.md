@@ -6,7 +6,7 @@ Thank you for your interest in contributing to GitLab Bud Chart! This document p
 
 ### Prerequisites
 
-- **Node.js** 18+ (for frontend development)
+- **Node.js** 22.12+ (for frontend development; required by vitest 5)
 - **Python** 3.8+ (for backend development)
 - **Git** for version control
 - **GitLab** instance access (for testing)
@@ -14,30 +14,33 @@ Thank you for your interest in contributing to GitLab Bud Chart! This document p
 ### Development Setup
 
 1. **Clone the repository**
+
    ```bash
    git clone <repository-url>
    cd gitlab-bud-chart
    ```
 
 2. **Environment setup**
+
    ```bash
    # Copy environment template
    cp .env.example .env
-   
+
    # Edit .env with your GitLab credentials
    # NEVER commit .env files!
    ```
 
 3. **Install dependencies**
+
    ```bash
    # Run setup script
    ./scripts/setup.sh
-   
+
    # Or manually:
    # Backend
    cd backend && python -m venv venv && source venv/bin/activate && pip install -r requirements.txt
-   
-   # Frontend  
+
+   # Frontend
    cd frontend && npm install && npx playwright install
    ```
 
@@ -99,6 +102,7 @@ gitlab-bud-chart/
 ## 🧪 Testing
 
 ### **Backend Tests**
+
 ```bash
 cd backend
 source venv/bin/activate
@@ -106,37 +110,59 @@ pytest tests/ -v --cov=app
 ```
 
 ### **Frontend Unit Tests**
+
 ```bash
 cd frontend
 npm run test:unit
 ```
 
 ### **E2E Tests**
+
 ```bash
 cd frontend
 npm run test:e2e
 ```
 
 ### **Full Test Suite**
+
 ```bash
-./scripts/run-tests.sh  # Will be created in future tasks
+make setup   # 初回のみ: 依存と qlty のツールをインストール
+make test    # frontend / backend のユニットテスト
 ```
+
+## ✅ Quality Gate
+
+整形・静的解析・セキュリティ検査は [qlty](https://qlty.sh) にまとめている。設定は `.qlty/qlty.toml`。
+
+| コマンド     | 内容                                                  |
+| ------------ | ----------------------------------------------------- |
+| `make fmt`   | 全ファイルを整形する (Prettier / ruff format)         |
+| `make lint`  | CI と同じゲート + 型チェック                          |
+| `make sast`  | セキュリティ検査だけを実行する                        |
+| `make check` | `lint` + `test`。**コミット前にこれが通る状態にする** |
+
+- ゲートは「medium 以上の指摘が 0 件」で合格する。依存の脆弱性・シークレット混入・CI 設定の不備もここで検出する
+- 複雑度や重複リテラルなどのコードスメルは low の助言扱いで、ゲートでは落とさない
+- `qlty check --fix` は使わない。指定にかかわらず全ファイルを整形するため、整形は `make fmt` で明示的に行う
 
 ## 📝 Code Style
 
 ### **Backend (Python)**
+
 - Follow PEP 8
 - Use type hints
 - Document functions with docstrings
 - Maximum line length: 88 characters
 
 ### **Frontend (TypeScript)**
+
 - Use TypeScript strict mode
 - Follow React best practices
 - Use functional components with hooks
 - Consistent naming conventions
 
 ### **Commits**
+
 - Use conventional commit format
 - Examples:
   - `feat(frontend): add burn-up chart component`
@@ -147,16 +173,19 @@ npm run test:e2e
 ## 🔄 Development Workflow
 
 ### **1. Create Feature Branch**
+
 ```bash
 git checkout -b feature/your-feature-name
 ```
 
 ### **2. Make Changes**
+
 - Write code following project conventions
 - Add/update tests
 - Update documentation if needed
 
 ### **3. Test Locally**
+
 ```bash
 # Run all tests
 npm run test  # Frontend
@@ -167,12 +196,14 @@ npm run test:e2e
 ```
 
 ### **4. Commit Changes**
+
 ```bash
 git add .
 git commit -m "feat: add new feature"
 ```
 
 ### **5. Push and Create PR**
+
 ```bash
 git push origin feature/your-feature-name
 # Create pull request via GitHub interface
@@ -200,6 +231,7 @@ For new features:
 ## 📋 Pull Request Guidelines
 
 ### **Before Submitting**
+
 - [ ] Code follows project style guidelines
 - [ ] Tests pass locally
 - [ ] Documentation is updated
@@ -207,6 +239,7 @@ For new features:
 - [ ] Conventional commit messages
 
 ### **PR Description Should Include**
+
 - **Summary** of changes
 - **Testing** performed
 - **Screenshots** for UI changes
@@ -215,16 +248,19 @@ For new features:
 ## ⚠️ Important Notes
 
 ### **GitLab Credentials**
+
 - Use personal access tokens, not passwords
 - Required scopes: `api`, `read_user`, `read_repository`
 - Store in `.env` file (never commit!)
 
 ### **Supported GitLab Versions**
+
 - GitLab CE/EE 13.0+
 - Self-hosted and GitLab.com
 - API v4
 
 ### **Browser Support**
+
 - Chrome/Chromium 90+
 - Firefox 88+
 - Safari 14+

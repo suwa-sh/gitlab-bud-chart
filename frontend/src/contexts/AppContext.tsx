@@ -1,7 +1,16 @@
-import React, { createContext, useContext, useReducer, ReactNode, useEffect } from 'react'
+import React, {
+  createContext,
+  useContext,
+  useReducer,
+  ReactNode,
+  useEffect,
+} from 'react'
 import { format } from 'date-fns'
 import { Issue } from '../types/api'
-import { getCurrentFiscalQuarter, fiscalQuarterToDateRange } from '../utils/quarterUtils'
+import {
+  getCurrentFiscalQuarter,
+  fiscalQuarterToDateRange,
+} from '../utils/quarterUtils'
 
 interface IssueFilters {
   milestone?: string
@@ -28,14 +37,14 @@ interface AppState {
   dashboardFilters: IssueFilters
   dashboardCacheTimestamp: Date | null
   dashboardWarnings: any[] | null
-  
+
   // PBL-Viewer用の状態
   pblViewerIssues: Issue[]
   pblViewerLoading: boolean
   pblViewerError: string | null
   pblViewerFilters: IssueFilters
   pblViewerCacheTimestamp: Date | null
-  
+
   // 共通状態
   chartPeriod: {
     start: string
@@ -54,7 +63,7 @@ interface AppState {
     noProxy?: string
   }
   sessionId?: string
-  
+
   // 後方互換性のため残す（廃止予定）
   issues: Issue[]
   loading: boolean
@@ -62,7 +71,7 @@ interface AppState {
   filters: IssueFilters
 }
 
-type AppAction = 
+type AppAction =
   // Dashboard用のアクション
   | { type: 'SET_DASHBOARD_ISSUES'; payload: Issue[] }
   | { type: 'SET_DASHBOARD_LOADING'; payload: boolean }
@@ -70,14 +79,14 @@ type AppAction =
   | { type: 'SET_DASHBOARD_FILTERS'; payload: Partial<IssueFilters> }
   | { type: 'SET_DASHBOARD_CACHE_TIMESTAMP'; payload: Date | null }
   | { type: 'SET_DASHBOARD_WARNINGS'; payload: any[] | null }
-  
+
   // PBL-Viewer用のアクション
   | { type: 'SET_PBL_VIEWER_ISSUES'; payload: Issue[] }
   | { type: 'SET_PBL_VIEWER_LOADING'; payload: boolean }
   | { type: 'SET_PBL_VIEWER_ERROR'; payload: string | null }
   | { type: 'SET_PBL_VIEWER_FILTERS'; payload: Partial<IssueFilters> }
   | { type: 'SET_PBL_VIEWER_CACHE_TIMESTAMP'; payload: Date | null }
-  
+
   // 共通アクション
   | { type: 'SET_CHART_PERIOD'; payload: { start: string; end: string } }
   | { type: 'SET_GITLAB_CONFIG'; payload: Partial<AppState['gitlabConfig']> }
@@ -85,7 +94,7 @@ type AppAction =
   | { type: 'SET_SESSION_ID'; payload: string | undefined }
   | { type: 'SESSION_EXPIRED' }
   | { type: 'RESET_SESSION' }
-  
+
   // 後方互換性のため残す（廃止予定）
   | { type: 'SET_ISSUES'; payload: Issue[] }
   | { type: 'SET_LOADING'; payload: boolean }
@@ -96,10 +105,10 @@ type AppAction =
 const getDefaultPeriod = (): { start: string; end: string } => {
   const currentQuarter = getCurrentFiscalQuarter() // 例: @FY25Q2
   const dateRange = fiscalQuarterToDateRange(currentQuarter) // { start: Date, end: Date }
-  
+
   return {
     start: format(dateRange.start, 'yyyy-MM-dd'),
-    end: format(dateRange.end, 'yyyy-MM-dd')
+    end: format(dateRange.end, 'yyyy-MM-dd'),
   }
 }
 
@@ -119,7 +128,7 @@ const loadGitLabConfigFromStorage = (): AppState['gitlabConfig'] => {
         apiVersion: config.apiVersion,
         httpProxy: config.httpProxy,
         httpsProxy: config.httpsProxy,
-        noProxy: config.noProxy
+        noProxy: config.noProxy,
       }
     }
   } catch (error) {
@@ -135,7 +144,7 @@ const loadGitLabConfigFromStorage = (): AppState['gitlabConfig'] => {
     apiVersion: undefined,
     httpProxy: undefined,
     httpsProxy: undefined,
-    noProxy: undefined
+    noProxy: undefined,
   }
 }
 
@@ -151,7 +160,7 @@ const saveGitLabConfigToStorage = (config: AppState['gitlabConfig']) => {
 // LocalStorageからissuesデータを読み込む関数（Dashboard用）
 const loadDashboardIssuesFromStorage = (sessionId?: string): Issue[] => {
   if (!sessionId) return []
-  
+
   try {
     const stored = localStorage.getItem(`dashboard-issues-${sessionId}`)
     if (stored) {
@@ -170,7 +179,7 @@ const loadDashboardIssuesFromStorage = (sessionId?: string): Issue[] => {
 // LocalStorageからDashboardキャッシュタイムスタンプを読み込む関数
 const loadDashboardCacheTimestamp = (sessionId?: string): Date | null => {
   if (!sessionId) return null
-  
+
   try {
     const stored = localStorage.getItem(`dashboard-issues-${sessionId}`)
     if (stored) {
@@ -185,16 +194,24 @@ const loadDashboardCacheTimestamp = (sessionId?: string): Date | null => {
   return null
 }
 
+// PBL-Viewerのキャッシュは「フィルタ未適用の全issue」であることを示す印。
+// サーバー側で絞り込んだ結果を保存していた旧形式のキャッシュを全件として誤用しないために使う
+const PBL_VIEWER_CACHE_SCOPE = 'all'
+
 // LocalStorageからissuesデータを読み込む関数（PBL-Viewer用）
 const loadPBLViewerIssuesFromStorage = (sessionId?: string): Issue[] => {
   if (!sessionId) return []
-  
+
   try {
     const stored = localStorage.getItem(`pbl-viewer-issues-${sessionId}`)
     if (stored) {
       const data = JSON.parse(stored)
-      // 1時間以内のキャッシュのみ有効
-      if (data.timestamp && Date.now() - data.timestamp < 3600000) {
+      // 1時間以内、かつ全件取得のキャッシュのみ有効
+      if (
+        data.scope === PBL_VIEWER_CACHE_SCOPE &&
+        data.timestamp &&
+        Date.now() - data.timestamp < 3600000
+      ) {
         return data.issues || []
       }
     }
@@ -207,12 +224,16 @@ const loadPBLViewerIssuesFromStorage = (sessionId?: string): Issue[] => {
 // LocalStorageからPBL-Viewerキャッシュタイムスタンプを読み込む関数
 const loadPBLViewerCacheTimestamp = (sessionId?: string): Date | null => {
   if (!sessionId) return null
-  
+
   try {
     const stored = localStorage.getItem(`pbl-viewer-issues-${sessionId}`)
     if (stored) {
       const data = JSON.parse(stored)
-      if (data.timestamp && Date.now() - data.timestamp < 3600000) {
+      if (
+        data.scope === PBL_VIEWER_CACHE_SCOPE &&
+        data.timestamp &&
+        Date.now() - data.timestamp < 3600000
+      ) {
         return new Date(data.timestamp)
       }
     }
@@ -225,7 +246,7 @@ const loadPBLViewerCacheTimestamp = (sessionId?: string): Date | null => {
 // LocalStorageからissuesデータを読み込む関数（後方互換性）
 const loadIssuesFromStorage = (sessionId?: string): Issue[] => {
   if (!sessionId) return []
-  
+
   try {
     const stored = localStorage.getItem(`issues-${sessionId}`)
     if (stored) {
@@ -244,11 +265,11 @@ const loadIssuesFromStorage = (sessionId?: string): Issue[] => {
 // LocalStorageにissuesデータを保存する関数（Dashboard用）
 const saveDashboardIssuesToStorage = (issues: Issue[], sessionId?: string) => {
   if (!sessionId) return
-  
+
   try {
     const data = {
       issues,
-      timestamp: Date.now()
+      timestamp: Date.now(),
     }
     localStorage.setItem(`dashboard-issues-${sessionId}`, JSON.stringify(data))
   } catch (error) {
@@ -259,11 +280,12 @@ const saveDashboardIssuesToStorage = (issues: Issue[], sessionId?: string) => {
 // LocalStorageにissuesデータを保存する関数（PBL-Viewer用）
 const savePBLViewerIssuesToStorage = (issues: Issue[], sessionId?: string) => {
   if (!sessionId) return
-  
+
   try {
     const data = {
       issues,
-      timestamp: Date.now()
+      scope: PBL_VIEWER_CACHE_SCOPE,
+      timestamp: Date.now(),
     }
     localStorage.setItem(`pbl-viewer-issues-${sessionId}`, JSON.stringify(data))
   } catch (error) {
@@ -274,11 +296,11 @@ const savePBLViewerIssuesToStorage = (issues: Issue[], sessionId?: string) => {
 // LocalStorageにissuesデータを保存する関数（後方互換性）
 const saveIssuesToStorage = (issues: Issue[], sessionId?: string) => {
   if (!sessionId) return
-  
+
   try {
     const data = {
       issues,
-      timestamp: Date.now()
+      timestamp: Date.now(),
     }
     localStorage.setItem(`issues-${sessionId}`, JSON.stringify(data))
   } catch (error) {
@@ -289,7 +311,7 @@ const saveIssuesToStorage = (issues: Issue[], sessionId?: string) => {
 // LocalStorageからfiltersデータを読み込む関数（Dashboard用）
 const loadDashboardFiltersFromStorage = (sessionId?: string): IssueFilters => {
   if (!sessionId) return {}
-  
+
   try {
     const stored = localStorage.getItem(`dashboard-filters-${sessionId}`)
     if (stored) {
@@ -308,7 +330,7 @@ const loadDashboardFiltersFromStorage = (sessionId?: string): IssueFilters => {
 // LocalStorageからfiltersデータを読み込む関数（PBL-Viewer用）
 const loadPBLViewerFiltersFromStorage = (sessionId?: string): IssueFilters => {
   if (!sessionId) return {}
-  
+
   try {
     const stored = localStorage.getItem(`pbl-viewer-filters-${sessionId}`)
     if (stored) {
@@ -327,7 +349,7 @@ const loadPBLViewerFiltersFromStorage = (sessionId?: string): IssueFilters => {
 // LocalStorageからfiltersデータを読み込む関数（後方互換性）
 const loadFiltersFromStorage = (sessionId?: string): IssueFilters => {
   if (!sessionId) return {}
-  
+
   try {
     const stored = localStorage.getItem(`filters-${sessionId}`)
     if (stored) {
@@ -344,13 +366,16 @@ const loadFiltersFromStorage = (sessionId?: string): IssueFilters => {
 }
 
 // LocalStorageにfiltersデータを保存する関数（Dashboard用）
-const saveDashboardFiltersToStorage = (filters: IssueFilters, sessionId?: string) => {
+const saveDashboardFiltersToStorage = (
+  filters: IssueFilters,
+  sessionId?: string,
+) => {
   if (!sessionId) return
-  
+
   try {
     const data = {
       filters,
-      timestamp: Date.now()
+      timestamp: Date.now(),
     }
     localStorage.setItem(`dashboard-filters-${sessionId}`, JSON.stringify(data))
   } catch (error) {
@@ -359,15 +384,21 @@ const saveDashboardFiltersToStorage = (filters: IssueFilters, sessionId?: string
 }
 
 // LocalStorageにfiltersデータを保存する関数（PBL-Viewer用）
-const savePBLViewerFiltersToStorage = (filters: IssueFilters, sessionId?: string) => {
+const savePBLViewerFiltersToStorage = (
+  filters: IssueFilters,
+  sessionId?: string,
+) => {
   if (!sessionId) return
-  
+
   try {
     const data = {
       filters,
-      timestamp: Date.now()
+      timestamp: Date.now(),
     }
-    localStorage.setItem(`pbl-viewer-filters-${sessionId}`, JSON.stringify(data))
+    localStorage.setItem(
+      `pbl-viewer-filters-${sessionId}`,
+      JSON.stringify(data),
+    )
   } catch (error) {
     console.warn('Failed to save pbl-viewer filters to localStorage:', error)
   }
@@ -376,11 +407,11 @@ const savePBLViewerFiltersToStorage = (filters: IssueFilters, sessionId?: string
 // LocalStorageにfiltersデータを保存する関数（後方互換性）
 const saveFiltersToStorage = (filters: IssueFilters, sessionId?: string) => {
   if (!sessionId) return
-  
+
   try {
     const data = {
       filters,
-      timestamp: Date.now()
+      timestamp: Date.now(),
     }
     localStorage.setItem(`filters-${sessionId}`, JSON.stringify(data))
   } catch (error) {
@@ -391,30 +422,42 @@ const saveFiltersToStorage = (filters: IssueFilters, sessionId?: string) => {
 // 古いキャッシュから新しい分離キャッシュへのマイグレーション
 const migrateOldCacheToNewFormat = (sessionId?: string) => {
   if (!sessionId) return
-  
+
   try {
     // 古い単一キャッシュからデータを読み込み
     const oldIssuesData = localStorage.getItem(`issues-${sessionId}`)
     const oldFiltersData = localStorage.getItem(`filters-${sessionId}`)
-    
+
     // Dashboard用にマイグレーション（期間フィルタありのデータとして扱う）
-    if (oldIssuesData && !localStorage.getItem(`dashboard-issues-${sessionId}`)) {
+    if (
+      oldIssuesData &&
+      !localStorage.getItem(`dashboard-issues-${sessionId}`)
+    ) {
       localStorage.setItem(`dashboard-issues-${sessionId}`, oldIssuesData)
       console.log('Migrated old issues cache to dashboard cache')
     }
-    
-    if (oldFiltersData && !localStorage.getItem(`dashboard-filters-${sessionId}`)) {
+
+    if (
+      oldFiltersData &&
+      !localStorage.getItem(`dashboard-filters-${sessionId}`)
+    ) {
       localStorage.setItem(`dashboard-filters-${sessionId}`, oldFiltersData)
       console.log('Migrated old filters cache to dashboard cache')
     }
-    
+
     // PBL-Viewer用にマイグレーション（全データとして扱う）
-    if (oldIssuesData && !localStorage.getItem(`pbl-viewer-issues-${sessionId}`)) {
+    if (
+      oldIssuesData &&
+      !localStorage.getItem(`pbl-viewer-issues-${sessionId}`)
+    ) {
       localStorage.setItem(`pbl-viewer-issues-${sessionId}`, oldIssuesData)
       console.log('Migrated old issues cache to pbl-viewer cache')
     }
-    
-    if (oldFiltersData && !localStorage.getItem(`pbl-viewer-filters-${sessionId}`)) {
+
+    if (
+      oldFiltersData &&
+      !localStorage.getItem(`pbl-viewer-filters-${sessionId}`)
+    ) {
       // PBL-Viewer用は期間フィルタを除外
       try {
         const filterData = JSON.parse(oldFiltersData)
@@ -424,15 +467,20 @@ const migrateOldCacheToNewFormat = (sessionId?: string) => {
           delete pblFilters.created_before
           delete pblFilters.completed_after
           delete pblFilters.quarter
-          
+
           const pblFilterData = {
             ...filterData,
-            filters: pblFilters
+            filters: pblFilters,
           }
-          localStorage.setItem(`pbl-viewer-filters-${sessionId}`, JSON.stringify(pblFilterData))
-          console.log('Migrated old filters cache to pbl-viewer cache (without period filters)')
+          localStorage.setItem(
+            `pbl-viewer-filters-${sessionId}`,
+            JSON.stringify(pblFilterData),
+          )
+          console.log(
+            'Migrated old filters cache to pbl-viewer cache (without period filters)',
+          )
         }
-      } catch (error) {
+      } catch {
         // フォールバック：そのままコピー
         localStorage.setItem(`pbl-viewer-filters-${sessionId}`, oldFiltersData)
         console.log('Migrated old filters cache to pbl-viewer cache (fallback)')
@@ -449,41 +497,44 @@ const cleanupOldCache = (currentSessionId?: string) => {
     const keysToRemove: string[] = []
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i)
-      if (key && (
-        key.startsWith('issues-') ||
-        key.startsWith('filters-') ||
-        key.startsWith('dashboard-issues-') ||
-        key.startsWith('dashboard-filters-') ||
-        key.startsWith('pbl-viewer-issues-') ||
-        key.startsWith('pbl-viewer-filters-')
-      )) {
+      if (
+        key &&
+        (key.startsWith('issues-') ||
+          key.startsWith('filters-') ||
+          key.startsWith('dashboard-issues-') ||
+          key.startsWith('dashboard-filters-') ||
+          key.startsWith('pbl-viewer-issues-') ||
+          key.startsWith('pbl-viewer-filters-'))
+      ) {
         if (!currentSessionId || !key.endsWith(currentSessionId)) {
           keysToRemove.push(key)
         }
       }
     }
-    keysToRemove.forEach(key => localStorage.removeItem(key))
+    keysToRemove.forEach((key) => localStorage.removeItem(key))
   } catch (error) {
     console.warn('Failed to cleanup old cache:', error)
   }
 }
 
 const createInitialState = (): AppState => {
-  const sessionId = localStorage.getItem('gitlab-dashboard-session-id') || undefined
-  
+  const sessionId =
+    localStorage.getItem('gitlab-dashboard-session-id') || undefined
+
   // 古いキャッシュから新しいフォーマットへのマイグレーション
   migrateOldCacheToNewFormat(sessionId)
-  
+
   // URLパラメータから期間を取得
   const urlParams = new URLSearchParams(window.location.search)
   const periodStart = urlParams.get('period_start')
   const periodEnd = urlParams.get('period_end')
-  
+
   // 優先順位: URLパラメータ > デフォルト（現在四半期）
-  const chartPeriod = (periodStart && periodEnd) 
-    ? { start: periodStart, end: periodEnd }
-    : getDefaultPeriod()
-  
+  const chartPeriod =
+    periodStart && periodEnd
+      ? { start: periodStart, end: periodEnd }
+      : getDefaultPeriod()
+
   return {
     // Dashboard用の状態
     dashboardIssues: loadDashboardIssuesFromStorage(sessionId),
@@ -492,24 +543,24 @@ const createInitialState = (): AppState => {
     dashboardFilters: loadDashboardFiltersFromStorage(sessionId),
     dashboardCacheTimestamp: loadDashboardCacheTimestamp(sessionId),
     dashboardWarnings: null,
-    
+
     // PBL-Viewer用の状態
     pblViewerIssues: loadPBLViewerIssuesFromStorage(sessionId),
     pblViewerLoading: false,
     pblViewerError: null,
     pblViewerFilters: loadPBLViewerFiltersFromStorage(sessionId),
     pblViewerCacheTimestamp: loadPBLViewerCacheTimestamp(sessionId),
-    
+
     // 共通状態
     chartPeriod: chartPeriod,
     gitlabConfig: loadGitLabConfigFromStorage(),
     sessionId: sessionId,
-    
+
     // 後方互換性のため残す（廃止予定）
     issues: loadIssuesFromStorage(sessionId),
     loading: false,
     error: null,
-    filters: loadFiltersFromStorage(sessionId)
+    filters: loadFiltersFromStorage(sessionId),
   }
 }
 
@@ -530,12 +581,15 @@ function appReducer(state: AppState, action: AppAction): AppState {
     case 'SET_DASHBOARD_ERROR':
       return { ...state, dashboardError: action.payload }
     case 'SET_DASHBOARD_FILTERS':
-      return { ...state, dashboardFilters: { ...state.dashboardFilters, ...action.payload } }
+      return {
+        ...state,
+        dashboardFilters: { ...state.dashboardFilters, ...action.payload },
+      }
     case 'SET_DASHBOARD_CACHE_TIMESTAMP':
       return { ...state, dashboardCacheTimestamp: action.payload }
     case 'SET_DASHBOARD_WARNINGS':
       return { ...state, dashboardWarnings: action.payload }
-    
+
     // PBL-Viewer用のアクション
     case 'SET_PBL_VIEWER_ISSUES':
       return { ...state, pblViewerIssues: action.payload }
@@ -544,15 +598,21 @@ function appReducer(state: AppState, action: AppAction): AppState {
     case 'SET_PBL_VIEWER_ERROR':
       return { ...state, pblViewerError: action.payload }
     case 'SET_PBL_VIEWER_FILTERS':
-      return { ...state, pblViewerFilters: { ...state.pblViewerFilters, ...action.payload } }
+      return {
+        ...state,
+        pblViewerFilters: { ...state.pblViewerFilters, ...action.payload },
+      }
     case 'SET_PBL_VIEWER_CACHE_TIMESTAMP':
       return { ...state, pblViewerCacheTimestamp: action.payload }
-    
+
     // 共通アクション
     case 'SET_CHART_PERIOD':
       return { ...state, chartPeriod: action.payload }
     case 'SET_GITLAB_CONFIG':
-      return { ...state, gitlabConfig: { ...state.gitlabConfig, ...action.payload } }
+      return {
+        ...state,
+        gitlabConfig: { ...state.gitlabConfig, ...action.payload },
+      }
     case 'SET_METADATA':
       // Handle metadata if we need to store it in state later
       return state
@@ -565,9 +625,11 @@ function appReducer(state: AppState, action: AppAction): AppState {
         gitlabConfig: { ...state.gitlabConfig, isConnected: false },
         dashboardIssues: [],
         pblViewerIssues: [],
-        dashboardError: 'セッションが期限切れです。GitLab設定を再度行ってください。',
-        pblViewerError: 'セッションが期限切れです。GitLab設定を再度行ってください。',
-        sessionId: undefined
+        dashboardError:
+          'セッションが期限切れです。GitLab設定を再度行ってください。',
+        pblViewerError:
+          'セッションが期限切れです。GitLab設定を再度行ってください。',
+        sessionId: undefined,
       }
     case 'RESET_SESSION':
       // セッションリセット時の処理
@@ -580,9 +642,9 @@ function appReducer(state: AppState, action: AppAction): AppState {
         pblViewerError: null,
         dashboardCacheTimestamp: null,
         pblViewerCacheTimestamp: null,
-        sessionId: undefined
+        sessionId: undefined,
       }
-    
+
     // 後方互換性のため残す（廃止予定）
     case 'SET_ISSUES':
       return { ...state, issues: action.payload }
@@ -592,7 +654,7 @@ function appReducer(state: AppState, action: AppAction): AppState {
       return { ...state, error: action.payload }
     case 'SET_FILTERS':
       return { ...state, filters: { ...state.filters, ...action.payload } }
-    
+
     default:
       return state
   }
@@ -600,47 +662,47 @@ function appReducer(state: AppState, action: AppAction): AppState {
 
 export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [state, dispatch] = useReducer(appReducer, initialState)
-  
+
   // GitLab設定が変更されたときにlocalStorageに保存
   useEffect(() => {
     saveGitLabConfigToStorage(state.gitlabConfig)
   }, [state.gitlabConfig])
-  
+
   // Dashboard issuesが変更されたときにlocalStorageに保存
   useEffect(() => {
     if (state.dashboardIssues.length > 0) {
       saveDashboardIssuesToStorage(state.dashboardIssues, state.sessionId)
     }
   }, [state.dashboardIssues, state.sessionId])
-  
+
   // PBL-Viewer issuesが変更されたときにlocalStorageに保存
   useEffect(() => {
     if (state.pblViewerIssues.length > 0) {
       savePBLViewerIssuesToStorage(state.pblViewerIssues, state.sessionId)
     }
   }, [state.pblViewerIssues, state.sessionId])
-  
+
   // Dashboard filtersが変更されたときにlocalStorageに保存
   useEffect(() => {
     saveDashboardFiltersToStorage(state.dashboardFilters, state.sessionId)
   }, [state.dashboardFilters, state.sessionId])
-  
+
   // PBL-Viewer filtersが変更されたときにlocalStorageに保存
   useEffect(() => {
     savePBLViewerFiltersToStorage(state.pblViewerFilters, state.sessionId)
   }, [state.pblViewerFilters, state.sessionId])
-  
+
   // 後方互換性のため残す（廃止予定）
   useEffect(() => {
     if (state.issues.length > 0) {
       saveIssuesToStorage(state.issues, state.sessionId)
     }
   }, [state.issues, state.sessionId])
-  
+
   useEffect(() => {
     saveFiltersToStorage(state.filters, state.sessionId)
   }, [state.filters, state.sessionId])
-  
+
   // sessionIdが変更されたときに古いキャッシュをクリーンアップとlocalStorageに保存
   useEffect(() => {
     if (state.sessionId) {
@@ -648,7 +710,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       localStorage.setItem('gitlab-dashboard-session-id', state.sessionId)
     }
   }, [state.sessionId])
-  
+
   // アプリ起動時にセッション検証
   useEffect(() => {
     const validateSessionOnStartup = async () => {
@@ -656,12 +718,18 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         try {
           const { sessionApi } = await import('../services/api')
           const validation = await sessionApi.validateSession()
-          
+
           if (!validation.valid) {
-            console.warn('Session validation failed, attempting session recreation')
-            
+            console.warn(
+              'Session validation failed, attempting session recreation',
+            )
+
             // GitLab設定が残っている場合は自動的にセッション再作成を試行
-            if (state.gitlabConfig.url && state.gitlabConfig.token && state.gitlabConfig.projectId) {
+            if (
+              state.gitlabConfig.url &&
+              state.gitlabConfig.token &&
+              state.gitlabConfig.projectId
+            ) {
               try {
                 const recreateResult = await sessionApi.recreateSession({
                   gitlab_url: state.gitlabConfig.url,
@@ -670,11 +738,17 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
                   api_version: state.gitlabConfig.apiVersion,
                   http_proxy: state.gitlabConfig.httpProxy,
                   https_proxy: state.gitlabConfig.httpsProxy,
-                  no_proxy: state.gitlabConfig.noProxy
+                  no_proxy: state.gitlabConfig.noProxy,
                 })
-                
-                console.log('Session recreated successfully:', recreateResult.session_id)
-                dispatch({ type: 'SET_SESSION_ID', payload: recreateResult.session_id })
+
+                console.log(
+                  'Session recreated successfully:',
+                  recreateResult.session_id,
+                )
+                dispatch({
+                  type: 'SET_SESSION_ID',
+                  payload: recreateResult.session_id,
+                })
               } catch (recreateError) {
                 console.warn('Session recreation failed:', recreateError)
                 dispatch({ type: 'SESSION_EXPIRED' })
@@ -690,10 +764,10 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         }
       }
     }
-    
+
     validateSessionOnStartup()
   }, []) // 起動時のみ実行
-  
+
   return (
     <AppContext.Provider value={{ state, dispatch }}>
       {children}
