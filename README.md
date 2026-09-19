@@ -536,7 +536,7 @@ def _determine_completed_at(self, issue: IssueModel) -> Optional[datetime]:
 
 ### 前提条件
 
-- Node.js 18+
+- Node.js 22.12+ (vitest 5 の要件)
 - Python 3.8+
 - GitLab Personal Access Token
 

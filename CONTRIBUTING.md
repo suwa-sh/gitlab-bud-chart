@@ -6,7 +6,7 @@ Thank you for your interest in contributing to GitLab Bud Chart! This document p
 
 ### Prerequisites
 
-- **Node.js** 18+ (for frontend development)
+- **Node.js** 22.12+ (for frontend development; required by vitest 5)
 - **Python** 3.8+ (for backend development)
 - **Git** for version control
 - **GitLab** instance access (for testing)
