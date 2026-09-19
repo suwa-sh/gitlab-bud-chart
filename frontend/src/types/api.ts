@@ -10,6 +10,7 @@ export interface Issue {
   assignee?: string
   milestone?: string
   labels: string[]
+  web_url?: string
 
   // 分析済みフィールド
   point?: number

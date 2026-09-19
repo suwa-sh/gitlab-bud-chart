@@ -120,33 +120,6 @@ export const useDashboardIssues = () => {
     [dispatch, state.dashboardFilters],
   )
 
-  const exportIssues = useCallback(
-    async (format: 'csv' | 'json' = 'csv') => {
-      try {
-        const blob = await issuesApi.exportIssues(
-          state.dashboardFilters,
-          format,
-        )
-
-        // ダウンロード処理
-        const url = URL.createObjectURL(blob)
-        const a = document.createElement('a')
-        a.href = url
-        a.download = `dashboard_issues_${new Date().toISOString().split('T')[0]}.${format}`
-        a.click()
-        URL.revokeObjectURL(url)
-      } catch (error: any) {
-        // セッション期限切れのチェック
-        if (error.response?.status === 401 || error.response?.status === 403) {
-          dispatch({ type: 'SESSION_EXPIRED' })
-        } else {
-          dispatch({ type: 'SET_DASHBOARD_ERROR', payload: error.message })
-        }
-      }
-    },
-    [state.dashboardFilters, dispatch],
-  )
-
   const setFilters = useCallback(
     (filters: any) => {
       dispatch({ type: 'SET_DASHBOARD_FILTERS', payload: filters })
@@ -164,7 +137,6 @@ export const useDashboardIssues = () => {
     refreshFromCache,
     fetchIssues,
     searchIssues,
-    exportIssues,
     setFilters,
   }
 }

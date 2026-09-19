@@ -14,11 +14,13 @@ import {
 import { filterIssues } from '../../utils/filterUtils'
 import { EMPTY_PBL_FILTERS } from '../../utils/pblFilters'
 import { LoadingSpinner } from '../Common/LoadingSpinner'
+import { exportIssuesAsCsv } from '../../utils/csvExport'
+import { sortIssues } from '../../utils/issueSort'
 import './PBLViewer.css'
 
 export const PBLViewer = () => {
   const { state, dispatch } = useApp()
-  const { issues, loading, fetchAllIssues, exportIssues, hasCachedData } =
+  const { issues, loading, fetchAllIssues, hasCachedData } =
     usePBLViewerIssues()
   const isInitialLoadRef = useRef(true)
   const [showEditConfig, setShowEditConfig] = useState(false)
@@ -166,7 +168,13 @@ export const PBLViewer = () => {
             {loading ? '読み込み中...' : 'データ再取得'}
           </button>
           <button
-            onClick={() => exportIssues('csv')}
+            onClick={() =>
+              // 画面に表示している issue をそのまま書き出す（絞り込み・並び順が必ず一致する）
+              exportIssuesAsCsv(
+                sortIssues(filteredIssues, sortConfig),
+                'pbl_viewer_issues',
+              )
+            }
             disabled={loading || issues.length === 0}
             className="export-btn"
           >
